@@ -1,0 +1,49 @@
+{
+  "initialBalance": 10000,
+  "cash": 5625,
+  "equity": 10037.4,
+  "dailyTargetMin": 50,
+  "dailyTargetMax": 100,
+  "dailyRealizedPnl": 0,
+  "lastResetDate": "2026-09-18",
+  "autoTradeEnabled": true,
+  "riskPerTradePercent": 1.5,
+  "maxPositionNotional": 2500,
+  "maxOpenPositions": 2,
+  "positions": [
+    {
+      "id": "pos_1789699713179",
+      "symbol": "BINANCE:BTCUSDT",
+      "side": "LONG",
+      "entryPrice": 76931.57,
+      "size": 0.032496412071143226,
+      "notional": 2500,
+      "stopLoss": 77085.43,
+      "takeProfit": 78085.54,
+      "entryTime": "2026-09-18T02:48:33.179Z",
+      "strategy": "Supertrend + MACD Momentum",
+      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 67.44, 26-TA Buy consensus (11/26)."
+    },
+    {
+      "id": "pos_1789699716046",
+      "symbol": "BINANCE:ETHUSDT",
+      "side": "LONG",
+      "entryPrice": 2462.08,
+      "size": 0.7615512087340786,
+      "notional": 1875,
+      "stopLoss": 2467,
+      "takeProfit": 2499.01,
+      "entryTime": "2026-09-18T02:48:36.046Z",
+      "strategy": "Supertrend + MACD Momentum",
+      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 61.63, 26-TA Buy consensus (12/26)."
+    }
+  ],
+  "trades": [],
+  "logs": [
+    "[10:18:14 AM] Trailing Stop locked for LONG BINANCE:BTCUSDT at breakeven+$ ($77085.43)",
+    "[10:18:14 AM] Trailing Stop locked for LONG BINANCE:ETHUSDT at breakeven+$ ($2467)",
+    "[9:50:20 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[9:48:36 AM] OPENED LONG on BINANCE:ETHUSDT @ $2462.08. Target TP: $2499.01, SL: $2442.38 [Strategy: Supertrend + MACD Momentum]",
+    "[9:48:33 AM] OPENED LONG on BINANCE:BTCUSDT @ $76931.57. Target TP: $78085.54, SL: $76316.12 [Strategy: Supertrend + MACD Momentum]"
+  ]
+}
