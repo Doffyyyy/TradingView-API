@@ -215,6 +215,7 @@ const htmlContent = `<!DOCTYPE html>
             <option value="100">100 bars</option>
             <option value="50">50 bars</option>
           </select>
+          <button class="btn" id="btn-fit-focus" title="Auto-scale and focus price/time">⛶ Fit Focus</button>
         </div>
       </div>
       <div id="chart-container">
@@ -633,7 +634,13 @@ const htmlContent = `<!DOCTYPE html>
         mode: LightweightCharts.CrosshairMode.Normal,
       },
       timeScale: { borderColor: '#2b3040', timeVisible: true },
-      rightPriceScale: { borderColor: '#2b3040' },
+      rightPriceScale: { borderColor: '#2b3040', autoScale: true },
+      handleScale: {
+        axisDoubleClickReset: { time: true, price: true },
+        axisPressedMouseMove: { time: true, price: true },
+        mouseWheel: true,
+        pinch: true,
+      },
     });
     const candleSeries = chart.addCandlestickSeries({ upColor: '#26a69a', downColor: '#ef5350' });
 
@@ -656,15 +663,31 @@ const htmlContent = `<!DOCTYPE html>
 
     async function loadChart(sym, tf) {
       if (eventSource) eventSource.close();
+      clearFiboLines();
+      try {
+        chart.priceScale('right').applyOptions({ autoScale: true });
+      } catch (e) {}
       const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
       const data = await res.json();
       if (data.candles && data.candles.length > 0) {
         currentCandlesCache = data.candles;
+        try {
+          chart.priceScale('right').applyOptions({ autoScale: true });
+        } catch (e) {}
         candleSeries.setData(data.candles);
-        chart.timeScale().fitContent();
+        try {
+          chart.priceScale('right').applyOptions({ autoScale: true });
+          chart.timeScale().fitContent();
+        } catch (e) {}
         lastLoadedCandle = data.candles[data.candles.length - 1];
         setLegendOHLC(lastLoadedCandle);
         updateFiboRadar(currentCandlesCache);
+        setTimeout(() => {
+          try {
+            chart.priceScale('right').applyOptions({ autoScale: true });
+            chart.timeScale().fitContent();
+          } catch (e) {}
+        }, 50);
       }
       eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
       eventSource.onmessage = (e) => {
@@ -681,6 +704,14 @@ const htmlContent = `<!DOCTYPE html>
       };
     }
     loadChart(currentSymbol, currentTimeframe);
+
+    const btnFitFocus = document.getElementById('btn-fit-focus');
+    if (btnFitFocus) {
+      btnFitFocus.addEventListener('click', () => {
+        chart.priceScale('right').applyOptions({ autoScale: true });
+        chart.timeScale().fitContent();
+      });
+    }
 
     // FiboRadar Controls
     const btnToggleFibo = document.getElementById('btn-toggle-fibo');
