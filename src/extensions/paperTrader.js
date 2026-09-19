@@ -300,15 +300,36 @@ class PaperTradingEngine {
     return position;
   }
 
-  async scanOpportunities() {
-    // 1. Check daily target hit ($50 - $100)
-    if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMax) {
-      this.log(`🎯 DAILY TARGET MAX REACHED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $100). Auto-trading paused to lock profits.`);
-      return;
+  checkDailyRollover() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.portfolio.lastResetDate !== today) {
+      this.log(`🌅 New trading day detected (${today}). Previous day realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}. Resetting daily target counter.`);
+      if (!this.portfolio.dailyHistory) this.portfolio.dailyHistory = [];
+      this.portfolio.dailyHistory.unshift({
+        date: this.portfolio.lastResetDate,
+        realizedPnl: this.portfolio.dailyRealizedPnl,
+        closingEquity: this.portfolio.equity,
+      });
+      this.portfolio.dailyRealizedPnl = 0.0;
+      this.portfolio.lastResetDate = today;
+      this.hasLoggedDailyMin = false;
+      this.hasLoggedDailyMax = false;
+      this.savePortfolio();
     }
+  }
 
-    if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin && this.portfolio.positions.length === 0) {
-      this.log(`✅ Daily Target Minimum Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)}). Waiting for optimal high-conviction setup.`);
+  async scanOpportunities() {
+    // Check daily milestones without blocking continuous trading
+    if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMax) {
+      if (!this.hasLoggedDailyMax) {
+        this.log(`🎯 DAILY TARGET EXCEEDED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $100/day). Continuing continuous paper trade with strict risk controls.`);
+        this.hasLoggedDailyMax = true;
+      }
+    } else if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin) {
+      if (!this.hasLoggedDailyMin) {
+        this.log(`✅ Daily Target Minimum Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $50/day). Compounding active.`);
+        this.hasLoggedDailyMin = true;
+      }
     }
 
     // 2. Check if slots available
@@ -360,6 +381,7 @@ class PaperTradingEngine {
   async tick() {
     if (!this.portfolio.autoTradeEnabled) return;
     try {
+      this.checkDailyRollover();
       await this.fetchPrices();
       this.updateEquity();
       await this.checkExitRules();
