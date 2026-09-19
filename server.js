@@ -225,12 +225,9 @@ const htmlContent = `<!DOCTYPE html>
     <!-- VIEW 1: LIVE CHART -->
     <div class="view-panel active" id="view-chart">
       <div class="controls-bar">
-        <div class="preset-group" id="presets">
-          <button class="btn active" data-symbol="BINANCE:BTCUSDT">BTC/USDT</button>
-          <button class="btn" data-symbol="BINANCE:ETHUSDT">ETH/USDT</button>
-          <button class="btn" data-symbol="BYBIT:HYPEUSDT">HYPE/USDT</button>
-          <button class="btn" data-symbol="BINANCE:SOLUSDT">SOL/USDT</button>
-          <button class="btn" data-symbol="BINANCE:SUIUSDT">SUI/USDT</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong id="active-symbol-title" style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">BTCUSDT</strong>
+          <span id="active-exchange-badge" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: 600;">BINANCE</span>
         </div>
         <div class="tf-group" id="timeframes">
           <button class="btn" data-tf="1">1m</button>
@@ -753,6 +750,20 @@ const htmlContent = `<!DOCTYPE html>
         lastLoadedCandle = data.candles[data.candles.length - 1];
         setLegendOHLC(lastLoadedCandle);
         updateFiboRadar(currentCandlesCache);
+
+        const titleEl = document.getElementById('active-symbol-title');
+        const exEl = document.getElementById('active-exchange-badge');
+        if (titleEl && exEl) {
+          const parts = sym.split(':');
+          if (parts.length > 1) {
+            exEl.textContent = parts[0];
+            titleEl.textContent = parts[1];
+          } else {
+            exEl.textContent = 'MARKET';
+            titleEl.textContent = sym;
+          }
+        }
+
         setTimeout(() => {
           try {
             chart.priceScale('right').applyOptions({ autoScale: true });
@@ -804,16 +815,6 @@ const htmlContent = `<!DOCTYPE html>
         updateFiboRadar(currentCandlesCache);
       });
     }
-
-    document.getElementById('presets').addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      document.querySelectorAll('#presets button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentSymbol = btn.dataset.symbol;
-      loadChart(currentSymbol, currentTimeframe);
-      renderWatchlist(document.getElementById('watchlist-search')?.value || '');
-    });
 
     // --- Proliquid Watchlist Logic ---
     const DEFAULT_WATCHLIST = [
@@ -1012,9 +1013,6 @@ const htmlContent = `<!DOCTYPE html>
       if (!sym) return;
 
       currentSymbol = sym;
-      document.querySelectorAll('#presets button').forEach(b => {
-        b.classList.toggle('active', b.dataset.symbol === sym);
-      });
       renderWatchlist(document.getElementById('watchlist-search')?.value || '');
       loadChart(currentSymbol, currentTimeframe);
     });
