@@ -171,6 +171,37 @@ const htmlContent = `<!DOCTYPE html>
       height: 30px; background: var(--bg-secondary); border-top: 1px solid var(--border-color);
       display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--text-secondary);
     }
+
+    /* Proliquid Watchlist Styles */
+    .wl-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      cursor: pointer; transition: background 0.12s; position: relative; user-select: none;
+    }
+    .wl-row:hover { background: var(--bg-tertiary); }
+    .wl-row.active {
+      background: rgba(41, 98, 255, 0.15);
+      border-left: 3px solid var(--accent-blue);
+    }
+    .wl-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+    .wl-badge {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--bg-tertiary); border: 1px solid var(--border-color);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; color: var(--text-primary); flex-shrink: 0;
+    }
+    .wl-info { display: flex; flex-direction: column; overflow: hidden; }
+    .wl-sym { font-size: 11px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wl-ex { font-size: 8.5px; color: var(--text-secondary); text-transform: uppercase; }
+    .wl-right { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+    .wl-price { font-family: monospace; font-size: 11.5px; font-weight: 700; color: var(--text-primary); }
+    .wl-chg { font-size: 9.5px; font-weight: 600; }
+    .wl-del {
+      opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 4px;
+      border-radius: 3px; font-size: 10px; margin-left: 4px;
+    }
+    .wl-row:hover .wl-del { opacity: 0.7; }
+    .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
   </style>
 </head>
 <body>
@@ -197,9 +228,9 @@ const htmlContent = `<!DOCTYPE html>
         <div class="preset-group" id="presets">
           <button class="btn active" data-symbol="BINANCE:BTCUSDT">BTC/USDT</button>
           <button class="btn" data-symbol="BINANCE:ETHUSDT">ETH/USDT</button>
-          <button class="btn" data-symbol="BINANCE:SOLUSDT">SOL/USDT</button>
           <button class="btn" data-symbol="BYBIT:HYPEUSDT">HYPE/USDT</button>
-          <button class="btn" data-symbol="NASDAQ:AAPL">AAPL</button>
+          <button class="btn" data-symbol="BINANCE:SOLUSDT">SOL/USDT</button>
+          <button class="btn" data-symbol="BINANCE:SUIUSDT">SUI/USDT</button>
         </div>
         <div class="tf-group" id="timeframes">
           <button class="btn" data-tf="1">1m</button>
@@ -216,24 +247,64 @@ const htmlContent = `<!DOCTYPE html>
             <option value="50">50 bars</option>
           </select>
           <button class="btn" id="btn-fit-focus" title="Auto-scale and focus price/time">⛶ Fit Focus</button>
+          <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff;">📑 Watchlist</button>
         </div>
       </div>
-      <div id="chart-container">
-        <div class="legend-overlay">
-          <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
-          <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
-          <span class="legend-item"><span class="legend-label">L:</span><span id="leg-low">--</span></span>
-          <span class="legend-item"><span class="legend-label">C:</span><span id="leg-close">--</span></span>
+
+      <!-- Main Workspace: Chart on Left, Proliquid Watchlist on Right -->
+      <div style="flex: 1; display: flex; overflow: hidden; position: relative;">
+        <!-- Left: Chart Canvas -->
+        <div style="flex: 1; position: relative; height: 100%; display: flex; flex-direction: column;">
+          <div id="chart-container" style="flex: 1; width: 100%; position: relative;">
+            <div class="legend-overlay">
+              <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
+              <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
+              <span class="legend-item"><span class="legend-label">L:</span><span id="leg-low">--</span></span>
+              <span class="legend-item"><span class="legend-label">C:</span><span id="leg-close">--</span></span>
+            </div>
+            <div id="fiboradar-hud" style="position: absolute; top: 12px; right: 16px; z-index: 10; background: rgba(15, 17, 23, 0.88); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 230px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
+                <span id="fibo-swing-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(74, 222, 128, 0.2); color: #4ade80;">BULL</span>
+              </div>
+              <div style="margin-bottom: 6px; font-size: 10px; color: var(--text-secondary);">
+                Zone: <strong id="fibo-current-zone" style="color: #fbbf24;">--</strong>
+              </div>
+              <div id="fibo-levels-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
+            </div>
+          </div>
         </div>
-        <div id="fiboradar-hud" style="position: absolute; top: 12px; right: 16px; z-index: 10; background: rgba(15, 17, 23, 0.88); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 230px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
-            <span id="fibo-swing-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(74, 222, 128, 0.2); color: #4ade80;">BULL</span>
+
+        <!-- Right: Proliquid Watchlist Sidebar -->
+        <div id="watchlist-sidebar" style="width: 270px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%;">
+          <!-- Header -->
+          <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01);">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong style="font-size: 12px; letter-spacing: 0.5px;">PRO WATCHLIST</strong>
+              <span id="wl-total-count" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 700;">23</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn" id="btn-show-add-token" title="Add token to watchlist" style="padding: 3px 8px; font-size: 11px;">＋ Add</button>
+              <button class="btn" id="btn-refresh-wl-prices" title="Refresh prices" style="padding: 3px 6px; font-size: 11px;">🔄</button>
+            </div>
           </div>
-          <div style="margin-bottom: 6px; font-size: 10px; color: var(--text-secondary);">
-            Zone: <strong id="fibo-current-zone" style="color: #fbbf24;">--</strong>
+
+          <!-- Add Token Bar (collapsible) -->
+          <div id="add-token-container" style="display: none; padding: 8px; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary);">
+            <div style="display: flex; gap: 4px;">
+              <input type="text" id="input-new-symbol" placeholder="e.g. BINANCE:PEPEUSDT" style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 11px; outline: none;">
+              <button class="btn active" id="btn-confirm-add-token" style="padding: 5px 8px; font-size: 11px;">Add</button>
+            </div>
+            <div style="font-size: 9px; color: var(--text-secondary); margin-top: 4px;">Enter symbol or exchange:ticker</div>
           </div>
-          <div id="fibo-levels-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
+
+          <!-- Search / Quick Filter -->
+          <div style="padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <input type="text" id="watchlist-search" placeholder="Search tokens..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; outline: none;">
+          </div>
+
+          <!-- Watchlist Items Scroll -->
+          <div id="watchlist-list" style="flex: 1; overflow-y: auto;"></div>
         </div>
       </div>
     </div>
@@ -741,7 +812,216 @@ const htmlContent = `<!DOCTYPE html>
       btn.classList.add('active');
       currentSymbol = btn.dataset.symbol;
       loadChart(currentSymbol, currentTimeframe);
+      renderWatchlist(document.getElementById('watchlist-search')?.value || '');
     });
+
+    // --- Proliquid Watchlist Logic ---
+    const DEFAULT_WATCHLIST = [
+      { symbol: 'BINANCE:BTCUSDT', name: 'BTCUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:ETHUSDT', name: 'ETHUSDT', exchange: 'BINANCE' },
+      { symbol: 'BYBIT:HYPEUSDT', name: 'HYPEUSD', exchange: 'BYBIT' },
+      { symbol: 'METEORA:KLEDSOL_4SBYWY.USD', name: 'KLEDSOL_4!', exchange: 'METEORA' },
+      { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE' },
+      { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ' },
+      { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE' },
+      { symbol: 'BYBIT:VVVUSDT', name: 'VVVUSDT.P', exchange: 'BYBIT' },
+      { symbol: 'BINANCE:PUMPUSDT', name: 'PUMPUSDT', exchange: 'BINANCE' },
+      { symbol: 'COINBASE:MONUSD', name: 'MONUSD', exchange: 'COINBASE' },
+      { symbol: 'BYBIT:MNTUSDT', name: 'MNTUSDT', exchange: 'BYBIT' },
+      { symbol: 'CRYPTO:NOCKUSD', name: 'NOCKUSD', exchange: 'CRYPTO' },
+      { symbol: 'CRYPTO:LITLUSD', name: 'LITLUSD', exchange: 'CRYPTO' },
+      { symbol: 'ORCA:ANSEMSOL_CNTPTP.USD', name: 'ANSEMSOL_', exchange: 'ORCA' },
+      { symbol: 'BINANCE:NEARUSDT', name: 'NEARUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:BNBUSDT', name: 'BNBUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:LINKUSDT', name: 'LINKUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:ZKUSDT', name: 'ZKUSDT', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:PENDLEUSDT', name: 'PENDLEUSD', exchange: 'BINANCE' },
+      { symbol: 'BINANCE:ONDOUSDT', name: 'ONDOUSDT', exchange: 'BINANCE' },
+      { symbol: 'OKX:OKBUSDT', name: 'OKBUSDT', exchange: 'OKX' },
+    ];
+
+    let customWatchlist = [];
+    try {
+      const saved = localStorage.getItem('tv_custom_watchlist_v3');
+      customWatchlist = saved ? JSON.parse(saved) : DEFAULT_WATCHLIST;
+    } catch (e) {
+      customWatchlist = DEFAULT_WATCHLIST;
+    }
+
+    const pricesCache = {};
+
+    function saveWatchlist() {
+      try {
+        localStorage.setItem('tv_custom_watchlist_v3', JSON.stringify(customWatchlist));
+      } catch (e) {}
+    }
+
+    function formatPrice(p) {
+      if (typeof p !== 'number' || isNaN(p)) return '--';
+      if (p >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (p >= 1) return p.toFixed(p < 10 ? 3 : 2);
+      if (p >= 0.01) return p.toFixed(4);
+      return p.toPrecision(4);
+    }
+
+    function renderWatchlist(filter = '') {
+      const listEl = document.getElementById('watchlist-list');
+      const countEl = document.getElementById('wl-total-count');
+      if (!listEl) return;
+
+      const q = (filter || '').trim().toLowerCase();
+      const filtered = customWatchlist.filter(item => {
+        if (!q) return true;
+        return item.name.toLowerCase().includes(q) || item.symbol.toLowerCase().includes(q) || item.exchange.toLowerCase().includes(q);
+      });
+
+      if (countEl) countEl.textContent = customWatchlist.length;
+
+      listEl.innerHTML = filtered.map(item => {
+        const pData = pricesCache[item.symbol] || {};
+        const isActive = item.symbol === currentSymbol;
+        const priceStr = pData.close !== undefined ? formatPrice(pData.close) : '--';
+        const chg = pData.change !== undefined ? pData.change : null;
+        const chgClass = chg !== null ? (chg >= 0 ? 'val-green' : 'val-red') : '';
+        const chgStr = chg !== null ? (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%' : '';
+
+        const badge = item.name.replace(/USDT|\.P|USD|_/gi, '').slice(0, 3).toUpperCase() || 'TK';
+
+        return \`
+          <div class="wl-row \${isActive ? 'active' : ''}" data-symbol="\${item.symbol}">
+            <div class="wl-left">
+              <div class="wl-badge">\${badge}</div>
+              <div class="wl-info">
+                <div class="wl-sym">\${item.name}</div>
+                <div class="wl-ex">\${item.exchange}</div>
+              </div>
+            </div>
+            <div class="wl-right">
+              <div class="wl-price">\${priceStr}</div>
+              <div class="wl-chg \${chgClass}">\${chgStr}</div>
+            </div>
+            <span class="wl-del" data-del-symbol="\${item.symbol}" title="Remove token">✕</span>
+          </div>
+        \`;
+      }).join('');
+    }
+
+    async function updateWatchlistPrices() {
+      if (customWatchlist.length === 0) return;
+      try {
+        const symbols = customWatchlist.map(w => w.symbol);
+        const res = await fetch('/api/watchlist/prices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbols })
+        });
+        const data = await res.json();
+        if (data.prices) {
+          Object.assign(pricesCache, data.prices);
+          const filter = document.getElementById('watchlist-search')?.value || '';
+          renderWatchlist(filter);
+        }
+      } catch (e) {}
+    }
+
+    const btnToggleWl = document.getElementById('btn-toggle-watchlist');
+    const wlSidebar = document.getElementById('watchlist-sidebar');
+    if (btnToggleWl && wlSidebar) {
+      btnToggleWl.addEventListener('click', () => {
+        const isHidden = wlSidebar.style.display === 'none';
+        wlSidebar.style.display = isHidden ? 'flex' : 'none';
+        btnToggleWl.classList.toggle('active', isHidden);
+        setTimeout(resizeChart, 50);
+      });
+    }
+
+    const btnShowAddToken = document.getElementById('btn-show-add-token');
+    const addTokenContainer = document.getElementById('add-token-container');
+    const inputNewSymbol = document.getElementById('input-new-symbol');
+    if (btnShowAddToken && addTokenContainer) {
+      btnShowAddToken.addEventListener('click', () => {
+        const isHidden = addTokenContainer.style.display === 'none';
+        addTokenContainer.style.display = isHidden ? 'block' : 'none';
+        if (isHidden && inputNewSymbol) inputNewSymbol.focus();
+      });
+    }
+
+    function handleAddToken() {
+      if (!inputNewSymbol) return;
+      let raw = inputNewSymbol.value.trim().toUpperCase();
+      if (!raw) return;
+
+      let symbol = raw;
+      let exchange = 'BINANCE';
+      let name = raw;
+
+      if (raw.includes(':')) {
+        const parts = raw.split(':');
+        exchange = parts[0];
+        name = parts[1];
+        symbol = raw;
+      } else {
+        symbol = 'BINANCE:' + raw;
+        name = raw;
+        exchange = 'BINANCE';
+      }
+
+      if (!customWatchlist.some(w => w.symbol === symbol)) {
+        customWatchlist.unshift({ symbol, name, exchange });
+        saveWatchlist();
+        renderWatchlist();
+        updateWatchlistPrices();
+      }
+
+      inputNewSymbol.value = '';
+      addTokenContainer.style.display = 'none';
+
+      currentSymbol = symbol;
+      loadChart(currentSymbol, currentTimeframe);
+      renderWatchlist();
+    }
+
+    document.getElementById('btn-confirm-add-token')?.addEventListener('click', handleAddToken);
+    inputNewSymbol?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAddToken();
+      if (e.key === 'Escape') addTokenContainer.style.display = 'none';
+    });
+
+    document.getElementById('btn-refresh-wl-prices')?.addEventListener('click', updateWatchlistPrices);
+
+    document.getElementById('watchlist-search')?.addEventListener('input', (e) => {
+      renderWatchlist(e.target.value);
+    });
+
+    document.getElementById('watchlist-list')?.addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.wl-del');
+      if (delBtn) {
+        e.stopPropagation();
+        const delSym = delBtn.dataset.delSymbol;
+        customWatchlist = customWatchlist.filter(w => w.symbol !== delSym);
+        saveWatchlist();
+        renderWatchlist(document.getElementById('watchlist-search')?.value || '');
+        return;
+      }
+
+      const row = e.target.closest('.wl-row');
+      if (!row) return;
+      const sym = row.dataset.symbol;
+      if (!sym) return;
+
+      currentSymbol = sym;
+      document.querySelectorAll('#presets button').forEach(b => {
+        b.classList.toggle('active', b.dataset.symbol === sym);
+      });
+      renderWatchlist(document.getElementById('watchlist-search')?.value || '');
+      loadChart(currentSymbol, currentTimeframe);
+    });
+
+    renderWatchlist();
+    updateWatchlistPrices();
+    setInterval(updateWatchlistPrices, 8000);
 
     document.getElementById('timeframes').addEventListener('click', (e) => {
       const btn = e.target.closest('button');
@@ -1044,6 +1324,36 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(404);
     return res.end('Not found');
+  }
+
+  if (pathname === '/api/watchlist/prices') {
+    const body = await parseBody(req);
+    const symbols = body.symbols || [];
+    const prices = {};
+    if (symbols.length > 0) {
+      try {
+        const axios = require('axios');
+        const resScanner = await axios.post(
+          'https://scanner.tradingview.com/crypto/scan',
+          {
+            symbols: { tickers: symbols },
+            columns: ['close', 'change', 'volume'],
+          },
+          { timeout: 4000 }
+        );
+        if (resScanner.data && resScanner.data.data) {
+          resScanner.data.data.forEach(item => {
+            prices[item.s] = {
+              close: item.d[0],
+              change: item.d[1],
+              volume: item.d[2],
+            };
+          });
+        }
+      } catch (e) {}
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ prices }));
   }
 
   if (pathname === '/api/history') {
