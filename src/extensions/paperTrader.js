@@ -33,13 +33,29 @@ class PaperTradingEngine {
     this.latestPrices = {};
   }
 
+  getTodayDateString() {
+    // Return YYYY-MM-DD in UTC+7 (Vietnam Time)
+    const now = new Date();
+    const vnTime = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
+    const y = vnTime.getFullYear();
+    const m = String(vnTime.getMonth() + 1).padStart(2, '0');
+    const d = String(vnTime.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   loadPortfolio() {
     try {
       if (fs.existsSync(PORTFOLIO_PATH)) {
         const data = JSON.parse(fs.readFileSync(PORTFOLIO_PATH, 'utf8'));
-        // Check daily reset
-        const today = new Date().toISOString().slice(0, 10);
+        // Check daily reset according to Vietnam Time (UTC+7)
+        const today = this.getTodayDateString();
         if (data.lastResetDate !== today) {
+          if (!data.dailyHistory) data.dailyHistory = [];
+          data.dailyHistory.unshift({
+            date: data.lastResetDate,
+            realizedPnl: data.dailyRealizedPnl || 0.0,
+            closingEquity: data.equity || data.cash,
+          });
           data.dailyRealizedPnl = 0.0;
           data.lastResetDate = today;
           fs.writeFileSync(PORTFOLIO_PATH, JSON.stringify(data, null, 2));
@@ -301,9 +317,9 @@ class PaperTradingEngine {
   }
 
   checkDailyRollover() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = this.getTodayDateString();
     if (this.portfolio.lastResetDate !== today) {
-      this.log(`🌅 New trading day detected (${today}). Previous day realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}. Resetting daily target counter.`);
+      this.log(`🌅 New trading day detected (${today} UTC+7). Previous day realized PnL: $${(this.portfolio.dailyRealizedPnl || 0).toFixed(2)}. Resetting daily target counter.`);
       if (!this.portfolio.dailyHistory) this.portfolio.dailyHistory = [];
       this.portfolio.dailyHistory.unshift({
         date: this.portfolio.lastResetDate,
