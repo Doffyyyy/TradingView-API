@@ -173,32 +173,52 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     /* Proliquid Watchlist Styles */
+    .wl-col-header {
+      display: grid;
+      grid-template-columns: 105px 75px 55px 55px 22px;
+      align-items: center;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.02);
+      user-select: none;
+    }
+    .wl-col-header span { white-space: nowrap; }
+    .wl-col-header .text-right { text-align: right; }
+
     .wl-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      cursor: pointer; transition: background 0.12s; position: relative; user-select: none;
+      display: grid;
+      grid-template-columns: 105px 75px 55px 55px 22px;
+      align-items: center;
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
+      user-select: none;
     }
     .wl-row:hover { background: var(--bg-tertiary); }
     .wl-row.active {
       background: rgba(41, 98, 255, 0.15);
       border-left: 3px solid var(--accent-blue);
     }
-    .wl-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+    .wl-left { display: flex; align-items: center; gap: 6px; overflow: hidden; }
     .wl-badge {
-      width: 24px; height: 24px; border-radius: 50%;
+      width: 20px; height: 20px; border-radius: 50%;
       background: var(--bg-tertiary); border: 1px solid var(--border-color);
       display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 800; color: var(--text-primary); flex-shrink: 0;
+      font-size: 8px; font-weight: 800; color: var(--text-primary); flex-shrink: 0;
     }
-    .wl-info { display: flex; flex-direction: column; overflow: hidden; }
+    .wl-info { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
     .wl-sym { font-size: 11px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .wl-ex { font-size: 8.5px; color: var(--text-secondary); text-transform: uppercase; }
-    .wl-right { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
-    .wl-price { font-family: monospace; font-size: 11.5px; font-weight: 700; color: var(--text-primary); }
-    .wl-chg { font-size: 9.5px; font-weight: 600; }
+    .wl-ex { font-size: 8px; color: var(--text-secondary); text-transform: uppercase; }
+    .wl-cell { font-family: monospace; font-size: 11px; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wl-cell-last { color: var(--text-primary); font-weight: 700; }
     .wl-del {
       opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 4px;
-      border-radius: 3px; font-size: 10px; margin-left: 4px;
+      border-radius: 3px; font-size: 10px; text-align: center;
     }
     .wl-row:hover .wl-del { opacity: 0.7; }
     .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
@@ -273,7 +293,7 @@ const htmlContent = `<!DOCTYPE html>
         </div>
 
         <!-- Right: Proliquid Watchlist Sidebar -->
-        <div id="watchlist-sidebar" style="width: 270px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%;">
+        <div id="watchlist-sidebar" style="width: 320px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%;">
           <!-- Header -->
           <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01);">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -298,6 +318,15 @@ const htmlContent = `<!DOCTYPE html>
           <!-- Search / Quick Filter -->
           <div style="padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
             <input type="text" id="watchlist-search" placeholder="Search tokens..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; outline: none;">
+          </div>
+
+          <!-- Table Column Headers: Symbol | Last | Chg | Chg% -->
+          <div class="wl-col-header">
+            <span>Symbol</span>
+            <span class="text-right">Last</span>
+            <span class="text-right">Chg</span>
+            <span class="text-right">Chg%</span>
+            <span></span>
           </div>
 
           <!-- Watchlist Items Scroll -->
@@ -867,6 +896,15 @@ const htmlContent = `<!DOCTYPE html>
       return p.toPrecision(4);
     }
 
+    function formatChgAbs(a) {
+      if (typeof a !== 'number' || isNaN(a)) return '--';
+      const sign = a > 0 ? '+' : '';
+      if (Math.abs(a) >= 100) return sign + a.toFixed(1);
+      if (Math.abs(a) >= 1) return sign + a.toFixed(2);
+      if (Math.abs(a) >= 0.01) return sign + a.toFixed(3);
+      return sign + a.toPrecision(3);
+    }
+
     function renderWatchlist(filter = '') {
       const listEl = document.getElementById('watchlist-list');
       const countEl = document.getElementById('wl-total-count');
@@ -884,9 +922,13 @@ const htmlContent = `<!DOCTYPE html>
         const pData = pricesCache[item.symbol] || {};
         const isActive = item.symbol === currentSymbol;
         const priceStr = pData.close !== undefined ? formatPrice(pData.close) : '--';
+        
         const chg = pData.change !== undefined ? pData.change : null;
         const chgClass = chg !== null ? (chg >= 0 ? 'val-green' : 'val-red') : '';
-        const chgStr = chg !== null ? (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%' : '';
+        const chgStr = chg !== null ? (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%' : '--';
+
+        const chgAbs = pData.change_abs !== undefined ? pData.change_abs : (chg !== null && pData.close !== undefined ? (pData.close * chg / 100) : null);
+        const chgAbsStr = chgAbs !== null ? formatChgAbs(chgAbs) : '--';
 
         const badge = item.name.replace(/USDT|\.P|USD|_/gi, '').slice(0, 3).toUpperCase() || 'TK';
 
@@ -899,10 +941,9 @@ const htmlContent = `<!DOCTYPE html>
                 <div class="wl-ex">\${item.exchange}</div>
               </div>
             </div>
-            <div class="wl-right">
-              <div class="wl-price">\${priceStr}</div>
-              <div class="wl-chg \${chgClass}">\${chgStr}</div>
-            </div>
+            <div class="wl-cell wl-cell-last">\${priceStr}</div>
+            <div class="wl-cell \${chgClass}">\${chgAbsStr}</div>
+            <div class="wl-cell \${chgClass}">\${chgStr}</div>
             <span class="wl-del" data-del-symbol="\${item.symbol}" title="Remove token">✕</span>
           </div>
         \`;
@@ -1335,7 +1376,7 @@ const server = http.createServer(async (req, res) => {
           'https://scanner.tradingview.com/crypto/scan',
           {
             symbols: { tickers: symbols },
-            columns: ['close', 'change', 'volume'],
+            columns: ['close', 'change', 'change_abs', 'volume'],
           },
           { timeout: 4000 }
         );
@@ -1344,7 +1385,8 @@ const server = http.createServer(async (req, res) => {
             prices[item.s] = {
               close: item.d[0],
               change: item.d[1],
-              volume: item.d[2],
+              change_abs: item.d[2],
+              volume: item.d[3],
             };
           });
         }
