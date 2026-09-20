@@ -348,12 +348,22 @@ const htmlContent = `<!DOCTYPE html>
     }
     
     /* Screener */
+    .scr-header-row, .scr-row {
+      display: grid; grid-template-columns: 1.15fr 1fr 1fr; font-size: 11px; padding: 3px 0;
+      align-items: center;
+    }
     .scr-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 11px; padding: 4px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
-    .scr-label { color: var(--text-secondary); font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
-    .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 11px; }
+    .scr-header-row {
+      margin-bottom: 4px; padding-bottom: 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .scr-col-th {
+      text-align: right; font-size: 9.5px; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;
+    }
+    .scr-label { color: var(--text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; }
+    .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 10.5px; }
     
     /* Orderbook */
     .ob-table { width: 100%; font-size: 10.5px; font-family: monospace; border-collapse: collapse; }
@@ -622,12 +632,10 @@ const htmlContent = `<!DOCTYPE html>
           <div class="dock-grid-top">
             <!-- Screener Card -->
             <div class="dock-card">
-              <div class="dock-header">
-                <span style="color: #fff; font-weight: 800;">SCREENER</span>
-                <div style="display: flex; gap: 10px; font-size: 9.5px; color: var(--text-secondary); font-weight: 700;">
-                  <span>5 M</span>
-                  <span>15 M</span>
-                </div>
+              <div class="scr-header-row">
+                <span style="color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 0.5px;">SCREENER</span>
+                <span class="scr-col-th">5 M</span>
+                <span class="scr-col-th">15 M</span>
               </div>
               <div class="scr-row">
                 <span class="scr-label">TRADES</span>
