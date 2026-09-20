@@ -257,6 +257,72 @@ const htmlContent = `<!DOCTYPE html>
     .search-sug-item:hover { background: var(--bg-tertiary); }
     .search-sug-item.active { background: rgba(41, 98, 255, 0.2); }
 
+    /* Hyperliquid Two-Tier Market Header & Chart Toolbar */
+    .hl-ticker-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 12px; background: #0c0e12; border-bottom: 1px solid #1c2028;
+      height: 40px; gap: 10px; overflow-x: auto; user-select: none; flex-shrink: 0;
+    }
+    .hl-ticker-bar::-webkit-scrollbar { height: 2px; }
+    .hl-ticker-left {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .hl-drag-handle {
+      color: #4a505e; font-size: 14px; cursor: grab; padding: 0 2px;
+    }
+    .hl-market-badge {
+      display: flex; align-items: center; gap: 7px; padding: 3px 8px;
+      background: #14171e; border: 1px solid #232834; border-radius: 4px;
+    }
+    .hl-badge-sub {
+      font-size: 8px; font-weight: 700; color: #787b86; text-transform: uppercase; line-height: 1;
+    }
+    .hl-badge-title {
+      font-size: 12.5px; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: 0.3px;
+    }
+    .hl-stat-group {
+      display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+    }
+    .hl-stat-item {
+      display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .hl-stat-lbl {
+      font-size: 8px; color: #787b86; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 1px;
+    }
+    .hl-stat-val {
+      font-size: 11px; font-weight: 800; color: #fff; font-family: monospace; line-height: 1.1;
+    }
+    .hl-vdiv {
+      width: 1px; height: 16px; background: #232834; flex-shrink: 0;
+    }
+
+    /* Tier 2: Chart Toolbar */
+    .hl-chart-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 3px 12px; background: #11141a; border-bottom: 1px solid #1c2028;
+      height: 32px; gap: 6px; font-size: 11.5px; user-select: none; flex-shrink: 0;
+    }
+    .hl-tb-left {
+      display: flex; align-items: center; gap: 2px;
+    }
+    .hl-tf-btn {
+      background: transparent; border: none; color: #8c93a3; font-size: 11.5px; font-weight: 600;
+      padding: 2px 6px; border-radius: 3px; cursor: pointer; transition: all 0.1s;
+    }
+    .hl-tf-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .hl-tf-btn.active { color: #f7931a !important; font-weight: 800; }
+    .hl-tool-btn {
+      display: flex; align-items: center; gap: 4px; background: transparent; border: 1px solid transparent;
+      color: #d1d4dc; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px; cursor: pointer;
+    }
+    .hl-tool-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+    .hl-tool-btn.active { background: rgba(168, 85, 247, 0.2); color: #c084fc; border-color: #a855f7; }
+    .hl-icon-btn {
+      background: transparent; border: none; color: #8c93a3; font-size: 12px; padding: 3px 6px;
+      border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
     /* Proliquid Trading Dock Styles */
     .dock-panel {
       width: 430px; background: var(--bg-secondary); border-left: 1px solid var(--border-color);
@@ -365,28 +431,119 @@ const htmlContent = `<!DOCTYPE html>
   <div class="content-area">
     <!-- VIEW 1: LIVE CHART -->
     <div class="view-panel active" id="view-chart">
-      <div class="controls-bar">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: var(--bg-tertiary);" onerror="this.style.display='none';">
-          <strong id="active-symbol-title" style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">BTCUSDT</strong>
-          <span id="active-exchange-badge" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: 600;">BINANCE</span>
+      <!-- TIER 1: Hyperliquid Market Header & Ticker Bar -->
+      <div class="hl-ticker-bar">
+        <div class="hl-ticker-left">
+          <span class="hl-drag-handle">⋮</span>
+          <div class="hl-market-badge">
+            <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 20px; height: 20px; border-radius: 50%; object-fit: contain; background: #181b24;" onerror="this.style.display='none';">
+            <div style="display: flex; flex-direction: column;">
+              <span id="active-exchange-badge" class="hl-badge-sub">HYPERLIQUID</span>
+              <strong id="active-symbol-title" class="hl-badge-title">BTC-USDC</strong>
+            </div>
+          </div>
+          <div class="hl-vdiv"></div>
         </div>
-        <div class="tf-group" id="timeframes">
-          <button class="btn" data-tf="1">1m</button>
-          <button class="btn" data-tf="5">5m</button>
-          <button class="btn" data-tf="15">15m</button>
-          <button class="btn" data-tf="60">1h</button>
-          <button class="btn active" data-tf="D">1D</button>
+
+        <div class="hl-stat-group">
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">LAST</span>
+            <strong id="hl-stat-last" class="hl-stat-val">$80,452</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">INDEX</span>
+            <strong id="hl-stat-index" class="hl-stat-val">$80,440</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">CHANGE</span>
+            <strong id="hl-stat-change" class="hl-stat-val val-red">-1.02%</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">VOLUME</span>
+            <strong id="hl-stat-volume" class="hl-stat-val">$1.44b</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">OPEN INTEREST</span>
+            <strong id="hl-stat-oi" class="hl-stat-val">$3.31b</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">FUNDING / COUNTDOWN</span>
+            <div class="hl-stat-val" style="font-size: 11px;">
+              <span id="hl-stat-funding" class="val-red" style="font-weight: 800;">0.0013%</span> / <span id="hl-stat-countdown" style="font-weight: 700; color: #d1d4dc;">00:54:34</span>
+            </div>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">MARKETCAP</span>
+            <strong id="hl-stat-mcap" class="hl-stat-val">$1.62t</strong>
+          </div>
+          <div class="hl-stat-item">
+            <span class="hl-stat-lbl">FDV</span>
+            <strong id="hl-stat-fdv" class="hl-stat-val">$1.62t</strong>
+          </div>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <button class="btn active" id="btn-toggle-fibo" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">🎯 FiboRadar: ON</button>
-          <select id="select-fibo-period" class="btn" style="outline: none;">
-            <option value="200" selected>200 bars</option>
-            <option value="100">100 bars</option>
-            <option value="50">50 bars</option>
-          </select>
-          <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff;">📑 Watchlist</button>
-          <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a;">⚡ Terminal Dock</button>
+      </div>
+
+      <!-- TIER 2: TradingView Chart Toolbar -->
+      <div class="hl-chart-toolbar">
+        <div class="hl-tb-left">
+          <div class="tf-group" id="timeframes" style="display: flex; gap: 2px;">
+            <button class="hl-tf-btn" data-tf="1">1m</button>
+            <button class="hl-tf-btn" data-tf="5">5m</button>
+            <button class="hl-tf-btn" data-tf="15">15m</button>
+            <button class="hl-tf-btn" data-tf="60">1h</button>
+            <button class="hl-tf-btn" data-tf="240">4h</button>
+            <button class="hl-tf-btn active" data-tf="D">D</button>
+            <button class="hl-tf-btn" data-tf="W">W</button>
+            <button class="hl-tf-btn" data-tf="M">M</button>
+            <button class="hl-tf-btn" style="color: #687080;" title="More timeframes">⌄</button>
+          </div>
+
+          <div class="hl-vdiv"></div>
+
+          <!-- Chart style (Candlesticks) -->
+          <button class="hl-tool-btn" title="Candlesticks style">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v16M9 8h4v8H9zM17 2v20M17 5h4v6h-4z"/></svg>
+          </button>
+
+          <div class="hl-vdiv"></div>
+
+          <!-- Indicators Dropdown Button -->
+          <div style="position: relative; display: inline-block;">
+            <button class="hl-tool-btn" id="btn-indicators-menu">
+              <span style="font-family: serif; font-style: italic; font-weight: 800; color: #a855f7;">fx</span>
+              <span>Indicators</span>
+              <span style="font-size: 8px; color: #8c93a3;">⌄</span>
+            </button>
+            <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #181b24; border: 1px solid #2b3040; border-radius: 6px; padding: 8px 10px; z-index: 100; width: 220px; box-shadow: 0 6px 20px rgba(0,0,0,0.7);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🎯 FiboRadar</span>
+                <button class="btn active" id="btn-toggle-fibo" style="padding: 2px 6px; font-size: 9.5px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">ON</button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                <span>Bars period:</span>
+                <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                  <option value="200" selected>200 bars</option>
+                  <option value="100">100 bars</option>
+                  <option value="50">50 bars</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff; padding: 2px 7px; font-size: 10.5px;">📑 Watchlist</button>
+          <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a; padding: 2px 7px; font-size: 10.5px;">⚡ Terminal Dock</button>
+
+          <div class="hl-vdiv"></div>
+
+          <!-- Fullscreen & Camera -->
+          <button class="hl-icon-btn" id="btn-chart-fullscreen" title="Fullscreen chart">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+          <button class="hl-icon-btn" id="btn-chart-screenshot" title="Take chart screenshot">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
         </div>
       </div>
 
@@ -1591,6 +1748,7 @@ const htmlContent = `<!DOCTYPE html>
       if (coinBadge) coinBadge.textContent = c;
       if (denomBadge) denomBadge.textContent = c;
       updateDockData();
+      updateTickerBar(c);
     }
 
     async function updateDockData() {
@@ -1887,12 +2045,110 @@ const htmlContent = `<!DOCTYPE html>
 
     document.getElementById('timeframes').addEventListener('click', (e) => {
       const btn = e.target.closest('button');
-      if (!btn) return;
+      if (!btn || !btn.dataset.tf) return;
       document.querySelectorAll('#timeframes button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentTimeframe = btn.dataset.tf;
       loadChart(currentSymbol, currentTimeframe);
     });
+
+    // --- Hyperliquid Ticker Bar & Header Logic ---
+    async function updateTickerBar(coin) {
+      try {
+        const res = await fetch('/api/hyperliquid/ticker?coin=' + encodeURIComponent(coin));
+        const t = await res.json();
+        if (t && t.last) {
+          const lastEl = document.getElementById('hl-stat-last');
+          if (lastEl) lastEl.textContent = t.last;
+
+          const idxEl = document.getElementById('hl-stat-index');
+          if (idxEl) idxEl.textContent = t.index;
+
+          const chgEl = document.getElementById('hl-stat-change');
+          if (chgEl) {
+            chgEl.textContent = t.change;
+            chgEl.className = 'hl-stat-val ' + (t.rawChange >= 0 ? 'val-green' : 'val-red');
+          }
+
+          const volEl = document.getElementById('hl-stat-volume');
+          if (volEl) volEl.textContent = t.volume;
+
+          const oiEl = document.getElementById('hl-stat-oi');
+          if (oiEl) oiEl.textContent = t.openInterest;
+
+          const fundEl = document.getElementById('hl-stat-funding');
+          if (fundEl) {
+            fundEl.textContent = t.funding;
+            fundEl.className = t.rawFunding >= 0 ? 'val-red' : 'val-green';
+          }
+
+          const mcapEl = document.getElementById('hl-stat-mcap');
+          if (mcapEl) mcapEl.textContent = t.marketcap;
+
+          const fdvEl = document.getElementById('hl-stat-fdv');
+          if (fdvEl) fdvEl.textContent = t.fdv;
+
+          const titleEl = document.getElementById('active-symbol-title');
+          if (titleEl) titleEl.textContent = t.symbol;
+
+          const exEl = document.getElementById('active-exchange-badge');
+          if (exEl) exEl.textContent = t.exchange;
+        }
+      } catch (e) {}
+    }
+
+    function updateCountdown() {
+      const now = new Date();
+      const nextHour = new Date(now);
+      nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+      const diffSec = Math.max(0, Math.floor((nextHour - now) / 1000));
+      const h = String(Math.floor(diffSec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
+      const s = String(diffSec % 60).padStart(2, '0');
+      const cdEl = document.getElementById('hl-stat-countdown');
+      if (cdEl) cdEl.textContent = \`\${h}:\${m}:\${s}\`;
+    }
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // Indicators dropdown toggle
+    const btnIndMenu = document.getElementById('btn-indicators-menu');
+    const indDropdown = document.getElementById('indicators-dropdown');
+    btnIndMenu?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = indDropdown.style.display === 'none';
+      indDropdown.style.display = isHidden ? 'block' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+      if (indDropdown && !e.target.closest('#indicators-dropdown') && !e.target.closest('#btn-indicators-menu')) {
+        indDropdown.style.display = 'none';
+      }
+    });
+
+    // Fullscreen chart toggle
+    document.getElementById('btn-chart-fullscreen')?.addEventListener('click', () => {
+      const viewChart = document.getElementById('view-chart');
+      if (!document.fullscreenElement) {
+        viewChart?.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Screenshot chart
+    document.getElementById('btn-chart-screenshot')?.addEventListener('click', () => {
+      try {
+        const canvas = chartContainer.querySelector('canvas');
+        if (canvas) {
+          const a = document.createElement('a');
+          a.download = \`\${currentSymbol}_chart_\${Date.now()}.png\`;
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+        }
+      } catch (e) {}
+    });
+
+    setInterval(() => updateTickerBar(currentDockCoin), 3500);
 
     document.getElementById('btn-run-validation').addEventListener('click', async () => {
       const sym = document.getElementById('val-sym-input').value.trim();
@@ -2502,6 +2758,18 @@ const server = http.createServer(async (req, res) => {
       const acc = await hyperliquidInstance.getAccountState(address);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(acc));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/hyperliquid/ticker') {
+    const coin = parsedUrl.query.coin || 'BTC';
+    try {
+      const ticker = await hyperliquidInstance.getTickerDetails(coin);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(ticker));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
