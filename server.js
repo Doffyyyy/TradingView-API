@@ -432,124 +432,8 @@ const htmlContent = `<!DOCTYPE html>
   <div class="content-area">
     <!-- VIEW 1: LIVE CHART -->
     <div class="view-panel active" id="view-chart">
-      <!-- TIER 1: Hyperliquid Market Header & Ticker Bar -->
-      <div class="hl-ticker-bar">
-        <div class="hl-ticker-left">
-          <span class="hl-drag-handle">⋮</span>
-          <div class="hl-market-badge">
-            <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 20px; height: 20px; border-radius: 50%; object-fit: contain; background: #181b24;" onerror="this.style.display='none';">
-            <div style="display: flex; flex-direction: column;">
-              <span id="active-exchange-badge" class="hl-badge-sub">HYPERLIQUID</span>
-              <strong id="active-symbol-title" class="hl-badge-title">BTC-USDC</strong>
-            </div>
-          </div>
-          <div class="hl-vdiv"></div>
-        </div>
-
-        <div class="hl-stat-group">
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">LAST</span>
-            <strong id="hl-stat-last" class="hl-stat-val">$80,452</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">INDEX</span>
-            <strong id="hl-stat-index" class="hl-stat-val">$80,440</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">CHANGE</span>
-            <strong id="hl-stat-change" class="hl-stat-val val-red">-1.02%</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">VOLUME</span>
-            <strong id="hl-stat-volume" class="hl-stat-val">$1.44b</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">OPEN INTEREST</span>
-            <strong id="hl-stat-oi" class="hl-stat-val">$3.31b</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">FUNDING / COUNTDOWN</span>
-            <div class="hl-stat-val" style="font-size: 11px;">
-              <span id="hl-stat-funding" class="val-red" style="font-weight: 800;">0.0013%</span> / <span id="hl-stat-countdown" style="font-weight: 700; color: #d1d4dc;">00:54:34</span>
-            </div>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">MARKETCAP</span>
-            <strong id="hl-stat-mcap" class="hl-stat-val">$1.62t</strong>
-          </div>
-          <div class="hl-stat-item">
-            <span class="hl-stat-lbl">FDV</span>
-            <strong id="hl-stat-fdv" class="hl-stat-val">$1.62t</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- TIER 2: TradingView Chart Toolbar -->
-      <div class="hl-chart-toolbar">
-        <div class="hl-tb-left">
-          <div class="tf-group" id="timeframes" style="display: flex; gap: 2px;">
-            <button class="hl-tf-btn" data-tf="1">1m</button>
-            <button class="hl-tf-btn" data-tf="5">5m</button>
-            <button class="hl-tf-btn" data-tf="15">15m</button>
-            <button class="hl-tf-btn" data-tf="60">1h</button>
-            <button class="hl-tf-btn" data-tf="240">4h</button>
-            <button class="hl-tf-btn active" data-tf="D">D</button>
-            <button class="hl-tf-btn" data-tf="W">W</button>
-            <button class="hl-tf-btn" data-tf="M">M</button>
-            <button class="hl-tf-btn" style="color: #687080;" title="More timeframes">⌄</button>
-          </div>
-
-          <div class="hl-vdiv"></div>
-
-          <!-- Chart style (Candlesticks) -->
-          <button class="hl-tool-btn" title="Candlesticks style">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v16M9 8h4v8H9zM17 2v20M17 5h4v6h-4z"/></svg>
-          </button>
-
-          <div class="hl-vdiv"></div>
-
-          <!-- Indicators Dropdown Button -->
-          <div style="position: relative; display: inline-block;">
-            <button class="hl-tool-btn" id="btn-indicators-menu">
-              <span style="font-family: serif; font-style: italic; font-weight: 800; color: #a855f7;">fx</span>
-              <span>Indicators</span>
-              <span style="font-size: 8px; color: #8c93a3;">⌄</span>
-            </button>
-            <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #181b24; border: 1px solid #2b3040; border-radius: 6px; padding: 8px 10px; z-index: 100; width: 220px; box-shadow: 0 6px 20px rgba(0,0,0,0.7);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🎯 FiboRadar</span>
-                <button class="btn active" id="btn-toggle-fibo" style="padding: 2px 6px; font-size: 9.5px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">ON</button>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                <span>Bars period:</span>
-                <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
-                  <option value="200" selected>200 bars</option>
-                  <option value="100">100 bars</option>
-                  <option value="50">50 bars</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff; padding: 2px 7px; font-size: 10.5px;">📑 Watchlist</button>
-          <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a; padding: 2px 7px; font-size: 10.5px;">⚡ Terminal Dock</button>
-
-          <div class="hl-vdiv"></div>
-
-          <!-- Fullscreen & Camera -->
-          <button class="hl-icon-btn" id="btn-chart-fullscreen" title="Fullscreen chart">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          </button>
-          <button class="hl-icon-btn" id="btn-chart-screenshot" title="Take chart screenshot">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Workspace: Watchlist on Left, Chart in Center, Proliquid Trading Dock on Right -->
-      <div style="flex: 1; display: flex; overflow: hidden; position: relative;">
+      <!-- Main Workspace: Watchlist on Left, Chart Area in Center, Proliquid Trading Dock on Right -->
+      <div style="flex: 1; display: flex; overflow: hidden; position: relative; height: 100%;">
         <!-- Left: Proliquid Watchlist Sidebar -->
         <div id="watchlist-sidebar">
           <!-- Header -->
@@ -592,8 +476,125 @@ const htmlContent = `<!DOCTYPE html>
           <div id="watchlist-list" style="flex: 1; overflow-y: auto;"></div>
         </div>
 
-        <!-- Center: Chart Canvas -->
-        <div style="flex: 1; position: relative; height: 100%; display: flex; flex-direction: column; min-width: 0;">
+        <!-- Center: Chart Area (Directly Hosts Ticker Bar + Toolbar + Canvas) -->
+        <div style="flex: 1; position: relative; height: 100%; display: flex; flex-direction: column; min-width: 0; background: var(--bg-primary);">
+          <!-- TIER 1: Hyperliquid Market Header & Ticker Bar -->
+          <div class="hl-ticker-bar">
+            <div class="hl-ticker-left">
+              <span class="hl-drag-handle">⋮</span>
+              <div class="hl-market-badge">
+                <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 20px; height: 20px; border-radius: 50%; object-fit: contain; background: #181b24;" onerror="this.style.display='none';">
+                <div style="display: flex; flex-direction: column;">
+                  <span id="active-exchange-badge" class="hl-badge-sub">HYPERLIQUID</span>
+                  <strong id="active-symbol-title" class="hl-badge-title">BTC-USDC</strong>
+                </div>
+              </div>
+              <div class="hl-vdiv"></div>
+            </div>
+
+            <div class="hl-stat-group">
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">LAST</span>
+                <strong id="hl-stat-last" class="hl-stat-val">$80,452</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">INDEX</span>
+                <strong id="hl-stat-index" class="hl-stat-val">$80,440</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">CHANGE</span>
+                <strong id="hl-stat-change" class="hl-stat-val val-red">-1.02%</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">VOLUME</span>
+                <strong id="hl-stat-volume" class="hl-stat-val">$1.44b</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">OPEN INTEREST</span>
+                <strong id="hl-stat-oi" class="hl-stat-val">$3.31b</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">FUNDING / COUNTDOWN</span>
+                <div class="hl-stat-val" style="font-size: 11px;">
+                  <span id="hl-stat-funding" class="val-red" style="font-weight: 800;">0.0013%</span> / <span id="hl-stat-countdown" style="font-weight: 700; color: #d1d4dc;">00:54:34</span>
+                </div>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">MARKETCAP</span>
+                <strong id="hl-stat-mcap" class="hl-stat-val">$1.62t</strong>
+              </div>
+              <div class="hl-stat-item">
+                <span class="hl-stat-lbl">FDV</span>
+                <strong id="hl-stat-fdv" class="hl-stat-val">$1.62t</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIER 2: TradingView Chart Toolbar -->
+          <div class="hl-chart-toolbar">
+            <div class="hl-tb-left">
+              <div class="tf-group" id="timeframes" style="display: flex; gap: 2px;">
+                <button class="hl-tf-btn" data-tf="1">1m</button>
+                <button class="hl-tf-btn" data-tf="5">5m</button>
+                <button class="hl-tf-btn" data-tf="15">15m</button>
+                <button class="hl-tf-btn" data-tf="60">1h</button>
+                <button class="hl-tf-btn" data-tf="240">4h</button>
+                <button class="hl-tf-btn active" data-tf="D">D</button>
+                <button class="hl-tf-btn" data-tf="W">W</button>
+                <button class="hl-tf-btn" data-tf="M">M</button>
+                <button class="hl-tf-btn" style="color: #687080;" title="More timeframes">⌄</button>
+              </div>
+
+              <div class="hl-vdiv"></div>
+
+              <!-- Chart style (Candlesticks) -->
+              <button class="hl-tool-btn" title="Candlesticks style">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v16M9 8h4v8H9zM17 2v20M17 5h4v6h-4z"/></svg>
+              </button>
+
+              <div class="hl-vdiv"></div>
+
+              <!-- Indicators Dropdown Button -->
+              <div style="position: relative; display: inline-block;">
+                <button class="hl-tool-btn" id="btn-indicators-menu">
+                  <span style="font-family: serif; font-style: italic; font-weight: 800; color: #a855f7;">fx</span>
+                  <span>Indicators</span>
+                  <span style="font-size: 8px; color: #8c93a3;">⌄</span>
+                </button>
+                <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #181b24; border: 1px solid #2b3040; border-radius: 6px; padding: 8px 10px; z-index: 100; width: 220px; box-shadow: 0 6px 20px rgba(0,0,0,0.7);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🎯 FiboRadar</span>
+                    <button class="btn active" id="btn-toggle-fibo" style="padding: 2px 6px; font-size: 9.5px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">ON</button>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                    <span>Bars period:</span>
+                    <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                      <option value="200" selected>200 bars</option>
+                      <option value="100">100 bars</option>
+                      <option value="50">50 bars</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff; padding: 2px 7px; font-size: 10.5px;">📑 Watchlist</button>
+              <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a; padding: 2px 7px; font-size: 10.5px;">⚡ Terminal Dock</button>
+
+              <div class="hl-vdiv"></div>
+
+              <!-- Fullscreen & Camera -->
+              <button class="hl-icon-btn" id="btn-chart-fullscreen" title="Fullscreen chart">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+              <button class="hl-icon-btn" id="btn-chart-screenshot" title="Take chart screenshot">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Chart Canvas -->
           <div id="chart-container" style="flex: 1; width: 100%; position: relative;">
             <div class="legend-overlay">
               <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
