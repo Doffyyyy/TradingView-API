@@ -176,7 +176,7 @@ const htmlContent = `<!DOCTYPE html>
     /* Proliquid Watchlist Styles */
     .wl-col-header {
       display: grid;
-      grid-template-columns: 98px 66px 52px 52px 18px;
+      grid-template-columns: 92px 64px 50px 52px 24px;
       align-items: center;
       padding: 6px 8px;
       border-bottom: 1px solid var(--border-color);
@@ -194,7 +194,7 @@ const htmlContent = `<!DOCTYPE html>
 
     .wl-row {
       display: grid;
-      grid-template-columns: 98px 66px 52px 52px 18px;
+      grid-template-columns: 92px 64px 50px 52px 24px;
       align-items: center;
       padding: 6px 8px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -230,8 +230,8 @@ const htmlContent = `<!DOCTYPE html>
     .wl-cell { font-family: monospace; font-size: 10.5px; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wl-cell-last { color: var(--text-primary); font-weight: 700; }
     .wl-del {
-      opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 2px;
-      border-radius: 3px; font-size: 10px; text-align: center;
+      opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 3px;
+      border-radius: 3px; font-size: 10px; text-align: center; margin-left: 6px;
     }
     .wl-row:hover .wl-del { opacity: 0.7; }
     .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
