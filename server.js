@@ -206,10 +206,17 @@ const htmlContent = `<!DOCTYPE html>
     }
     .wl-left { display: flex; align-items: center; gap: 6px; overflow: hidden; }
     .wl-badge {
-      width: 20px; height: 20px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       background: var(--bg-tertiary); border: 1px solid var(--border-color);
       display: flex; align-items: center; justify-content: center;
-      font-size: 8px; font-weight: 800; color: var(--text-primary); flex-shrink: 0;
+      flex-shrink: 0; overflow: hidden; position: relative;
+    }
+    .wl-badge img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;
+    }
+    .wl-fallback {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 8.5px; font-weight: 800; color: var(--text-primary); text-transform: uppercase;
     }
     .wl-info { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
     .wl-sym { font-size: 11px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -246,6 +253,7 @@ const htmlContent = `<!DOCTYPE html>
     <div class="view-panel active" id="view-chart">
       <div class="controls-bar">
         <div style="display: flex; align-items: center; gap: 8px;">
+          <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: var(--bg-tertiary);" onerror="this.style.display='none';">
           <strong id="active-symbol-title" style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">BTCUSDT</strong>
           <span id="active-exchange-badge" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: 600;">BINANCE</span>
         </div>
@@ -782,14 +790,21 @@ const htmlContent = `<!DOCTYPE html>
 
         const titleEl = document.getElementById('active-symbol-title');
         const exEl = document.getElementById('active-exchange-badge');
+        const logoEl = document.getElementById('active-symbol-logo');
         if (titleEl && exEl) {
           const parts = sym.split(':');
-          if (parts.length > 1) {
-            exEl.textContent = parts[0];
-            titleEl.textContent = parts[1];
-          } else {
-            exEl.textContent = 'MARKET';
-            titleEl.textContent = sym;
+          const name = parts.length > 1 ? parts[1] : sym;
+          const ex = parts.length > 1 ? parts[0] : 'MARKET';
+          exEl.textContent = ex;
+          titleEl.textContent = name;
+          if (logoEl) {
+            const logo = (typeof LOGO_MAP !== 'undefined') ? (LOGO_MAP[sym] || LOGO_MAP[name]) : null;
+            if (logo) {
+              logoEl.src = 'https://s3-symbol-logo.tradingview.com/' + logo + '.svg';
+              logoEl.style.display = 'inline-block';
+            } else {
+              logoEl.style.display = 'none';
+            }
           }
         }
 
@@ -846,35 +861,83 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     // --- Proliquid Watchlist Logic ---
+    const LOGO_MAP = {
+      'BINANCE:BTCUSDT': 'crypto/XTVCBTC',
+      'BTCUSDT': 'crypto/XTVCBTC',
+      'BINANCE:ETHUSDT': 'crypto/XTVCETH',
+      'ETHUSDT': 'crypto/XTVCETH',
+      'BYBIT:HYPEUSDT': 'crypto/XTVCHYPEH',
+      'COINBASE:HYPEUSD': 'crypto/XTVCHYPEH',
+      'HYPEUSD': 'crypto/XTVCHYPEH',
+      'HYPEUSDT': 'crypto/XTVCHYPEH',
+      'BINANCE:SOLUSDT': 'crypto/XTVCSOL',
+      'SOLUSDT': 'crypto/XTVCSOL',
+      'BINANCE:SUIUSDT': 'crypto/XTVCSUI',
+      'SUIUSDT': 'crypto/XTVCSUI',
+      'NASDAQ:SPCX': 'spacex',
+      'SPCX': 'spacex',
+      'BINANCE:ZECUSDT': 'crypto/XTVCZEC',
+      'ZECUSDT': 'crypto/XTVCZEC',
+      'BINANCE:TAOUSDT': 'crypto/XTVCTAOB',
+      'TAOUSDT': 'crypto/XTVCTAOB',
+      'BYBIT:VVVUSDT': 'crypto/XTVCVVV',
+      'VVVUSDT.P': 'crypto/XTVCVVV',
+      'VVVUSDT': 'crypto/XTVCVVV',
+      'BINANCE:PUMPUSDT': 'crypto/XTVCPUMPF',
+      'PUMPUSDT': 'crypto/XTVCPUMPF',
+      'COINBASE:MONUSD': 'crypto/XTVCMONAD',
+      'MONUSD': 'crypto/XTVCMONAD',
+      'BYBIT:MNTUSDT': 'crypto/XTVCMNT',
+      'MNTUSDT': 'crypto/XTVCMNT',
+      'CRYPTO:NOCKUSD': 'crypto/XTVCNOCK',
+      'NOCKUSD': 'crypto/XTVCNOCK',
+      'CRYPTO:LITLUSD': 'crypto/XTVCLITL',
+      'LITLUSD': 'crypto/XTVCLITL',
+      'BINANCE:NEARUSDT': 'crypto/XTVCNEAR',
+      'NEARUSDT': 'crypto/XTVCNEAR',
+      'BINANCE:BNBUSDT': 'crypto/XTVCBNB',
+      'BNBUSDT': 'crypto/XTVCBNB',
+      'BINANCE:LINKUSDT': 'crypto/XTVCLINK',
+      'LINKUSDT': 'crypto/XTVCLINK',
+      'BINANCE:ZKUSDT': 'crypto/XTVCZKSY',
+      'ZKUSDT': 'crypto/XTVCZKSY',
+      'BINANCE:PENDLEUSDT': 'crypto/XTVCPENDLEPENDLE',
+      'PENDLEUSD': 'crypto/XTVCPENDLEPENDLE',
+      'BINANCE:ONDOUSDT': 'crypto/XTVCONDO',
+      'ONDOUSDT': 'crypto/XTVCONDO',
+      'OKX:OKBUSDT': 'crypto/XTVCOKB',
+      'OKBUSDT': 'crypto/XTVCOKB',
+    };
+
     const DEFAULT_WATCHLIST = [
-      { symbol: 'BINANCE:BTCUSDT', name: 'BTCUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:ETHUSDT', name: 'ETHUSDT', exchange: 'BINANCE' },
-      { symbol: 'BYBIT:HYPEUSDT', name: 'HYPEUSD', exchange: 'BYBIT' },
+      { symbol: 'BINANCE:BTCUSDT', name: 'BTCUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCBTC' },
+      { symbol: 'BINANCE:ETHUSDT', name: 'ETHUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCETH' },
+      { symbol: 'BYBIT:HYPEUSDT', name: 'HYPEUSD', exchange: 'BYBIT', logoId: 'crypto/XTVCHYPEH' },
       { symbol: 'METEORA:KLEDSOL_4SBYWY.USD', name: 'KLEDSOL_4!', exchange: 'METEORA' },
-      { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE' },
-      { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ' },
-      { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE' },
-      { symbol: 'BYBIT:VVVUSDT', name: 'VVVUSDT.P', exchange: 'BYBIT' },
-      { symbol: 'BINANCE:PUMPUSDT', name: 'PUMPUSDT', exchange: 'BINANCE' },
-      { symbol: 'COINBASE:MONUSD', name: 'MONUSD', exchange: 'COINBASE' },
-      { symbol: 'BYBIT:MNTUSDT', name: 'MNTUSDT', exchange: 'BYBIT' },
-      { symbol: 'CRYPTO:NOCKUSD', name: 'NOCKUSD', exchange: 'CRYPTO' },
-      { symbol: 'CRYPTO:LITLUSD', name: 'LITLUSD', exchange: 'CRYPTO' },
+      { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSOL' },
+      { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSUI' },
+      { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ', logoId: 'spacex' },
+      { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZEC' },
+      { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCTAOB' },
+      { symbol: 'BYBIT:VVVUSDT', name: 'VVVUSDT.P', exchange: 'BYBIT', logoId: 'crypto/XTVCVVV' },
+      { symbol: 'BINANCE:PUMPUSDT', name: 'PUMPUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCPUMPF' },
+      { symbol: 'COINBASE:MONUSD', name: 'MONUSD', exchange: 'COINBASE', logoId: 'crypto/XTVCMONAD' },
+      { symbol: 'BYBIT:MNTUSDT', name: 'MNTUSDT', exchange: 'BYBIT', logoId: 'crypto/XTVCMNT' },
+      { symbol: 'CRYPTO:NOCKUSD', name: 'NOCKUSD', exchange: 'CRYPTO', logoId: 'crypto/XTVCNOCK' },
+      { symbol: 'CRYPTO:LITLUSD', name: 'LITLUSD', exchange: 'CRYPTO', logoId: 'crypto/XTVCLITL' },
       { symbol: 'ORCA:ANSEMSOL_CNTPTP.USD', name: 'ANSEMSOL_', exchange: 'ORCA' },
-      { symbol: 'BINANCE:NEARUSDT', name: 'NEARUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:BNBUSDT', name: 'BNBUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:LINKUSDT', name: 'LINKUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:ZKUSDT', name: 'ZKUSDT', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:PENDLEUSDT', name: 'PENDLEUSD', exchange: 'BINANCE' },
-      { symbol: 'BINANCE:ONDOUSDT', name: 'ONDOUSDT', exchange: 'BINANCE' },
-      { symbol: 'OKX:OKBUSDT', name: 'OKBUSDT', exchange: 'OKX' },
+      { symbol: 'BINANCE:NEARUSDT', name: 'NEARUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCNEAR' },
+      { symbol: 'BINANCE:BNBUSDT', name: 'BNBUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCBNB' },
+      { symbol: 'BINANCE:LINKUSDT', name: 'LINKUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCLINK' },
+      { symbol: 'BINANCE:ZKUSDT', name: 'ZKUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZKSY' },
+      { symbol: 'BINANCE:PENDLEUSDT', name: 'PENDLEUSD', exchange: 'BINANCE', logoId: 'crypto/XTVCPENDLEPENDLE' },
+      { symbol: 'BINANCE:ONDOUSDT', name: 'ONDOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCONDO' },
+      { symbol: 'OKX:OKBUSDT', name: 'OKBUSDT', exchange: 'OKX', logoId: 'crypto/XTVCOKB' },
     ];
 
     let customWatchlist = [];
     try {
-      const saved = localStorage.getItem('tv_custom_watchlist_v3');
+      const saved = localStorage.getItem('tv_custom_watchlist_v4');
       customWatchlist = saved ? JSON.parse(saved) : DEFAULT_WATCHLIST;
     } catch (e) {
       customWatchlist = DEFAULT_WATCHLIST;
@@ -884,7 +947,7 @@ const htmlContent = `<!DOCTYPE html>
 
     function saveWatchlist() {
       try {
-        localStorage.setItem('tv_custom_watchlist_v3', JSON.stringify(customWatchlist));
+        localStorage.setItem('tv_custom_watchlist_v4', JSON.stringify(customWatchlist));
       } catch (e) {}
     }
 
@@ -930,12 +993,22 @@ const htmlContent = `<!DOCTYPE html>
         const chgAbs = pData.change_abs !== undefined ? pData.change_abs : (chg !== null && pData.close !== undefined ? (pData.close * chg / 100) : null);
         const chgAbsStr = chgAbs !== null ? formatChgAbs(chgAbs) : '--';
 
-        const badge = item.name.replace(/USDT|\.P|USD|_/gi, '').slice(0, 3).toUpperCase() || 'TK';
+        const logoId = item.logoId || LOGO_MAP[item.symbol] || LOGO_MAP[item.name];
+        const initial = item.name.replace(/USDT|\.P|USD|_/gi, '').slice(0, 1).toUpperCase() || 'T';
+
+        const logoContent = logoId ? \`
+          <img src="https://s3-symbol-logo.tradingview.com/\${logoId}.svg" alt="\${item.name}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+          <div class="wl-fallback" style="display:none;">\${initial}</div>
+        \` : \`
+          <div class="wl-fallback">\${initial}</div>
+        \`;
 
         return \`
           <div class="wl-row \${isActive ? 'active' : ''}" data-symbol="\${item.symbol}">
             <div class="wl-left">
-              <div class="wl-badge">\${badge}</div>
+              <div class="wl-badge">
+                \${logoContent}
+              </div>
               <div class="wl-info">
                 <div class="wl-sym">\${item.name}</div>
                 <div class="wl-ex">\${item.exchange}</div>
@@ -1010,8 +1083,9 @@ const htmlContent = `<!DOCTYPE html>
         exchange = 'BINANCE';
       }
 
+      const detectedLogo = LOGO_MAP[symbol] || LOGO_MAP[name] || null;
       if (!customWatchlist.some(w => w.symbol === symbol)) {
-        customWatchlist.unshift({ symbol, name, exchange });
+        customWatchlist.unshift({ symbol, name, exchange, logoId: detectedLogo });
         saveWatchlist();
         renderWatchlist();
         updateWatchlistPrices();
