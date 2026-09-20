@@ -176,38 +176,43 @@ const htmlContent = `<!DOCTYPE html>
     /* Proliquid Watchlist Styles */
     .wl-col-header {
       display: grid;
-      grid-template-columns: 105px 75px 55px 55px 22px;
+      grid-template-columns: 98px 66px 52px 52px 18px;
       align-items: center;
-      padding: 6px 10px;
+      padding: 6px 8px;
       border-bottom: 1px solid var(--border-color);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 600;
       color: var(--text-secondary);
       background: rgba(255, 255, 255, 0.02);
       user-select: none;
+      box-sizing: border-box;
+      width: 100%;
+      overflow: hidden;
     }
-    .wl-col-header span { white-space: nowrap; }
+    .wl-col-header span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wl-col-header .text-right { text-align: right; }
 
     .wl-row {
       display: grid;
-      grid-template-columns: 105px 75px 55px 55px 22px;
+      grid-template-columns: 98px 66px 52px 52px 18px;
       align-items: center;
-      padding: 7px 10px;
+      padding: 6px 8px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       cursor: pointer;
       transition: background 0.12s;
       position: relative;
       user-select: none;
+      box-sizing: border-box;
+      width: 100%;
     }
     .wl-row:hover { background: var(--bg-tertiary); }
     .wl-row.active {
       background: rgba(41, 98, 255, 0.15);
       border-left: 3px solid var(--accent-blue);
     }
-    .wl-left { display: flex; align-items: center; gap: 6px; overflow: hidden; }
+    .wl-left { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
     .wl-badge {
-      width: 22px; height: 22px; border-radius: 50%;
+      width: 20px; height: 20px; border-radius: 50%;
       background: var(--bg-tertiary); border: 1px solid var(--border-color);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; overflow: hidden; position: relative;
@@ -217,19 +222,32 @@ const htmlContent = `<!DOCTYPE html>
     }
     .wl-fallback {
       width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-      font-size: 8.5px; font-weight: 800; color: var(--text-primary); text-transform: uppercase;
+      font-size: 8px; font-weight: 800; color: var(--text-primary); text-transform: uppercase;
     }
     .wl-info { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-    .wl-sym { font-size: 11px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wl-sym { font-size: 10.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wl-ex { font-size: 8px; color: var(--text-secondary); text-transform: uppercase; }
-    .wl-cell { font-family: monospace; font-size: 11px; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wl-cell { font-family: monospace; font-size: 10.5px; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wl-cell-last { color: var(--text-primary); font-weight: 700; }
     .wl-del {
-      opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 4px;
+      opacity: 0; color: var(--text-secondary); cursor: pointer; padding: 1px 2px;
       border-radius: 3px; font-size: 10px; text-align: center;
     }
     .wl-row:hover .wl-del { opacity: 0.7; }
     .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
+
+    #watchlist-sidebar {
+      width: 315px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
+      display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 5;
+      overflow: hidden; box-sizing: border-box;
+    }
+    #watchlist-list {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
+    }
+    #watchlist-list::-webkit-scrollbar { width: 4px; }
+    #watchlist-list::-webkit-scrollbar-track { background: transparent; }
+    #watchlist-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
 
     .search-sug-item {
       display: flex; align-items: center; justify-content: space-between;
@@ -375,7 +393,7 @@ const htmlContent = `<!DOCTYPE html>
       <!-- Main Workspace: Watchlist on Left, Chart in Center, Proliquid Trading Dock on Right -->
       <div style="flex: 1; display: flex; overflow: hidden; position: relative;">
         <!-- Left: Proliquid Watchlist Sidebar -->
-        <div id="watchlist-sidebar" style="width: 275px; background: var(--bg-secondary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 5;">
+        <div id="watchlist-sidebar">
           <!-- Header -->
           <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01);">
             <div style="display: flex; align-items: center; gap: 6px;">
