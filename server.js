@@ -367,7 +367,6 @@ const htmlContent = `<!DOCTYPE html>
             <option value="100">100 bars</option>
             <option value="50">50 bars</option>
           </select>
-          <button class="btn" id="btn-fit-focus" title="Auto-scale and focus price/time">⛶ Fit Focus</button>
           <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff;">📑 Watchlist</button>
           <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a;">⚡ Terminal Dock</button>
         </div>
@@ -425,6 +424,7 @@ const htmlContent = `<!DOCTYPE html>
               <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
               <span class="legend-item"><span class="legend-label">L:</span><span id="leg-low">--</span></span>
               <span class="legend-item"><span class="legend-label">C:</span><span id="leg-close">--</span></span>
+              <span class="legend-item"><span class="legend-label">Vol:</span><span id="leg-vol">--</span></span>
             </div>
             <div id="fiboradar-hud" style="position: absolute; top: 12px; right: 16px; z-index: 10; background: rgba(15, 17, 23, 0.88); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 230px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -1004,12 +1004,19 @@ const htmlContent = `<!DOCTYPE html>
       const hEl = document.getElementById('leg-high');
       const lEl = document.getElementById('leg-low');
       const cEl = document.getElementById('leg-close');
+      const vEl = document.getElementById('leg-vol');
       if (oEl && typeof c.open === 'number') oEl.textContent = c.open.toFixed(2);
       if (hEl && typeof c.high === 'number') hEl.textContent = c.high.toFixed(2);
       if (lEl && typeof c.low === 'number') lEl.textContent = c.low.toFixed(2);
       if (cEl && typeof c.close === 'number') {
         cEl.textContent = c.close.toFixed(2);
         cEl.className = c.close >= c.open ? 'val-green' : 'val-red';
+      }
+      if (vEl && typeof c.volume === 'number') {
+        const v = c.volume;
+        if (v >= 1e6) vEl.textContent = (v / 1e6).toFixed(2) + 'M';
+        else if (v >= 1e3) vEl.textContent = (v / 1e3).toFixed(1) + 'K';
+        else vEl.textContent = v.toFixed(1);
       }
     }
 
@@ -1030,6 +1037,16 @@ const htmlContent = `<!DOCTYPE html>
       },
     });
     const candleSeries = chart.addCandlestickSeries({ upColor: '#26a69a', downColor: '#ef5350' });
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+    });
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    });
 
     function resizeChart() {
       chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
@@ -1044,7 +1061,11 @@ const htmlContent = `<!DOCTYPE html>
       }
       const candle = param.seriesData.get(candleSeries);
       if (candle) {
-        setLegendOHLC(candle);
+        const vol = param.seriesData.get(volumeSeries);
+        setLegendOHLC({
+          ...candle,
+          volume: vol ? vol.value : (candle.volume || 0),
+        });
       }
     });
 
@@ -1088,6 +1109,11 @@ const htmlContent = `<!DOCTYPE html>
           chart.priceScale('right').applyOptions({ autoScale: true });
         } catch (e) {}
         candleSeries.setData(data.candles);
+        volumeSeries.setData(data.candles.map(c => ({
+          time: c.time,
+          value: c.volume || 0,
+          color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+        })));
         try {
           chart.priceScale('right').applyOptions({ autoScale: true });
           chart.timeScale().fitContent();
@@ -1109,6 +1135,11 @@ const htmlContent = `<!DOCTYPE html>
         if (d.candle) {
           lastLoadedCandle = d.candle;
           candleSeries.update(d.candle);
+          volumeSeries.update({
+            time: d.candle.time,
+            value: d.candle.volume || 0,
+            color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+          });
           setLegendOHLC(d.candle);
           if (currentCandlesCache.length > 0) {
             currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
@@ -1118,14 +1149,6 @@ const htmlContent = `<!DOCTYPE html>
       };
     }
     loadChart(currentSymbol, currentTimeframe);
-
-    const btnFitFocus = document.getElementById('btn-fit-focus');
-    if (btnFitFocus) {
-      btnFitFocus.addEventListener('click', () => {
-        chart.priceScale('right').applyOptions({ autoScale: true });
-        chart.timeScale().fitContent();
-      });
-    }
 
     // FiboRadar Controls
     const btnToggleFibo = document.getElementById('btn-toggle-fibo');
