@@ -259,9 +259,9 @@ const htmlContent = `<!DOCTYPE html>
 
     /* Hyperliquid Two-Tier Market Header & Chart Toolbar */
     .hl-ticker-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 12px; background: #0c0e12; border-bottom: 1px solid #1c2028;
-      height: 40px; gap: 10px; overflow-x: auto; user-select: none; flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 4px 14px; background: #0c0e12; border-bottom: 1px solid #1c2028;
+      height: 40px; gap: 14px; overflow-x: auto; user-select: none; flex-shrink: 0;
     }
     .hl-ticker-bar::-webkit-scrollbar { height: 2px; }
     .hl-ticker-left {
@@ -281,7 +281,8 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 12.5px; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: 0.3px;
     }
     .hl-stat-group {
-      display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; gap: 20px;
+      flex: 1; margin: 0 auto;
     }
     .hl-stat-item {
       display: flex; flex-direction: column; flex-shrink: 0;
