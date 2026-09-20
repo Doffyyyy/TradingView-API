@@ -11,6 +11,7 @@ const { runHistoricalReplay } = require('./src/extensions/replay');
 const { sendTelegramAlert } = require('./src/extensions/alert');
 const { hubInstance } = require('./src/extensions/agentHub');
 const { paperTraderInstance } = require('./src/extensions/paperTrader');
+const { hyperliquidInstance, normalizeCoin } = require('./src/extensions/hyperliquid');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -229,6 +230,101 @@ const htmlContent = `<!DOCTYPE html>
     }
     .wl-row:hover .wl-del { opacity: 0.7; }
     .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
+
+    .search-sug-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 11px; transition: background 0.1s;
+    }
+    .search-sug-item:hover { background: var(--bg-tertiary); }
+    .search-sug-item.active { background: rgba(41, 98, 255, 0.2); }
+
+    /* Proliquid Trading Dock Styles */
+    .dock-panel {
+      width: 430px; background: var(--bg-secondary); border-left: 1px solid var(--border-color);
+      display: flex; flex-direction: column; height: 100%; z-index: 5; flex-shrink: 0;
+    }
+    .dock-grid-top {
+      display: grid; grid-template-columns: 1.15fr 1fr; border-bottom: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+    .dock-grid-bottom {
+      display: grid; grid-template-columns: 1.15fr 1fr; flex: 1; min-height: 0;
+      background: var(--bg-secondary);
+    }
+    .dock-card {
+      padding: 10px 12px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .dock-card:last-child { border-right: none; }
+    .dock-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-secondary);
+    }
+    
+    /* Screener */
+    .scr-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 11px; padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .scr-label { color: var(--text-secondary); font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
+    .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 11px; }
+    
+    /* Orderbook */
+    .ob-table { width: 100%; font-size: 10.5px; font-family: monospace; border-collapse: collapse; }
+    .ob-row { position: relative; display: flex; justify-content: space-between; padding: 2px 4px; font-size: 10px; cursor: pointer; }
+    .ob-row:hover { background: rgba(255,255,255,0.06); }
+    .ob-bg { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.18; pointer-events: none; z-index: 1; transition: width 0.15s; }
+    .ob-bg-ask { background: #ef5350; }
+    .ob-bg-bid { background: #26a69a; }
+    .ob-cell { z-index: 2; text-align: right; font-family: monospace; }
+    .ob-cell-price { z-index: 2; text-align: left; font-weight: 700; font-family: monospace; }
+    .ob-spread-bar {
+      padding: 4px 6px; margin: 3px 0; background: var(--bg-tertiary); border-radius: 4px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 9px;
+    }
+    .ob-ratio-bar {
+      width: 100%; height: 3px; background: #ef5350; border-radius: 2px; overflow: hidden; margin-top: 1px;
+      display: flex;
+    }
+    .ob-ratio-bid { background: #26a69a; height: 100%; }
+
+    /* Execution Panel */
+    .exec-input-group {
+      background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 5px;
+      padding: 5px 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .exec-input-group:focus-within { border-color: var(--accent-blue); }
+    .exec-input {
+      background: transparent; border: none; color: #fff; font-family: monospace; font-size: 11.5px;
+      font-weight: 700; outline: none; width: 100%;
+    }
+    .exec-slider {
+      width: 100%; -webkit-appearance: none; height: 4px; border-radius: 2px;
+      background: var(--bg-tertiary); outline: none; margin: 6px 0;
+    }
+    .exec-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%;
+      background: var(--accent-blue); cursor: pointer; box-shadow: 0 0 6px rgba(41, 98, 255, 0.6);
+    }
+    .pct-chips { display: flex; gap: 4px; margin-bottom: 6px; }
+    .pct-chip {
+      flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);
+      border-radius: 3px; font-size: 9px; font-weight: 600; padding: 2px 0; text-align: center; cursor: pointer;
+    }
+    .pct-chip:hover, .pct-chip.active { background: rgba(41, 98, 255, 0.2); color: #fff; border-color: var(--accent-blue); }
+    .exec-btn {
+      width: 100%; padding: 8px 10px; border-radius: 5px; font-size: 11px; font-weight: 800; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .exec-btn-buy {
+      background: rgba(38, 166, 154, 0.15); border: 1px solid #26a69a; color: #4ade80;
+    }
+    .exec-btn-buy:hover { background: #26a69a; color: #fff; box-shadow: 0 0 10px rgba(38, 166, 154, 0.4); }
+    .exec-btn-sell {
+      background: rgba(239, 83, 80, 0.15); border: 1px solid #ef5350; color: #f87171;
+    }
+    .exec-btn-sell:hover { background: #ef5350; color: #fff; box-shadow: 0 0 10px rgba(239, 83, 80, 0.4); }
   </style>
 </head>
 <body>
@@ -273,13 +369,56 @@ const htmlContent = `<!DOCTYPE html>
           </select>
           <button class="btn" id="btn-fit-focus" title="Auto-scale and focus price/time">⛶ Fit Focus</button>
           <button class="btn active" id="btn-toggle-watchlist" style="background: rgba(41, 98, 255, 0.2); color: #78a9ff; border: 1px solid #2962ff;">📑 Watchlist</button>
+          <button class="btn active" id="btn-toggle-dock" style="background: rgba(38, 166, 154, 0.2); color: #4ade80; border: 1px solid #26a69a;">⚡ Terminal Dock</button>
         </div>
       </div>
 
-      <!-- Main Workspace: Chart on Left, Proliquid Watchlist on Right -->
+      <!-- Main Workspace: Watchlist on Left, Chart in Center, Proliquid Trading Dock on Right -->
       <div style="flex: 1; display: flex; overflow: hidden; position: relative;">
-        <!-- Left: Chart Canvas -->
-        <div style="flex: 1; position: relative; height: 100%; display: flex; flex-direction: column;">
+        <!-- Left: Proliquid Watchlist Sidebar -->
+        <div id="watchlist-sidebar" style="width: 275px; background: var(--bg-secondary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 5;">
+          <!-- Header -->
+          <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01);">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong style="font-size: 12px; letter-spacing: 0.5px;">PRO WATCHLIST</strong>
+              <span id="wl-total-count" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 700;">23</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn" id="btn-show-add-token" title="Add token to watchlist" style="padding: 3px 8px; font-size: 11px;">＋ Add</button>
+              <button class="btn" id="btn-refresh-wl-prices" title="Refresh prices" style="padding: 3px 6px; font-size: 11px;">🔄</button>
+            </div>
+          </div>
+
+          <!-- Add Token Bar (collapsible) -->
+          <div id="add-token-container" style="display: none; padding: 8px; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary); position: relative;">
+            <div style="display: flex; gap: 4px;">
+              <input type="text" id="input-new-symbol" placeholder="Search token (e.g. ARB, DOGE, PEPE)..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 11px; outline: none;">
+              <button class="btn active" id="btn-confirm-add-token" style="padding: 5px 8px; font-size: 11px;">Add</button>
+            </div>
+            <div id="search-suggestions" style="display: none; margin-top: 6px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; max-height: 180px; overflow-y: auto;"></div>
+            <div id="add-token-hint" style="font-size: 9px; color: var(--text-secondary); margin-top: 4px;">Type token name (e.g. ARB, PEPE) or pair (BINANCE:ARBUSDT)</div>
+          </div>
+
+          <!-- Search / Quick Filter -->
+          <div style="padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <input type="text" id="watchlist-search" placeholder="Search tokens..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; outline: none;">
+          </div>
+
+          <!-- Table Column Headers: Symbol | Last | Chg | Chg% -->
+          <div class="wl-col-header">
+            <span>Symbol</span>
+            <span class="text-right">Last</span>
+            <span class="text-right">Chg</span>
+            <span class="text-right">Chg%</span>
+            <span></span>
+          </div>
+
+          <!-- Watchlist Items Scroll -->
+          <div id="watchlist-list" style="flex: 1; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Center: Chart Canvas -->
+        <div style="flex: 1; position: relative; height: 100%; display: flex; flex-direction: column; min-width: 0;">
           <div id="chart-container" style="flex: 1; width: 100%; position: relative;">
             <div class="legend-overlay">
               <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
@@ -300,45 +439,188 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Right: Proliquid Watchlist Sidebar -->
-        <div id="watchlist-sidebar" style="width: 320px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%;">
-          <!-- Header -->
-          <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01);">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <strong style="font-size: 12px; letter-spacing: 0.5px;">PRO WATCHLIST</strong>
-              <span id="wl-total-count" style="font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 10px; font-weight: 700;">23</span>
+        <!-- Right: Proliquid Trading & Execution Dock (Hyperliquid Integration) -->
+        <div id="trading-dock" class="dock-panel">
+          <!-- Top Row: Screener (Left) + Account (Right) -->
+          <div class="dock-grid-top">
+            <!-- Screener Card -->
+            <div class="dock-card">
+              <div class="dock-header">
+                <span style="color: #fff; font-weight: 800;">SCREENER</span>
+                <div style="display: flex; gap: 10px; font-size: 9.5px; color: var(--text-secondary); font-weight: 700;">
+                  <span>5 M</span>
+                  <span>15 M</span>
+                </div>
+              </div>
+              <div class="scr-row">
+                <span class="scr-label">TRADES</span>
+                <span class="scr-val" id="scr-trades-5m">--</span>
+                <span class="scr-val" id="scr-trades-15m">--</span>
+              </div>
+              <div class="scr-row">
+                <span class="scr-label">CHANGE %</span>
+                <span class="scr-val" id="scr-chg-5m">--</span>
+                <span class="scr-val" id="scr-chg-15m">--</span>
+              </div>
+              <div class="scr-row">
+                <span class="scr-label">VOLUME</span>
+                <span class="scr-val" id="scr-vol-5m">--</span>
+                <span class="scr-val" id="scr-vol-15m">--</span>
+              </div>
+              <div class="scr-row" style="border-bottom: none;">
+                <span class="scr-label">VOLUME Δ</span>
+                <span class="scr-val" id="scr-vdelta-5m">--</span>
+                <span class="scr-val" id="scr-vdelta-15m">--</span>
+              </div>
             </div>
-            <div style="display: flex; gap: 4px;">
-              <button class="btn" id="btn-show-add-token" title="Add token to watchlist" style="padding: 3px 8px; font-size: 11px;">＋ Add</button>
-              <button class="btn" id="btn-refresh-wl-prices" title="Refresh prices" style="padding: 3px 6px; font-size: 11px;">🔄</button>
+
+            <!-- Account Card -->
+            <div class="dock-card">
+              <div class="dock-header">
+                <span style="color: #fff; font-weight: 800;">ACCOUNT</span>
+                <span id="account-mode-badge" style="font-size: 8.5px; padding: 1px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #4ade80; font-weight: 700;">PAPER $10K</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 1px;">
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px;">
+                  <span style="color: var(--text-secondary);">AVAILABLE:</span>
+                  <strong id="dock-avail-bal" style="color: #fff; font-family: monospace;">$10,214.44</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px;">
+                  <span style="color: var(--text-secondary);">POSITION:</span>
+                  <span id="dock-active-pos" style="color: #4ade80; font-weight: 700; font-family: monospace;">--</span>
+                </div>
+                <div style="display: flex; gap: 4px; margin-top: 2px;">
+                  <button class="btn" id="btn-dock-mode-toggle" style="flex: 1; padding: 3px 5px; font-size: 9.5px; background: var(--bg-tertiary);" title="Toggle Live Hyperliquid connection">⚡ Connect HL</button>
+                </div>
+                <div id="hl-connect-modal" style="display: none; padding: 6px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; margin-top: 2px;">
+                  <input type="text" id="input-hl-wallet" placeholder="0x... Hyperliquid address" style="width: 100%; background: transparent; border: 1px solid var(--border-color); color: #fff; padding: 3px 5px; font-size: 9.5px; border-radius: 3px; outline: none; margin-bottom: 4px;">
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn active" id="btn-save-hl-wallet" style="flex: 1; padding: 3px; font-size: 9.5px;">Connect</button>
+                    <button class="btn" id="btn-disconnect-hl-wallet" style="padding: 3px 6px; font-size: 9.5px;">Paper</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Add Token Bar (collapsible) -->
-          <div id="add-token-container" style="display: none; padding: 8px; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary);">
-            <div style="display: flex; gap: 4px;">
-              <input type="text" id="input-new-symbol" placeholder="e.g. BINANCE:PEPEUSDT" style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 11px; outline: none;">
-              <button class="btn active" id="btn-confirm-add-token" style="padding: 5px 8px; font-size: 11px;">Add</button>
+          <!-- Bottom Row: Orderbook (Left) + Trade Execution (Right) -->
+          <div class="dock-grid-bottom">
+            <!-- Orderbook Card -->
+            <div class="dock-card" style="display: flex; flex-direction: column;">
+              <div class="dock-header" style="margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span>ORDERBOOK</span>
+                  <span id="ob-coin-badge" style="font-size: 9px; padding: 1px 4px; border-radius: 2px; background: var(--bg-tertiary); color: var(--accent-blue); font-weight: 800;">BTC</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary);">Tick: <strong>1</strong></div>
+              </div>
+
+              <!-- Header cols -->
+              <div style="display: flex; justify-content: space-between; padding: 2px 4px; font-size: 9px; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">
+                <span>PRICE</span>
+                <span>SIZE</span>
+                <span>TOTAL</span>
+              </div>
+
+              <!-- Asks Container -->
+              <div id="ob-asks-list" style="display: flex; flex-direction: column; justify-content: flex-end; height: 115px; overflow: hidden; margin-top: 2px;"></div>
+
+              <!-- Spread bar -->
+              <div class="ob-spread-bar">
+                <div>
+                  <span id="ob-spread-val" style="font-weight: 700; color: #fff;">SPREAD --</span>
+                  <span id="ob-spread-bp" style="color: var(--text-secondary); font-size: 8px;">(--BP)</span>
+                </div>
+                <div style="text-align: right;">
+                  <span style="color: var(--text-secondary); font-size: 8px;">MAX</span>
+                  <span id="ob-max-depth" style="font-family: monospace; font-weight: 600; color: #fff;">--</span>
+                </div>
+              </div>
+              <div class="ob-ratio-bar">
+                <div id="ob-ratio-bid" class="ob-ratio-bid" style="width: 50%;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-secondary); margin: 2px 0 3px 0;">
+                <span>BID <strong id="ob-bid-pct" style="color: #4ade80;">50%</strong></span>
+                <span>ASK <strong id="ob-ask-pct" style="color: #f87171;">50%</strong></span>
+              </div>
+
+              <!-- Bids Container -->
+              <div id="ob-bids-list" style="display: flex; flex-direction: column; height: 115px; overflow: hidden;"></div>
             </div>
-            <div style="font-size: 9px; color: var(--text-secondary); margin-top: 4px;">Enter symbol or exchange:ticker</div>
-          </div>
 
-          <!-- Search / Quick Filter -->
-          <div style="padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
-            <input type="text" id="watchlist-search" placeholder="Search tokens..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; outline: none;">
-          </div>
+            <!-- Trade Execution Card -->
+            <div class="dock-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div class="dock-header" style="margin-bottom: 6px;">
+                  <div style="display: flex; gap: 3px;">
+                    <button class="btn active" id="btn-ord-market" style="padding: 2px 5px; font-size: 9px;">MARKET</button>
+                    <button class="btn" id="btn-ord-limit" style="padding: 2px 5px; font-size: 9px;">LIMIT</button>
+                  </div>
+                  <span id="dock-market-price" style="font-family: monospace; font-size: 11px; font-weight: 800; color: #4ade80;">--</span>
+                </div>
 
-          <!-- Table Column Headers: Symbol | Last | Chg | Chg% -->
-          <div class="wl-col-header">
-            <span>Symbol</span>
-            <span class="text-right">Last</span>
-            <span class="text-right">Chg</span>
-            <span class="text-right">Chg%</span>
-            <span></span>
-          </div>
+                <div id="limit-price-group" style="display: none;" class="exec-input-group">
+                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">PRICE:</span>
+                  <input type="number" id="input-exec-price" class="exec-input" step="any" placeholder="Limit price">
+                  <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
+                </div>
 
-          <!-- Watchlist Items Scroll -->
-          <div id="watchlist-list" style="flex: 1; overflow-y: auto;"></div>
+                <div class="exec-input-group">
+                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">QTY:</span>
+                  <input type="number" id="input-exec-qty" class="exec-input" step="any" placeholder="0">
+                  <span id="exec-coin-denom" style="font-size: 9.5px; color: var(--text-secondary);">BTC</span>
+                </div>
+
+                <div class="exec-input-group">
+                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">NOTIONAL:</span>
+                  <input type="number" id="input-exec-notional" class="exec-input" step="any" placeholder="0">
+                  <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
+                </div>
+
+                <!-- Slider & Chips -->
+                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-secondary); margin-top: 1px;">
+                  <span>SLIDER</span>
+                  <span id="exec-pct-display" style="color: #fff; font-weight: 700;">0 %</span>
+                </div>
+                <input type="range" id="exec-pct-slider" class="exec-slider" min="0" max="100" step="5" value="0">
+                <div class="pct-chips">
+                  <div class="pct-chip" data-pct="25">25%</div>
+                  <div class="pct-chip" data-pct="50">50%</div>
+                  <div class="pct-chip" data-pct="75">75%</div>
+                  <div class="pct-chip" data-pct="100">100%</div>
+                </div>
+
+                <!-- Options -->
+                <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                  <button class="btn" id="btn-toggle-reduce" style="flex: 1; padding: 3px 0; font-size: 8.5px;">REDUCE ONLY</button>
+                  <button class="btn" id="btn-toggle-tpsl" style="flex: 1; padding: 3px 0; font-size: 8.5px;">TP / SL</button>
+                </div>
+
+                <div id="tpsl-inputs-container" style="display: none; margin-bottom: 6px;">
+                  <div class="exec-input-group" style="margin-bottom: 3px; padding: 3px 6px;">
+                    <span style="font-size: 9px; color: #4ade80; margin-right: 4px;">TP:</span>
+                    <input type="number" id="input-exec-tp" class="exec-input" placeholder="Take Profit price">
+                  </div>
+                  <div class="exec-input-group" style="margin-bottom: 0; padding: 3px 6px;">
+                    <span style="font-size: 9px; color: #f87171; margin-right: 4px;">SL:</span>
+                    <input type="number" id="input-exec-sl" class="exec-input" placeholder="Stop Loss price">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <button class="exec-btn exec-btn-buy" id="btn-exec-buy">
+                  <span>BUY / LONG</span>
+                  <span id="exec-buy-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
+                </button>
+                <button class="exec-btn exec-btn-sell" id="btn-exec-sell">
+                  <span>SELL / SHORT</span>
+                  <span id="exec-sell-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -769,6 +1051,32 @@ const htmlContent = `<!DOCTYPE html>
     async function loadChart(sym, tf) {
       if (eventSource) eventSource.close();
       clearFiboLines();
+
+      if (typeof syncDockCoin === 'function') {
+        syncDockCoin(sym);
+      }
+
+      const titleEl = document.getElementById('active-symbol-title');
+      const exEl = document.getElementById('active-exchange-badge');
+      const logoEl = document.getElementById('active-symbol-logo');
+      if (titleEl && exEl) {
+        const parts = sym.split(':');
+        const name = parts.length > 1 ? parts[1] : sym;
+        const ex = parts.length > 1 ? parts[0] : 'MARKET';
+        exEl.textContent = ex;
+        titleEl.textContent = name;
+        if (logoEl) {
+          const foundItem = (typeof customWatchlist !== 'undefined') ? customWatchlist.find(w => w.symbol === sym || w.name === name) : null;
+          const logo = foundItem?.logoId || ((typeof LOGO_MAP !== 'undefined') ? (LOGO_MAP[sym] || LOGO_MAP[name]) : null);
+          if (logo) {
+            logoEl.src = 'https://s3-symbol-logo.tradingview.com/' + logo + '.svg';
+            logoEl.style.display = 'inline-block';
+          } else {
+            logoEl.style.display = 'none';
+          }
+        }
+      }
+
       try {
         chart.priceScale('right').applyOptions({ autoScale: true });
       } catch (e) {}
@@ -787,26 +1095,6 @@ const htmlContent = `<!DOCTYPE html>
         lastLoadedCandle = data.candles[data.candles.length - 1];
         setLegendOHLC(lastLoadedCandle);
         updateFiboRadar(currentCandlesCache);
-
-        const titleEl = document.getElementById('active-symbol-title');
-        const exEl = document.getElementById('active-exchange-badge');
-        const logoEl = document.getElementById('active-symbol-logo');
-        if (titleEl && exEl) {
-          const parts = sym.split(':');
-          const name = parts.length > 1 ? parts[1] : sym;
-          const ex = parts.length > 1 ? parts[0] : 'MARKET';
-          exEl.textContent = ex;
-          titleEl.textContent = name;
-          if (logoEl) {
-            const logo = (typeof LOGO_MAP !== 'undefined') ? (LOGO_MAP[sym] || LOGO_MAP[name]) : null;
-            if (logo) {
-              logoEl.src = 'https://s3-symbol-logo.tradingview.com/' + logo + '.svg';
-              logoEl.style.display = 'inline-block';
-            } else {
-              logoEl.style.display = 'none';
-            }
-          }
-        }
 
         setTimeout(() => {
           try {
@@ -866,6 +1154,9 @@ const htmlContent = `<!DOCTYPE html>
       'BTCUSDT': 'crypto/XTVCBTC',
       'BINANCE:ETHUSDT': 'crypto/XTVCETH',
       'ETHUSDT': 'crypto/XTVCETH',
+      'BINANCE:ARBUSDT': 'crypto/XTVCARBI',
+      'ARBUSDT': 'crypto/XTVCARBI',
+      'ARB': 'crypto/XTVCARBI',
       'BYBIT:HYPEUSDT': 'crypto/XTVCHYPEH',
       'COINBASE:HYPEUSD': 'crypto/XTVCHYPEH',
       'HYPEUSD': 'crypto/XTVCHYPEH',
@@ -937,11 +1228,28 @@ const htmlContent = `<!DOCTYPE html>
 
     let customWatchlist = [];
     try {
-      const saved = localStorage.getItem('tv_custom_watchlist_v4');
+      const saved = localStorage.getItem('tv_custom_watchlist_v4') || localStorage.getItem('tv_custom_watchlist_v3');
       customWatchlist = saved ? JSON.parse(saved) : DEFAULT_WATCHLIST;
     } catch (e) {
       customWatchlist = DEFAULT_WATCHLIST;
     }
+
+    // Auto-fix any incomplete or invalid symbols from previous adds (e.g. BINANCE:ARB -> BINANCE:ARBUSDT)
+    customWatchlist = customWatchlist.map(item => {
+      if (item.symbol === 'BINANCE:ARB' || item.name === 'ARB' || item.symbol === 'ARB') {
+        return {
+          symbol: 'BINANCE:ARBUSDT',
+          name: 'ARBUSDT',
+          exchange: 'BINANCE',
+          logoId: 'crypto/XTVCARBI',
+        };
+      }
+      if (!item.logoId && LOGO_MAP[item.symbol]) {
+        item.logoId = LOGO_MAP[item.symbol];
+      }
+      return item;
+    });
+    saveWatchlist();
 
     const pricesCache = {};
 
@@ -1063,46 +1371,122 @@ const htmlContent = `<!DOCTYPE html>
       });
     }
 
-    function handleAddToken() {
-      if (!inputNewSymbol) return;
-      let raw = inputNewSymbol.value.trim().toUpperCase();
-      if (!raw) return;
+    const searchSugBox = document.getElementById('search-suggestions');
+    const addTokenHint = document.getElementById('add-token-hint');
+    let searchTimer = null;
 
-      let symbol = raw;
-      let exchange = 'BINANCE';
-      let name = raw;
-
-      if (raw.includes(':')) {
-        const parts = raw.split(':');
-        exchange = parts[0];
-        name = parts[1];
-        symbol = raw;
-      } else {
-        symbol = 'BINANCE:' + raw;
-        name = raw;
-        exchange = 'BINANCE';
+    async function fetchSuggestions(q) {
+      if (!q || q.length < 1) {
+        if (searchSugBox) { searchSugBox.innerHTML = ''; searchSugBox.style.display = 'none'; }
+        return;
       }
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        if (data.symbols && data.symbols.length > 0) {
+          if (searchSugBox) {
+            searchSugBox.style.display = 'block';
+            searchSugBox.innerHTML = data.symbols.map(s => {
+              const logo = s.logoId ? \`<img src="https://s3-symbol-logo.tradingview.com/\${s.logoId}.svg" style="width: 16px; height: 16px; border-radius: 50%; object-fit: contain; vertical-align: middle; margin-right: 6px;" onerror="this.style.display='none';">\` : '';
+              return \`
+                <div class="search-sug-item" data-sym="\${s.symbol}" data-name="\${s.name}" data-ex="\${s.exchange}" data-logo="\${s.logoId}">
+                  <div style="display: flex; align-items: center; overflow: hidden;">
+                    \${logo}
+                    <strong style="color: #fff; margin-right: 6px;">\${s.name}</strong>
+                    <span style="color: var(--text-secondary); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">\${s.description}</span>
+                  </div>
+                  <span style="font-size: 9px; color: var(--accent-blue); background: rgba(41,98,255,0.15); padding: 1px 4px; border-radius: 3px; margin-left: 6px;">\${s.exchange}</span>
+                </div>
+              \`;
+            }).join('');
+          }
+        } else {
+          if (searchSugBox) { searchSugBox.innerHTML = ''; searchSugBox.style.display = 'none'; }
+        }
+      } catch (e) {}
+    }
 
-      const detectedLogo = LOGO_MAP[symbol] || LOGO_MAP[name] || null;
+    inputNewSymbol?.addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      const val = e.target.value.trim();
+      searchTimer = setTimeout(() => fetchSuggestions(val), 250);
+    });
+
+    searchSugBox?.addEventListener('click', (e) => {
+      const item = e.target.closest('.search-sug-item');
+      if (!item) return;
+      const symbol = item.dataset.sym;
+      const name = item.dataset.name;
+      const exchange = item.dataset.ex;
+      const logoId = item.dataset.logo || null;
+
+      addResolvedToken(symbol, name, exchange, logoId);
+    });
+
+    function addResolvedToken(symbol, name, exchange, logoId) {
       if (!customWatchlist.some(w => w.symbol === symbol)) {
-        customWatchlist.unshift({ symbol, name, exchange, logoId: detectedLogo });
+        customWatchlist.unshift({ symbol, name, exchange, logoId });
         saveWatchlist();
         renderWatchlist();
         updateWatchlistPrices();
       }
 
-      inputNewSymbol.value = '';
-      addTokenContainer.style.display = 'none';
+      if (inputNewSymbol) inputNewSymbol.value = '';
+      if (searchSugBox) { searchSugBox.innerHTML = ''; searchSugBox.style.display = 'none'; }
+      if (addTokenContainer) addTokenContainer.style.display = 'none';
 
       currentSymbol = symbol;
       loadChart(currentSymbol, currentTimeframe);
       renderWatchlist();
     }
 
+    async function handleAddToken() {
+      if (!inputNewSymbol) return;
+      let raw = inputNewSymbol.value.trim();
+      if (!raw) return;
+
+      const btnConfirm = document.getElementById('btn-confirm-add-token');
+      if (btnConfirm) btnConfirm.textContent = '...';
+
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(raw));
+        const data = await res.json();
+        if (data.symbols && data.symbols.length > 0) {
+          const match = data.symbols[0];
+          addResolvedToken(match.symbol, match.name, match.exchange, match.logoId);
+          if (btnConfirm) btnConfirm.textContent = 'Add';
+          return;
+        }
+      } catch (e) {}
+
+      // Fallback if search has no response
+      let symbol = raw.toUpperCase();
+      let exchange = 'BINANCE';
+      let name = symbol;
+
+      if (symbol.includes(':')) {
+        const parts = symbol.split(':');
+        exchange = parts[0];
+        name = parts[1];
+      } else {
+        if (!symbol.endsWith('USDT') && !symbol.endsWith('USD')) {
+          name = symbol + 'USDT';
+        }
+        symbol = exchange + ':' + name;
+      }
+
+      const detectedLogo = LOGO_MAP[symbol] || LOGO_MAP[name] || null;
+      addResolvedToken(symbol, name, exchange, detectedLogo);
+      if (btnConfirm) btnConfirm.textContent = 'Add';
+    }
+
     document.getElementById('btn-confirm-add-token')?.addEventListener('click', handleAddToken);
     inputNewSymbol?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleAddToken();
-      if (e.key === 'Escape') addTokenContainer.style.display = 'none';
+      if (e.key === 'Escape') {
+        if (searchSugBox) { searchSugBox.innerHTML = ''; searchSugBox.style.display = 'none'; }
+        addTokenContainer.style.display = 'none';
+      }
     });
 
     document.getElementById('btn-refresh-wl-prices')?.addEventListener('click', updateWatchlistPrices);
@@ -1135,6 +1519,330 @@ const htmlContent = `<!DOCTYPE html>
     renderWatchlist();
     updateWatchlistPrices();
     setInterval(updateWatchlistPrices, 8000);
+
+    // --- Proliquid Trading & Execution Dock Logic ---
+    let currentDockCoin = 'BTC';
+    let currentDockPrice = 80000;
+    let currentDockOrderType = 'MARKET';
+    let currentDockMode = 'PAPER';
+    let isReduceOnly = false;
+    let isTpSlActive = false;
+    let dockAvailableBalance = 10000;
+
+    const btnToggleDock = document.getElementById('btn-toggle-dock');
+    const tradingDockEl = document.getElementById('trading-dock');
+    if (btnToggleDock && tradingDockEl) {
+      btnToggleDock.addEventListener('click', () => {
+        const isHidden = tradingDockEl.style.display === 'none';
+        tradingDockEl.style.display = isHidden ? 'flex' : 'none';
+        btnToggleDock.classList.toggle('active', isHidden);
+        setTimeout(resizeChart, 50);
+      });
+    }
+
+    function syncDockCoin(sym) {
+      let c = (sym || 'BTC').toUpperCase();
+      if (c.includes(':')) c = c.split(':')[1];
+      c = c.replace(/USDT|USDC|USD|\.P|_/gi, '').trim() || 'BTC';
+      currentDockCoin = c;
+      const coinBadge = document.getElementById('ob-coin-badge');
+      const denomBadge = document.getElementById('exec-coin-denom');
+      if (coinBadge) coinBadge.textContent = c;
+      if (denomBadge) denomBadge.textContent = c;
+      updateDockData();
+    }
+
+    async function updateDockData() {
+      const c = currentDockCoin;
+      // 1. Fetch Orderbook
+      try {
+        const res = await fetch('/api/hyperliquid/book?coin=' + encodeURIComponent(c));
+        const b = await res.json();
+        if (b && b.bids && b.asks) {
+          const mktPriceEl = document.getElementById('dock-market-price');
+          currentDockPrice = b.bestAsk || b.bestBid || currentDockPrice;
+          if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
+
+          const asksEl = document.getElementById('ob-asks-list');
+          if (asksEl) {
+            asksEl.innerHTML = b.asks.slice(-6).map(a => \`
+              <div class="ob-row" data-price="\${a.price}">
+                <div class="ob-bg ob-bg-ask" style="width: \${a.depthPercent}%;"></div>
+                <span class="ob-cell-price val-red">\${a.price >= 1 ? a.price.toFixed(a.price < 10 ? 3 : 1) : a.price.toFixed(4)}</span>
+                <span class="ob-cell" style="color: #fff;">\${a.size >= 1 ? a.size.toFixed(2) : a.size.toFixed(4)}</span>
+                <span class="ob-cell" style="color: var(--text-secondary);">\${a.total >= 1 ? a.total.toFixed(2) : a.total.toFixed(3)}</span>
+              </div>
+            \`).join('');
+          }
+
+          const bidsEl = document.getElementById('ob-bids-list');
+          if (bidsEl) {
+            bidsEl.innerHTML = b.bids.slice(0, 6).map(bid => \`
+              <div class="ob-row" data-price="\${bid.price}">
+                <div class="ob-bg ob-bg-bid" style="width: \${bid.depthPercent}%;"></div>
+                <span class="ob-cell-price val-green">\${bid.price >= 1 ? bid.price.toFixed(bid.price < 10 ? 3 : 1) : bid.price.toFixed(4)}</span>
+                <span class="ob-cell" style="color: #fff;">\${bid.size >= 1 ? bid.size.toFixed(2) : bid.size.toFixed(4)}</span>
+                <span class="ob-cell" style="color: var(--text-secondary);">\${bid.total >= 1 ? bid.total.toFixed(2) : bid.total.toFixed(3)}</span>
+              </div>
+            \`).join('');
+          }
+
+          document.getElementById('ob-spread-val').textContent = 'SPREAD ' + b.spread;
+          document.getElementById('ob-spread-bp').textContent = '(' + b.spreadBP + 'BP)';
+          document.getElementById('ob-max-depth').textContent = b.maxDepthTotal;
+          document.getElementById('ob-bid-pct').textContent = b.imbalance.bidPercent + '%';
+          document.getElementById('ob-ask-pct').textContent = b.imbalance.askPercent + '%';
+          document.getElementById('ob-ratio-bid').style.width = b.imbalance.bidPercent + '%';
+
+          updateExecutionLabels();
+        }
+      } catch (e) {}
+
+      // 2. Fetch Screener
+      try {
+        const res = await fetch('/api/hyperliquid/screener?coin=' + encodeURIComponent(c));
+        const scr = await res.json();
+        if (scr && scr.m5 && scr.m15) {
+          document.getElementById('scr-trades-5m').textContent = scr.m5.trades;
+          document.getElementById('scr-trades-15m').textContent = scr.m15.trades;
+
+          const chg5El = document.getElementById('scr-chg-5m');
+          chg5El.textContent = scr.m5.changePercent;
+          chg5El.className = 'scr-val ' + (scr.m5.rawChangePercent >= 0 ? 'val-green' : 'val-red');
+
+          const chg15El = document.getElementById('scr-chg-15m');
+          chg15El.textContent = scr.m15.changePercent;
+          chg15El.className = 'scr-val ' + (scr.m15.rawChangePercent >= 0 ? 'val-green' : 'val-red');
+
+          document.getElementById('scr-vol-5m').textContent = scr.m5.volume;
+          document.getElementById('scr-vol-15m').textContent = scr.m15.volume;
+
+          const vd5El = document.getElementById('scr-vdelta-5m');
+          vd5El.textContent = scr.m5.volumeDelta;
+          vd5El.className = 'scr-val ' + (scr.m5.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
+
+          const vd15El = document.getElementById('scr-vdelta-15m');
+          vd15El.textContent = scr.m15.volumeDelta;
+          vd15El.className = 'scr-val ' + (scr.m15.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
+        }
+      } catch (e) {}
+
+      // 3. Fetch Account
+      try {
+        const res = await fetch('/api/hyperliquid/account');
+        const acc = await res.json();
+        if (acc) {
+          dockAvailableBalance = acc.available || 10000;
+          document.getElementById('dock-avail-bal').textContent = '$' + dockAvailableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const matchingPos = (acc.positions || []).find(p => (p.symbol && p.symbol.includes(c)) || (p.coin === c));
+          const posEl = document.getElementById('dock-active-pos');
+          if (posEl) {
+            if (matchingPos) {
+              const sz = matchingPos.size || matchingPos.szi || 0;
+              const pnl = matchingPos.unrealizedPnl || 0;
+              posEl.textContent = \`\${matchingPos.side} \${sz} ($\${pnl >= 0 ? '+' : ''}\${pnl.toFixed(2)})\`;
+              posEl.className = pnl >= 0 ? 'val-green' : 'val-red';
+            } else {
+              posEl.textContent = '--';
+              posEl.className = '';
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    function updateExecutionLabels() {
+      const qtyInput = document.getElementById('input-exec-qty');
+      const qty = parseFloat(qtyInput?.value) || 0;
+      const price = currentDockPrice || 0;
+      const priceFmt = price >= 1 ? price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : price.toFixed(4);
+
+      const buySub = document.getElementById('exec-buy-sub');
+      const sellSub = document.getElementById('exec-sell-sub');
+      if (buySub) buySub.textContent = \`\${qty} \${currentDockCoin} @ $\${priceFmt}\`;
+      if (sellSub) sellSub.textContent = \`\${qty} \${currentDockCoin} @ $\${priceFmt}\`;
+    }
+
+    // Execution Inputs Bindings
+    const inputQty = document.getElementById('input-exec-qty');
+    const inputNotional = document.getElementById('input-exec-notional');
+    const slider = document.getElementById('exec-pct-slider');
+    const sliderDisplay = document.getElementById('exec-pct-display');
+
+    inputQty?.addEventListener('input', () => {
+      const qty = parseFloat(inputQty.value) || 0;
+      if (currentDockPrice > 0) {
+        inputNotional.value = (qty * currentDockPrice).toFixed(2);
+      }
+      updateExecutionLabels();
+    });
+
+    inputNotional?.addEventListener('input', () => {
+      const notional = parseFloat(inputNotional.value) || 0;
+      if (currentDockPrice > 0) {
+        inputQty.value = (notional / currentDockPrice).toFixed(4);
+      }
+      updateExecutionLabels();
+    });
+
+    slider?.addEventListener('input', () => {
+      const pct = parseInt(slider.value, 10);
+      sliderDisplay.textContent = pct + ' %';
+      document.querySelectorAll('.pct-chip').forEach(c => c.classList.toggle('active', parseInt(c.dataset.pct, 10) === pct));
+      if (dockAvailableBalance > 0 && currentDockPrice > 0) {
+        const notional = (dockAvailableBalance * pct) / 100;
+        inputNotional.value = notional.toFixed(2);
+        inputQty.value = (notional / currentDockPrice).toFixed(4);
+        updateExecutionLabels();
+      }
+    });
+
+    document.querySelectorAll('.pct-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const pct = parseInt(chip.dataset.pct, 10);
+        slider.value = pct;
+        sliderDisplay.textContent = pct + ' %';
+        document.querySelectorAll('.pct-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        if (dockAvailableBalance > 0 && currentDockPrice > 0) {
+          const notional = (dockAvailableBalance * pct) / 100;
+          inputNotional.value = notional.toFixed(2);
+          inputQty.value = (notional / currentDockPrice).toFixed(4);
+          updateExecutionLabels();
+        }
+      });
+    });
+
+    // Order type toggle
+    const btnOrdMarket = document.getElementById('btn-ord-market');
+    const btnOrdLimit = document.getElementById('btn-ord-limit');
+    const limitGroup = document.getElementById('limit-price-group');
+    btnOrdMarket?.addEventListener('click', () => {
+      currentDockOrderType = 'MARKET';
+      btnOrdMarket.classList.add('active');
+      btnOrdLimit.classList.remove('active');
+      limitGroup.style.display = 'none';
+    });
+    btnOrdLimit?.addEventListener('click', () => {
+      currentDockOrderType = 'LIMIT';
+      btnOrdLimit.classList.add('active');
+      btnOrdMarket.classList.remove('active');
+      limitGroup.style.display = 'flex';
+      document.getElementById('input-exec-price').value = currentDockPrice;
+    });
+
+    // Options toggles
+    const btnReduce = document.getElementById('btn-toggle-reduce');
+    btnReduce?.addEventListener('click', () => {
+      isReduceOnly = !isReduceOnly;
+      btnReduce.classList.toggle('active', isReduceOnly);
+    });
+
+    const btnTpsl = document.getElementById('btn-toggle-tpsl');
+    const tpslBox = document.getElementById('tpsl-inputs-container');
+    btnTpsl?.addEventListener('click', () => {
+      isTpSlActive = !isTpSlActive;
+      btnTpsl.classList.toggle('active', isTpSlActive);
+      tpslBox.style.display = isTpSlActive ? 'block' : 'none';
+      if (isTpSlActive && currentDockPrice > 0) {
+        document.getElementById('input-exec-tp').value = (currentDockPrice * 1.015).toFixed(2);
+        document.getElementById('input-exec-sl').value = (currentDockPrice * 0.992).toFixed(2);
+      }
+    });
+
+    // Orderbook click row to fill price
+    document.getElementById('trading-dock')?.addEventListener('click', (e) => {
+      const obRow = e.target.closest('.ob-row');
+      if (obRow) {
+        const px = parseFloat(obRow.dataset.price);
+        if (px) {
+          document.getElementById('input-exec-price').value = px;
+          if (currentDockOrderType === 'LIMIT') {
+            const notional = parseFloat(inputNotional.value) || 0;
+            if (notional > 0) inputQty.value = (notional / px).toFixed(4);
+          }
+        }
+      }
+    });
+
+    // Connect Hyperliquid wallet toggle
+    const btnHlToggle = document.getElementById('btn-dock-mode-toggle');
+    const hlModal = document.getElementById('hl-connect-modal');
+    btnHlToggle?.addEventListener('click', () => {
+      const isHidden = hlModal.style.display === 'none';
+      hlModal.style.display = isHidden ? 'block' : 'none';
+    });
+    document.getElementById('btn-save-hl-wallet')?.addEventListener('click', async () => {
+      const addr = document.getElementById('input-hl-wallet')?.value.trim();
+      if (addr) {
+        currentDockMode = 'HYPERLIQUID_LIVE';
+        document.getElementById('account-mode-badge').textContent = 'HL LIVE';
+        document.getElementById('account-mode-badge').style.background = 'rgba(41, 98, 255, 0.2)';
+        document.getElementById('account-mode-badge').style.color = '#78a9ff';
+        hlModal.style.display = 'none';
+        updateDockData();
+      }
+    });
+    document.getElementById('btn-disconnect-hl-wallet')?.addEventListener('click', () => {
+      currentDockMode = 'PAPER';
+      document.getElementById('account-mode-badge').textContent = 'PAPER $10K';
+      document.getElementById('account-mode-badge').style.background = 'rgba(34, 197, 94, 0.2)';
+      document.getElementById('account-mode-badge').style.color = '#4ade80';
+      hlModal.style.display = 'none';
+      updateDockData();
+    });
+
+    // Execute Trade handler
+    async function handleTradeExecution(side) {
+      const qty = parseFloat(document.getElementById('input-exec-qty')?.value) || 0;
+      const notional = parseFloat(document.getElementById('input-exec-notional')?.value) || 0;
+      if (qty <= 0 && notional <= 0) {
+        alert('Please enter a Quantity or Notional amount');
+        return;
+      }
+      const tp = isTpSlActive ? parseFloat(document.getElementById('input-exec-tp')?.value) : null;
+      const sl = isTpSlActive ? parseFloat(document.getElementById('input-exec-sl')?.value) : null;
+      const price = currentDockOrderType === 'LIMIT' ? parseFloat(document.getElementById('input-exec-price')?.value) : currentDockPrice;
+
+      try {
+        const res = await fetch('/api/trade/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            coin: currentDockCoin,
+            side,
+            orderType: currentDockOrderType,
+            size: qty,
+            notional,
+            price,
+            mode: currentDockMode.toLowerCase(),
+            reduceOnly: isReduceOnly,
+            tp,
+            sl,
+          }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Execution: ' + data.error);
+        } else {
+          // Success feedback
+          const btn = side === 'LONG' ? document.getElementById('btn-exec-buy') : document.getElementById('btn-exec-sell');
+          const orig = btn.innerHTML;
+          btn.innerHTML = \`<span style="color:#fff;">✓ ORDER PLACED (\${data.mode})</span>\`;
+          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+          updateDockData();
+          refreshPaperStatus();
+        }
+      } catch (e) {
+        alert('Trade error: ' + e.message);
+      }
+    }
+
+    document.getElementById('btn-exec-buy')?.addEventListener('click', () => handleTradeExecution('LONG'));
+    document.getElementById('btn-exec-sell')?.addEventListener('click', () => handleTradeExecution('SHORT'));
+
+    syncDockCoin(currentSymbol);
+    setInterval(updateDockData, 2500);
 
     document.getElementById('timeframes').addEventListener('click', (e) => {
       const btn = e.target.closest('button');
@@ -1439,6 +2147,89 @@ const server = http.createServer(async (req, res) => {
     return res.end('Not found');
   }
 
+  if (pathname === '/api/search') {
+    const q = (parsedUrl.query.q || '').trim();
+    if (!q) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ symbols: [] }));
+    }
+
+    try {
+      const axios = require('axios');
+      function formatResult(s) {
+        const exchange = (s.prefix || s.exchange.split(' ')[0] || 'MARKET').toUpperCase();
+        const id = exchange + ':' + s.symbol;
+        const logo = s.logo?.logoid || s['base-currency-logoid'] || s['currency-logoid'] || s.logoid || '';
+        return {
+          symbol: id,
+          name: s.symbol,
+          exchange: exchange,
+          description: s.description || s.symbol,
+          logoId: logo,
+        };
+      }
+
+      let list = [];
+      if (q.includes(':')) {
+        const parts = q.split(':');
+        const exchange = parts[0];
+        const text = parts[1];
+        try {
+          const resSearch = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+            params: { text, exchange },
+            headers: { origin: 'https://www.tradingview.com' },
+            timeout: 4000,
+          });
+          if (resSearch.data && resSearch.data.symbols) {
+            list = resSearch.data.symbols.map(formatResult);
+          }
+        } catch (e) {}
+      }
+
+      if (list.length === 0) {
+        try {
+          const resCrypto = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+            params: { text: q, search_type: 'crypto' },
+            headers: { origin: 'https://www.tradingview.com' },
+            timeout: 4000,
+          });
+          if (resCrypto.data && resCrypto.data.symbols) {
+            list = resCrypto.data.symbols.map(formatResult);
+          }
+        } catch (e) {}
+      }
+
+      if (list.length === 0) {
+        try {
+          const resAll = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+            params: { text: q },
+            headers: { origin: 'https://www.tradingview.com' },
+            timeout: 4000,
+          });
+          if (resAll.data && resAll.data.symbols) {
+            list = resAll.data.symbols.map(formatResult);
+          }
+        } catch (e) {}
+      }
+
+      const preferred = ['BINANCE', 'BYBIT', 'OKX', 'COINBASE', 'NASDAQ'];
+      list.sort((a, b) => {
+        const aPref = preferred.indexOf(a.exchange);
+        const bPref = preferred.indexOf(b.exchange);
+        if (aPref !== -1 && bPref !== -1) return aPref - bPref;
+        if (aPref !== -1) return -1;
+        if (bPref !== -1) return 1;
+        return 0;
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ symbols: list.slice(0, 10) }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message, symbols: [] }));
+    }
+  }
+
   if (pathname === '/api/watchlist/prices') {
     const body = await parseBody(req);
     const symbols = body.symbols || [];
@@ -1637,6 +2428,55 @@ const server = http.createServer(async (req, res) => {
     paperTraderInstance.resetAccount();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: true }));
+  }
+
+  // --- Hyperliquid & Terminal Dock Endpoints ---
+  if (pathname === '/api/hyperliquid/book') {
+    const coin = parsedUrl.query.coin || 'BTC';
+    try {
+      const book = await hyperliquidInstance.getL2Book(coin);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(book));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/hyperliquid/screener') {
+    const coin = parsedUrl.query.coin || 'BTC';
+    try {
+      const screener = await hyperliquidInstance.getScreener(coin);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(screener));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/hyperliquid/account') {
+    const address = parsedUrl.query.address || null;
+    try {
+      const acc = await hyperliquidInstance.getAccountState(address);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(acc));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/trade/execute') {
+    const body = await parseBody(req);
+    try {
+      const result = await hyperliquidInstance.executeTrade(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
   }
 
   res.writeHead(404);

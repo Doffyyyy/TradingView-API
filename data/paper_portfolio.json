@@ -1,10 +1,10 @@
 {
   "initialBalance": 10000,
-  "cash": 6236.076498257167,
-  "equity": 10252.66,
+  "cash": 7714.437336206711,
+  "equity": 10214.44,
   "dailyTargetMin": 50,
   "dailyTargetMax": 100,
-  "dailyRealizedPnl": 0,
+  "dailyRealizedPnl": -38.709162050457145,
   "lastResetDate": "2026-09-20",
   "autoTradeEnabled": true,
   "riskPerTradePercent": 1.5,
@@ -12,33 +12,52 @@
   "maxOpenPositions": 2,
   "positions": [
     {
-      "id": "pos_1789787083950",
-      "symbol": "BINANCE:ETHUSDT",
+      "id": "pos_1789890571839",
+      "symbol": "BINANCE:BTCUSDT",
       "side": "LONG",
-      "entryPrice": 2626.48,
-      "size": 0.7380126725523006,
-      "notional": 1938.38,
-      "stopLoss": 2605.47,
-      "takeProfit": 2665.88,
-      "entryTime": "2026-09-19T03:04:43.950Z",
-      "strategy": "Supertrend + MACD Momentum",
-      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 61.96, 26-TA Buy consensus (17/26)."
-    },
+      "entryPrice": 80338.38,
+      "size": 0.031118377044695198,
+      "notional": 2500,
+      "stopLoss": 79695.67,
+      "takeProfit": 81543.46,
+      "entryTime": "2026-09-20T07:49:31.839Z",
+      "strategy": "Manual Terminal Execution",
+      "reason": "Manual LONG order on BTC via Proliquid Trading Deck. TP: auto, SL: auto"
+    }
+  ],
+  "trades": [
     {
       "id": "pos_1789815023844",
       "symbol": "BINANCE:BTCUSDT",
       "side": "LONG",
       "entryPrice": 81306.01,
+      "exitPrice": 80609.43,
       "size": 0.025566279369578247,
       "notional": 2078.69,
-      "stopLoss": 80655.56,
-      "takeProfit": 82525.6,
+      "pnl": -19.88,
+      "pnlPercent": -0.96,
+      "fee": 2.07,
       "entryTime": "2026-09-19T10:50:23.844Z",
-      "strategy": "Supertrend + MACD Momentum",
-      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 54.53, 26-TA Buy consensus (17/26)."
-    }
-  ],
-  "trades": [
+      "exitTime": "2026-09-20T02:44:46.034Z",
+      "reason": "Stop Loss / Trailing Stop hit at $80609.43 (-0.86%)",
+      "strategy": "Supertrend + MACD Momentum"
+    },
+    {
+      "id": "pos_1789787083950",
+      "symbol": "BINANCE:ETHUSDT",
+      "side": "LONG",
+      "entryPrice": 2626.48,
+      "exitPrice": 2603.58,
+      "size": 0.7380126725523006,
+      "notional": 1938.38,
+      "pnl": -18.83,
+      "pnlPercent": -0.97,
+      "fee": 1.93,
+      "entryTime": "2026-09-19T03:04:43.950Z",
+      "exitTime": "2026-09-20T02:43:50.009Z",
+      "reason": "Stop Loss / Trailing Stop hit at $2603.58 (-0.87%)",
+      "strategy": "Supertrend + MACD Momentum"
+    },
     {
       "id": "pos_1789783425739",
       "symbol": "BYBIT:HYPEUSDT",
@@ -89,6 +108,14 @@
     }
   ],
   "logs": [
+    "[2:49:31 PM] OPENED LONG on BINANCE:BTCUSDT @ $80338.38. Target TP: $81543.46, SL: $79695.67 [Strategy: Manual Terminal Execution]",
+    "[2:49:06 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[10:31:58 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[10:29:52 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[10:15:11 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[9:44:46 AM] CLOSED LONG BINANCE:BTCUSDT: Net PnL $-19.88 (-0.96%). Stop Loss / Trailing Stop hit at $80609.43 (-0.86%)",
+    "[9:43:50 AM] CLOSED LONG BINANCE:ETHUSDT: Net PnL $-18.83 (-0.97%). Stop Loss / Trailing Stop hit at $2603.58 (-0.87%)",
+    "[8:19:45 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[4:07:39 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[3:58:46 AM] 🎯 DAILY TARGET EXCEEDED (+$253.14 >= $100/day). Continuing continuous paper trade with strict risk controls.",
     "[3:58:46 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
@@ -130,15 +157,7 @@
     "[9:01:12 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
     "[9:01:04 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
     "[9:00:56 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:48 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:40 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:32 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:24 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:16 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:08 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits.",
-    "[9:00:05 AM] Auto-trading switched to: ACTIVE",
-    "[9:00:05 AM] Auto-trading switched to: PAUSED",
-    "[9:00:00 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits."
+    "[9:00:48 AM] 🎯 DAILY TARGET MAX REACHED (+$253.50 >= $100). Auto-trading paused to lock profits."
   ],
   "dailyHistory": [
     {
