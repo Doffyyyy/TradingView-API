@@ -335,21 +335,28 @@ class PaperTradingEngine {
   }
 
   async scanOpportunities() {
-    // Check daily milestones without blocking continuous trading
+    const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
+
+    // Check daily milestones
     if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMax) {
       if (!this.hasLoggedDailyMax) {
-        this.log(`🎯 DAILY TARGET EXCEEDED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $100/day). Continuing continuous paper trade with strict risk controls.`);
+        this.log(`🎯 DAILY TARGET EXCEEDED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $100/day). Switching to Sniper / Ultra-High Confluence mode only.`);
         this.hasLoggedDailyMax = true;
       }
     } else if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin) {
       if (!this.hasLoggedDailyMin) {
-        this.log(`✅ Daily Target Minimum Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $50/day). Compounding active.`);
+        this.log(`✅ Daily Target Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $50/day). Preserving daily profit: Pausing normal entries, only sniping A+ setups.`);
         this.hasLoggedDailyMin = true;
       }
     }
 
     // 2. Check if slots available
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
+      return;
+    }
+
+    // When target is reached ($50+), only allow 1 position at a time to strictly preserve capital
+    if (isTargetHit && this.portfolio.positions.length >= 1) {
       return;
     }
 
@@ -372,9 +379,32 @@ class PaperTradingEngine {
         const buyVotes = taValidation.consensus.buy;
         const sellVotes = taValidation.consensus.sell;
 
+        // Dynamic threshold:
+        // Normal mode (< $50 target): buyVotes >= 11/26
+        // Sniper / Ultra-High Confluence mode (>= $50 target):
+        // Needs A+ "Siêu đẹp" setup: 26-TA Buy votes >= 16, Sell votes <= 4, pristine RSI, aligned MACD & Supertrend
+        if (isTargetHit) {
+          // --- SNIPER A+ SETUP ONLY ---
+          // Long A+: Supertrend BUY + MACD BULLISH + RSI 48-65 + TA Consensus Buy >= 16 & Sell <= 4
+          if (supertrend === 'BUY' && macdTrend === 'BULLISH' && rsi >= 48 && rsi <= 65 && buyVotes >= 16 && sellVotes <= 4) {
+            const reason = `🎯 [SNIPER A+ SETUP] Target achieved ($${this.portfolio.dailyRealizedPnl.toFixed(2)}), exceptional confluence detected: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Consensus Buy (${buyVotes}/26, sell: ${sellVotes}).`;
+            this.log(`🔥 SIÊU ĐẸP LONG detected on ${sym} while daily target is achieved! Triggering sniper trade.`);
+            await this.openPosition(sym, 'LONG', 'Sniper A+ Confluence Long', reason);
+            if (this.portfolio.positions.length >= 1) break;
+          }
+          // Short A+: Supertrend SELL + MACD BEARISH + RSI 35-52 + TA Consensus Sell >= 16 & Buy <= 4
+          else if (supertrend === 'SELL' && macdTrend === 'BEARISH' && rsi >= 35 && rsi <= 52 && sellVotes >= 16 && buyVotes <= 4) {
+            const reason = `🎯 [SNIPER A+ SETUP] Target achieved ($${this.portfolio.dailyRealizedPnl.toFixed(2)}), exceptional confluence breakdown: Supertrend Bearish, MACD Bearish, RSI ${rsi}, 26-TA Consensus Sell (${sellVotes}/26, buy: ${buyVotes}).`;
+            this.log(`🔥 SIÊU ĐẸP SHORT detected on ${sym} while daily target is achieved! Triggering sniper trade.`);
+            await this.openPosition(sym, 'SHORT', 'Sniper A+ Confluence Breakdown', reason);
+            if (this.portfolio.positions.length >= 1) break;
+          }
+          continue;
+        }
+
+        // --- NORMAL MODE (< $50 TARGET) ---
         // Long Setup:
         // Trend following: Supertrend = BUY + MACD Bullish + 26-TA Buy votes >= 11 + RSI between 45 and 75
-        // OR Fibo Golden Pocket bounce / pullback
         if (supertrend === 'BUY' && macdTrend === 'BULLISH' && rsi >= 45 && rsi <= 75 && buyVotes >= 11 && sellVotes <= 8) {
           const reason = `Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Buy consensus (${buyVotes}/26).`;
           await this.openPosition(sym, 'LONG', 'Supertrend + MACD Momentum', reason);
@@ -434,6 +464,7 @@ class PaperTradingEngine {
     const wins = this.portfolio.trades.filter(t => t.pnl > 0).length;
     const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
     const targetProgress = Math.min(100, Math.max(0, (this.portfolio.dailyRealizedPnl / this.portfolio.dailyTargetMax) * 100));
+    const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
 
     return {
       balance: Math.round(this.portfolio.cash * 100) / 100,
@@ -443,6 +474,8 @@ class PaperTradingEngine {
       dailyTargetMin: this.portfolio.dailyTargetMin,
       dailyTargetMax: this.portfolio.dailyTargetMax,
       dailyTargetProgressPercent: Math.round(targetProgress * 10) / 10,
+      dailyTargetHit: isTargetHit,
+      tradingMode: isTargetHit ? 'SNIPER (A+ Setups Only)' : 'ACTIVE (Normal Confluence)',
       autoTradeEnabled: this.portfolio.autoTradeEnabled,
       openPositions: this.portfolio.positions.map(p => {
         const curr = this.latestPrices[p.symbol]?.price || p.entryPrice;

@@ -2326,17 +2326,28 @@ const htmlContent = `<!DOCTYPE html>
 
         document.getElementById('paper-winrate').textContent = data.winRate + '% (' + data.totalTrades + ')';
 
-        // Target progress
-        document.getElementById('target-progress-text').textContent = data.dailyTargetProgressPercent + '% ($' + data.dailyPnl.toFixed(2) + ' / $100)';
+        // Target progress & Sniper mode state
+        const targetText = data.dailyTargetHit 
+          ? ('🎯 Target Achieved: $' + data.dailyPnl.toFixed(2) + ' — 🛡️ SNIPER MODE: Only A+ setups')
+          : (data.dailyTargetProgressPercent + '% ($' + data.dailyPnl.toFixed(2) + ' / $100)');
+        document.getElementById('target-progress-text').textContent = targetText;
+        document.getElementById('target-progress-text').style.color = data.dailyTargetHit ? '#4ade80' : '#fbbf24';
         document.getElementById('target-progress-bar').style.width = Math.min(100, Math.max(0, data.dailyTargetProgressPercent)) + '%';
 
         // Auto trade button
         const btnToggle = document.getElementById('btn-toggle-auto-trade');
         if (data.autoTradeEnabled) {
-          btnToggle.textContent = '🟢 Auto-Trade: ACTIVE';
-          btnToggle.style.background = '#22c55e';
-          document.getElementById('paper-engine-status').textContent = '● Auto-Engine Running';
-          document.getElementById('paper-engine-status').style.color = 'var(--accent-green)';
+          if (data.dailyTargetHit) {
+            btnToggle.textContent = '🎯 Auto-Trade: TARGET MET (Sniper A+)';
+            btnToggle.style.background = '#0284c7';
+            document.getElementById('paper-engine-status').textContent = '● Target Reached — Sniper Mode (Only A+ Setups)';
+            document.getElementById('paper-engine-status').style.color = '#38bdf8';
+          } else {
+            btnToggle.textContent = '🟢 Auto-Trade: ACTIVE';
+            btnToggle.style.background = '#22c55e';
+            document.getElementById('paper-engine-status').textContent = '● Auto-Engine Running';
+            document.getElementById('paper-engine-status').style.color = 'var(--accent-green)';
+          }
         } else {
           btnToggle.textContent = '🔴 Auto-Trade: PAUSED';
           btnToggle.style.background = '#6b7280';
