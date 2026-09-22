@@ -27,7 +27,22 @@ const DEFAULT_PORTFOLIO = {
 class PaperTradingEngine {
   constructor() {
     this.portfolio = this.loadPortfolio();
-    this.monitoredSymbols = ['BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:SOLUSDT', 'BYBIT:HYPEUSDT'];
+    this.monitoredSymbols = [
+      'BINANCE:BTCUSDT',    // #1 HL Vol: $4.9B
+      'BINANCE:ETHUSDT',    // #2 HL Vol: $2.0B
+      'BYBIT:HYPEUSDT',     // #3 HL Vol: $665M
+      'BINANCE:ZECUSDT',    // #4 HL Vol: $434M
+      'BINANCE:SOLUSDT',    // #5 HL Vol: $395M
+      'BINANCE:NEARUSDT',   // #6 HL Vol: $327M
+      'BINANCE:TAOUSDT',    // #9 HL Vol: $105M
+      'BINANCE:SUIUSDT',    // #11 HL Vol: $81M
+      'BINANCE:PUMPUSDT',   // #15 HL Vol: $56M
+      'BYBIT:VVVUSDT',      // #16 HL Vol: $50M
+      'BINANCE:ARBUSDT',    // #17 HL Vol: $48M
+      'BINANCE:LINKUSDT',   // #25 HL Vol: $27M
+      'BINANCE:ONDOUSDT',   // #27 HL Vol: $24M
+      'BINANCE:BNBUSDT',    // #30 HL Vol: $17M
+    ];
     this.isRunning = false;
     this.loopTimer = null;
     this.latestPrices = {};
@@ -481,6 +496,7 @@ class PaperTradingEngine {
       dailyTargetHit: isTargetHit,
       tradingMode: isTargetHit ? 'SNIPER (A+ Setups Only)' : 'ACTIVE (Normal Confluence)',
       autoTradeEnabled: this.portfolio.autoTradeEnabled,
+      monitoredSymbols: this.monitoredSymbols,
       openPositions: this.portfolio.positions.map(p => {
         const curr = this.latestPrices[p.symbol]?.price || p.entryPrice;
         let upnl = p.side === 'LONG' ? (curr - p.entryPrice) * p.size : (p.entryPrice - curr) * p.size;
