@@ -100,10 +100,7 @@ async function sendTelegramAlert(alertData) {
   // If customMessage (log format) is provided, use it directly as requested by user
   let caption = '';
   if (customMessage) {
-    caption = `🔔 *TRADE LOG ALERT*\n\n` +
-      `\`${customMessage}\`\n\n` +
-      `💰 *Account Equity:* \`$${accountEquity.toLocaleString ? accountEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : accountEquity}\`\n` +
-      `_Powered by TradingView API & Hermes Agent Engine_`;
+    caption = customMessage;
   } else {
     caption = `🚨 *TRADINGVIEW API SIGNAL ALERT* 🚨\n\n` +
       `📌 *Instrument:* \`${instrument}\`\n` +
