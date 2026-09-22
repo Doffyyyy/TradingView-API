@@ -59,6 +59,7 @@ async function sendTelegramAlert(alertData) {
     instrument = 'BINANCE:BTCUSDT',
     strategy = 'Astra-Supertrend v2',
     action = 'BUY / LONG',
+    customMessage = null,
     sharpe = 2.45,
     drawdown = '-3.8%',
     winRate = 0.62,
@@ -96,16 +97,25 @@ async function sendTelegramAlert(alertData) {
   execSync(`python "${scriptPath}" "${tempJsonPath}" "${outPngPath}"`);
 
   // 3. Format Telegram message caption
-  const caption = `🚨 *TRADINGVIEW API SIGNAL ALERT* 🚨\n\n` +
-    `📌 *Instrument:* \`${instrument}\`\n` +
-    `⚡ *Strategy:* \`${strategy}\`\n` +
-    `🎯 *Action:* *${action}*\n` +
-    `📊 *Sharpe Ratio:* \`${sharpe}\`\n` +
-    `📉 *Max Drawdown:* \`${drawdown}\`\n` +
-    `💰 *Kelly Position Size:* *${kelly.kellyPercent}%* (\`$${kelly.positionDollar}\` of \`$${accountEquity}\`)\n` +
-    `🛡️ *Validation Layer:* 26-Indicator Consensus PASSED\n` +
-    `📝 *Notes:* ${notes}\n\n` +
-    `_Powered by TradingView API & Hermes Agent Engine_`;
+  // If customMessage (log format) is provided, use it directly as requested by user
+  let caption = '';
+  if (customMessage) {
+    caption = `🔔 *TRADE LOG ALERT*\n\n` +
+      `\`${customMessage}\`\n\n` +
+      `💰 *Account Equity:* \`$${accountEquity.toLocaleString ? accountEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : accountEquity}\`\n` +
+      `_Powered by TradingView API & Hermes Agent Engine_`;
+  } else {
+    caption = `🚨 *TRADINGVIEW API SIGNAL ALERT* 🚨\n\n` +
+      `📌 *Instrument:* \`${instrument}\`\n` +
+      `⚡ *Strategy:* \`${strategy}\`\n` +
+      `🎯 *Action:* *${action}*\n` +
+      `📊 *Sharpe Ratio:* \`${sharpe}\`\n` +
+      `📉 *Max Drawdown:* \`${drawdown}\`\n` +
+      `💰 *Kelly Position Size:* *${kelly.kellyPercent}%* (\`$${kelly.positionDollar}\` of \`$${accountEquity}\`)\n` +
+      `🛡️ *Validation Layer:* 26-Indicator Consensus PASSED\n` +
+      `📝 *Notes:* ${notes}\n\n` +
+      `_Powered by TradingView API & Hermes Agent Engine_`;
+  }
 
   // 4. Send via curl to avoid multipart issues on Windows
   const curlCmd = `curl.exe -s -X POST "https://api.telegram.org/bot${token}/sendPhoto" ` +

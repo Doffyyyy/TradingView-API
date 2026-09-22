@@ -224,12 +224,14 @@ class PaperTradingEngine {
 
     this.log(`CLOSED ${pos.side} ${pos.symbol}: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}`);
 
-    // Optional Telegram notification
+    // Telegram notification
     try {
+      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} @ $${exitPrice.toFixed(2)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
       sendTelegramAlert({
         instrument: pos.symbol,
         strategy: `AutoPaper: ${pos.strategy}`,
         action: `CLOSED ${pos.side} (PnL: $${closedTrade.pnl})`,
+        customMessage: closeLog,
         sharpe: 2.3,
         drawdown: '-2.1%',
         winRate: 0.65,
@@ -295,7 +297,8 @@ class PaperTradingEngine {
     this.updateEquity();
     this.savePortfolio();
 
-    this.log(`OPENED ${side} on ${symbol} @ $${currPrice.toFixed(2)}. Target TP: $${takeProfit.toFixed(2)}, SL: $${stopLoss.toFixed(2)} [Strategy: ${strategy}]`);
+    const openLog = `OPENED ${side} on ${symbol} @ $${currPrice.toFixed(2)}. Target TP: $${takeProfit.toFixed(2)}, SL: $${stopLoss.toFixed(2)} [Strategy: ${strategy}]`;
+    this.log(openLog);
 
     // Notify Telegram
     try {
@@ -303,6 +306,7 @@ class PaperTradingEngine {
         instrument: symbol,
         strategy: `AutoPaper: ${strategy}`,
         action: `ENTER ${side} @ $${currPrice.toFixed(2)}`,
+        customMessage: openLog,
         sharpe: 2.45,
         drawdown: '-2.5%',
         winRate: 0.65,
