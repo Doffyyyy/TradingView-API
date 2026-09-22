@@ -7,12 +7,29 @@ const axios = require('axios');
 
 const PORTFOLIO_PATH = path.join(__dirname, '../../data/paper_portfolio.json');
 
+function formatTokenPrice(price) {
+  if (typeof price !== 'number' || isNaN(price)) return '0.00';
+  if (price >= 1000) return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 1) return price.toFixed(2);
+  if (price >= 0.01) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function roundPriceForCoin(price) {
+  if (typeof price !== 'number' || isNaN(price) || price <= 0) return 0;
+  if (price >= 100) return Math.round(price * 100) / 100;
+  if (price >= 1) return Math.round(price * 10000) / 10000;
+  if (price >= 0.01) return Math.round(price * 100000) / 100000;
+  return Number(price.toPrecision(6));
+}
+
 const DEFAULT_PORTFOLIO = {
   initialBalance: 10000.0,
   cash: 10000.0,
   equity: 10000.0,
   dailyTargetMin: 50.0,
   dailyTargetMax: 100.0,
+  dailyStopLossMax: 100.0, // Max $100 loss per day (Circuit Breaker)
   dailyRealizedPnl: 0.0,
   lastResetDate: new Date().toISOString().slice(0, 10),
   autoTradeEnabled: true,
@@ -46,6 +63,10 @@ class PaperTradingEngine {
     this.isRunning = false;
     this.loopTimer = null;
     this.latestPrices = {};
+    this.symbolCooldowns = {}; // { 'BINANCE:SOLUSDT': timestamp }
+    this.hasLoggedDailyMin = false;
+    this.hasLoggedDailyMax = false;
+    this.hasLoggedDailyStopLoss = false;
   }
 
   getTodayDateString() {
@@ -152,19 +173,19 @@ class PaperTradingEngine {
       if (pos.side === 'LONG') {
         const gainPct = (curr - pos.entryPrice) / pos.entryPrice;
         if (gainPct >= 0.008) {
-          const lockPrice = Math.round(pos.entryPrice * 1.002 * 100) / 100;
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.002);
           if (pos.stopLoss < lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for LONG ${pos.symbol} at breakeven+$ ($${lockPrice})`);
+            this.log(`Trailing Stop locked for LONG ${pos.symbol} at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
           }
         }
       } else {
         const gainPct = (pos.entryPrice - curr) / pos.entryPrice;
         if (gainPct >= 0.008) {
-          const lockPrice = Math.round(pos.entryPrice * 0.998 * 100) / 100;
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.998);
           if (pos.stopLoss > lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for SHORT ${pos.symbol} at breakeven+$ ($${lockPrice})`);
+            this.log(`Trailing Stop locked for SHORT ${pos.symbol} at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
           }
         }
       }
@@ -173,20 +194,20 @@ class PaperTradingEngine {
       let reason = '';
 
       if (pos.side === 'LONG') {
-        if (curr >= pos.takeProfit) {
+        if (curr >= pos.takeProfit && pos.takeProfit > 0) {
           shouldClose = true;
-          reason = `Take Profit hit at $${curr.toFixed(2)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
-        } else if (curr <= pos.stopLoss) {
+          reason = `Take Profit hit at $${formatTokenPrice(curr)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+        } else if (curr <= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
-          reason = `Stop Loss / Trailing Stop hit at $${curr.toFixed(2)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Stop Loss / Trailing Stop hit at $${formatTokenPrice(curr)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
         }
       } else {
-        if (curr <= pos.takeProfit) {
+        if (curr <= pos.takeProfit && pos.takeProfit > 0) {
           shouldClose = true;
-          reason = `Take Profit hit at $${curr.toFixed(2)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
-        } else if (curr >= pos.stopLoss) {
+          reason = `Take Profit hit at $${formatTokenPrice(curr)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+        } else if (curr >= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
-          reason = `Stop Loss / Trailing Stop hit at $${curr.toFixed(2)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Stop Loss / Trailing Stop hit at $${formatTokenPrice(curr)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
         }
       }
 
@@ -237,11 +258,18 @@ class PaperTradingEngine {
     this.updateEquity();
     this.savePortfolio();
 
+    // If trade was a loss (Stop Loss), activate 30-minute cooldown on this symbol to prevent whipsaw
+    if (netPnl < 0) {
+      const cooldownUntil = Date.now() + 30 * 60 * 1000;
+      this.symbolCooldowns[pos.symbol] = cooldownUntil;
+      this.log(`⏳ Cooldown active for ${pos.symbol} (30 mins until ${new Date(cooldownUntil).toLocaleTimeString('vi-VN')}) after loss.`);
+    }
+
     this.log(`CLOSED ${pos.side} ${pos.symbol}: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}`);
 
     // Telegram notification
     try {
-      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} @ $${exitPrice.toFixed(2)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
+      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} @ $${formatTokenPrice(exitPrice)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
       sendTelegramAlert({
         instrument: pos.symbol,
         strategy: `AutoPaper: ${pos.strategy}`,
@@ -267,8 +295,13 @@ class PaperTradingEngine {
       return null;
     }
 
+    // Don't open if symbol is under cooldown
+    if (this.symbolCooldowns[symbol] && Date.now() < this.symbolCooldowns[symbol]) {
+      return null;
+    }
+
     const currPrice = this.latestPrices[symbol]?.price;
-    if (!currPrice) return null;
+    if (!currPrice || currPrice <= 0) return null;
 
     const notional = Math.min(this.portfolio.cash * 0.25, this.portfolio.maxPositionNotional);
     if (notional < 100) {
@@ -287,11 +320,18 @@ class PaperTradingEngine {
     let takeProfit = 0;
 
     if (side === 'LONG') {
-      stopLoss = currPrice * (1 - slPercent);
-      takeProfit = currPrice * (1 + tpPercent);
+      stopLoss = roundPriceForCoin(currPrice * (1 - slPercent));
+      takeProfit = roundPriceForCoin(currPrice * (1 + tpPercent));
     } else {
-      stopLoss = currPrice * (1 + slPercent);
-      takeProfit = currPrice * (1 - tpPercent);
+      stopLoss = roundPriceForCoin(currPrice * (1 + slPercent));
+      takeProfit = roundPriceForCoin(currPrice * (1 - tpPercent));
+    }
+
+    // Critical sanity check: prevent 0 or negative SL/TP
+    if (stopLoss <= 0 || takeProfit <= 0 || isNaN(stopLoss) || isNaN(takeProfit)) {
+      this.log(`⚠️ Aborting trade on ${symbol}: Invalid calculated SL ($${stopLoss}) / TP ($${takeProfit}) for price $${currPrice}`);
+      this.portfolio.cash += notional;
+      return null;
     }
 
     const position = {
@@ -301,8 +341,8 @@ class PaperTradingEngine {
       entryPrice: currPrice,
       size,
       notional: Math.round(notional * 100) / 100,
-      stopLoss: Math.round(stopLoss * 100) / 100,
-      takeProfit: Math.round(takeProfit * 100) / 100,
+      stopLoss,
+      takeProfit,
       entryTime: new Date().toISOString(),
       strategy,
       reason,
@@ -312,7 +352,7 @@ class PaperTradingEngine {
     this.updateEquity();
     this.savePortfolio();
 
-    const openLog = `OPENED ${side} on ${symbol} @ $${currPrice.toFixed(2)}. Target TP: $${takeProfit.toFixed(2)}, SL: $${stopLoss.toFixed(2)} [Strategy: ${strategy}]`;
+    const openLog = `OPENED ${side} on ${symbol} @ $${formatTokenPrice(currPrice)}. Target TP: $${formatTokenPrice(takeProfit)}, SL: $${formatTokenPrice(stopLoss)} [Strategy: ${strategy}]`;
     this.log(openLog);
 
     // Notify Telegram
@@ -320,7 +360,7 @@ class PaperTradingEngine {
       sendTelegramAlert({
         instrument: symbol,
         strategy: `AutoPaper: ${strategy}`,
-        action: `ENTER ${side} @ $${currPrice.toFixed(2)}`,
+        action: `ENTER ${side} @ $${formatTokenPrice(currPrice)}`,
         customMessage: openLog,
         sharpe: 2.45,
         drawdown: '-2.5%',
@@ -328,7 +368,7 @@ class PaperTradingEngine {
         winLossRatio: 1.8,
         accountEquity: this.portfolio.equity,
         timeframe: '15',
-        notes: `New trade dispatched. TP: $${takeProfit.toFixed(2)} (+1.5%), SL: $${stopLoss.toFixed(2)} (-0.8%). ${reason}`,
+        notes: `New trade dispatched. TP: $${formatTokenPrice(takeProfit)} (+1.5%), SL: $${formatTokenPrice(stopLoss)} (-0.8%). ${reason}`,
       }).catch(() => {});
     } catch (e) {}
 
@@ -338,7 +378,7 @@ class PaperTradingEngine {
   checkDailyRollover() {
     const today = this.getTodayDateString();
     if (this.portfolio.lastResetDate !== today) {
-      this.log(`🌅 New trading day detected (${today} UTC+7). Previous day realized PnL: $${(this.portfolio.dailyRealizedPnl || 0).toFixed(2)}. Resetting daily target counter.`);
+      this.log(`🌅 New trading day detected (${today} UTC+7). Previous day realized PnL: $${(this.portfolio.dailyRealizedPnl || 0).toFixed(2)}. Resetting daily target & stop loss counter.`);
       if (!this.portfolio.dailyHistory) this.portfolio.dailyHistory = [];
       this.portfolio.dailyHistory.unshift({
         date: this.portfolio.lastResetDate,
@@ -349,11 +389,34 @@ class PaperTradingEngine {
       this.portfolio.lastResetDate = today;
       this.hasLoggedDailyMin = false;
       this.hasLoggedDailyMax = false;
+      this.hasLoggedDailyStopLoss = false;
+      this.symbolCooldowns = {};
       this.savePortfolio();
     }
   }
 
   async scanOpportunities() {
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 100.0;
+    const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
+
+    // 1. Daily Circuit Breaker / Daily Stop Loss
+    if (isDailyStopLossHit) {
+      if (!this.hasLoggedDailyStopLoss) {
+        const lossAmount = Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2);
+        this.log(`🛑 DAILY STOP LOSS REACHED (-$${lossAmount} <= -$${dailyLossLimit}). All new trades halted for today to protect capital until 00:00 UTC+7.`);
+        this.hasLoggedDailyStopLoss = true;
+
+        try {
+          sendTelegramAlert({
+            instrument: 'PORTFOLIO_RISK',
+            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached daily limit of -$${dailyLossLimit}). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            accountEquity: this.portfolio.equity,
+          }).catch(() => {});
+        } catch (e) {}
+      }
+      return; // Stop scanning, no new trades allowed today!
+    }
+
     const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
 
     // Check daily milestones
@@ -374,14 +437,22 @@ class PaperTradingEngine {
       return;
     }
 
-    // When target is reached ($50+), only allow 1 position at a time to strictly preserve capital
-    if (isTargetHit && this.portfolio.positions.length >= 1) {
+    // Dynamic slot control:
+    // - Target reached ($50+): max 1 position
+    // - Near daily stop loss (loss >= -$50): Tier-1 defensive mode, max 1 position
+    const isDefensive = this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5);
+    if ((isTargetHit || isDefensive) && this.portfolio.positions.length >= 1) {
       return;
     }
 
     // 3. Scan symbols for high win-rate confluence:
     for (const sym of this.monitoredSymbols) {
       if (this.portfolio.positions.some(p => p.symbol === sym)) continue;
+
+      // Check symbol cooldown (e.g. 30 mins after stop loss)
+      if (this.symbolCooldowns[sym] && Date.now() < this.symbolCooldowns[sym]) {
+        continue;
+      }
 
       try {
         const [taValidation, indics] = await Promise.all([
@@ -484,6 +555,17 @@ class PaperTradingEngine {
     const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
     const targetProgress = Math.min(100, Math.max(0, (this.portfolio.dailyRealizedPnl / this.portfolio.dailyTargetMax) * 100));
     const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 100.0;
+    const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
+
+    let tradingMode = 'ACTIVE (Normal Confluence)';
+    if (isDailyStopLossHit) {
+      tradingMode = 'HALTED (Daily Stop Loss Hit)';
+    } else if (isTargetHit) {
+      tradingMode = 'SNIPER (A+ Setups Only)';
+    } else if (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5)) {
+      tradingMode = 'DEFENSIVE (Risk Reduced)';
+    }
 
     return {
       balance: Math.round(this.portfolio.cash * 100) / 100,
@@ -492,11 +574,16 @@ class PaperTradingEngine {
       dailyPnl: Math.round(this.portfolio.dailyRealizedPnl * 100) / 100,
       dailyTargetMin: this.portfolio.dailyTargetMin,
       dailyTargetMax: this.portfolio.dailyTargetMax,
+      dailyStopLossMax: dailyLossLimit,
       dailyTargetProgressPercent: Math.round(targetProgress * 10) / 10,
       dailyTargetHit: isTargetHit,
-      tradingMode: isTargetHit ? 'SNIPER (A+ Setups Only)' : 'ACTIVE (Normal Confluence)',
+      dailyStopLossHit: isDailyStopLossHit,
+      tradingMode,
       autoTradeEnabled: this.portfolio.autoTradeEnabled,
       monitoredSymbols: this.monitoredSymbols,
+      symbolCooldowns: Object.entries(this.symbolCooldowns)
+        .filter(([_, exp]) => Date.now() < exp)
+        .map(([s, exp]) => ({ symbol: s, remainingSec: Math.round((exp - Date.now()) / 1000) })),
       openPositions: this.portfolio.positions.map(p => {
         const curr = this.latestPrices[p.symbol]?.price || p.entryPrice;
         let upnl = p.side === 'LONG' ? (curr - p.entryPrice) * p.size : (p.entryPrice - curr) * p.size;
