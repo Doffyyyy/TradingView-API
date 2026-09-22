@@ -27,14 +27,14 @@ function parseBody(req) {
   });
 }
 
-function getHistory(symbol, timeframe) {
+function getHistory(symbol, timeframe, range = 5000) {
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
   if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
     return new Promise(async (resolve) => {
       try {
         const axios = require('axios');
         const tfParam = (timeframe === 'D' || timeframe === 'W' || timeframe === 'M') ? 'day' : 'hour';
-        const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP/ohlcv/${tfParam}?limit=150`;
+        const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP/ohlcv/${tfParam}?limit=1000`;
         const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000 });
         const list = res.data?.data?.attributes?.ohlcv_list || [];
         if (list.length > 0) {
@@ -59,9 +59,9 @@ function getHistory(symbol, timeframe) {
     let timer = setTimeout(() => {
       try { chart.delete(); client.end(); } catch (e) {}
       reject(new Error('Timeout fetching history'));
-    }, 6000);
+    }, 8000);
 
-    chart.setMarket(symbol, { timeframe });
+    chart.setMarket(symbol, { timeframe, range: range || 5000 });
     chart.onError((...err) => {
       clearTimeout(timer);
       try { chart.delete(); client.end(); } catch (e) {}
@@ -223,19 +223,36 @@ const htmlContent = `<!DOCTYPE html>
       align-items: center;
       padding: 6px 8px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      cursor: pointer;
-      transition: background 0.12s;
+      cursor: grab;
+      transition: background 0.12s, opacity 0.12s;
       position: relative;
       user-select: none;
       box-sizing: border-box;
       width: 100%;
     }
+    .wl-row:active { cursor: grabbing; }
     .wl-row:hover { background: var(--bg-tertiary); }
     .wl-row.active {
       background: rgba(41, 98, 255, 0.15);
       border-left: 3px solid var(--accent-blue);
     }
-    .wl-left { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+    .wl-row.dragging {
+      opacity: 0.35;
+      background: rgba(41, 98, 255, 0.12);
+      outline: 1px dashed var(--accent-blue);
+    }
+    .wl-row.drag-over-top {
+      border-top: 2px solid #38bdf8 !important;
+    }
+    .wl-row.drag-over-bottom {
+      border-bottom: 2px solid #38bdf8 !important;
+    }
+    .wl-left { display: flex; align-items: center; gap: 4px; overflow: hidden; min-width: 0; }
+    .wl-grip {
+      color: #4b5563; font-size: 11px; user-select: none; cursor: grab; padding: 0 1px;
+      transition: color 0.1s; flex-shrink: 0;
+    }
+    .wl-row:hover .wl-grip { color: #9ca3af; }
     .wl-badge {
       width: 20px; height: 20px; border-radius: 50%;
       background: var(--bg-tertiary); border: 1px solid var(--border-color);
@@ -604,6 +621,8 @@ const htmlContent = `<!DOCTYPE html>
                   <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
                     <span>Bars period:</span>
                     <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                      <option value="999999">Full / All bars</option>
+                      <option value="500">500 bars</option>
                       <option value="200" selected>200 bars</option>
                       <option value="100">100 bars</option>
                       <option value="50">50 bars</option>
@@ -1333,7 +1352,7 @@ const htmlContent = `<!DOCTYPE html>
       try {
         chart.priceScale('right').applyOptions({ autoScale: true });
       } catch (e) {}
-      const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
+      const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
       const data = await res.json();
       if (data.candles && data.candles.length > 0) {
         currentCandlesCache = data.candles;
@@ -1348,7 +1367,11 @@ const htmlContent = `<!DOCTYPE html>
         })));
         try {
           chart.priceScale('right').applyOptions({ autoScale: true });
-          chart.timeScale().fitContent();
+          const len = data.candles.length;
+          chart.timeScale().setVisibleLogicalRange({
+            from: Math.max(0, len - 160),
+            to: len + 4,
+          });
         } catch (e) {}
         lastLoadedCandle = data.candles[data.candles.length - 1];
         setLegendOHLC(lastLoadedCandle);
@@ -1357,9 +1380,13 @@ const htmlContent = `<!DOCTYPE html>
         setTimeout(() => {
           try {
             chart.priceScale('right').applyOptions({ autoScale: true });
-            chart.timeScale().fitContent();
+            const len = data.candles.length;
+            chart.timeScale().setVisibleLogicalRange({
+              from: Math.max(0, len - 160),
+              to: len + 4,
+            });
           } catch (e) {}
-        }, 50);
+        }, 60);
       }
       eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
       eventSource.onmessage = (e) => {
@@ -1567,8 +1594,9 @@ const htmlContent = `<!DOCTYPE html>
         \`;
 
         return \`
-          <div class="wl-row \${isActive ? 'active' : ''}" data-symbol="\${item.symbol}">
+          <div class="wl-row \${isActive ? 'active' : ''}" data-symbol="\${item.symbol}" draggable="true" title="Hold & drag to reorder">
             <div class="wl-left">
+              <span class="wl-grip" title="Hold & drag to reorder">⋮</span>
               <div class="wl-badge">
                 \${logoContent}
               </div>
@@ -1580,7 +1608,7 @@ const htmlContent = `<!DOCTYPE html>
             <div class="wl-cell wl-cell-last">\${priceStr}</div>
             <div class="wl-cell \${chgClass}">\${chgAbsStr}</div>
             <div class="wl-cell \${chgClass}">\${chgStr}</div>
-            <span class="wl-del" data-del-symbol="\${item.symbol}" title="Remove token">✕</span>
+            <span class="wl-del" data-del-symbol="\${item.symbol}" title="Remove token" draggable="false">✕</span>
           </div>
         \`;
       }).join('');
@@ -1770,6 +1798,86 @@ const htmlContent = `<!DOCTYPE html>
       renderWatchlist(document.getElementById('watchlist-search')?.value || '');
       loadChart(currentSymbol, currentTimeframe);
     });
+
+    // --- Watchlist Drag & Drop Reordering ---
+    const wlListContainer = document.getElementById('watchlist-list');
+    let draggedSymbol = null;
+
+    if (wlListContainer) {
+      wlListContainer.addEventListener('dragstart', (e) => {
+        const row = e.target.closest('.wl-row');
+        if (!row) return;
+        draggedSymbol = row.dataset.symbol;
+        row.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', draggedSymbol);
+        }
+      });
+
+      wlListContainer.addEventListener('dragend', (e) => {
+        const row = e.target.closest('.wl-row');
+        if (row) row.classList.remove('dragging');
+        wlListContainer.querySelectorAll('.wl-row').forEach(r => {
+          r.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+        });
+        draggedSymbol = null;
+      });
+
+      wlListContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const row = e.target.closest('.wl-row');
+        if (!row || !draggedSymbol || row.dataset.symbol === draggedSymbol) return;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+
+        const rect = row.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        wlListContainer.querySelectorAll('.wl-row').forEach(r => {
+          if (r !== row) r.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        if (e.clientY < midY) {
+          row.classList.add('drag-over-top');
+          row.classList.remove('drag-over-bottom');
+        } else {
+          row.classList.add('drag-over-bottom');
+          row.classList.remove('drag-over-top');
+        }
+      });
+
+      wlListContainer.addEventListener('dragleave', (e) => {
+        const row = e.target.closest('.wl-row');
+        if (row) row.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+
+      wlListContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const row = e.target.closest('.wl-row');
+        wlListContainer.querySelectorAll('.wl-row').forEach(r => {
+          r.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+        });
+        if (!row || !draggedSymbol) return;
+        const targetSymbol = row.dataset.symbol;
+        if (draggedSymbol === targetSymbol) return;
+
+        const rect = row.getBoundingClientRect();
+        const isBefore = e.clientY < (rect.top + rect.height / 2);
+
+        const fromIdx = customWatchlist.findIndex(w => w.symbol === draggedSymbol);
+        if (fromIdx < 0) return;
+        const [movedItem] = customWatchlist.splice(fromIdx, 1);
+
+        let toIdx = customWatchlist.findIndex(w => w.symbol === targetSymbol);
+        if (toIdx < 0) {
+          customWatchlist.push(movedItem);
+        } else {
+          if (!isBefore) toIdx += 1;
+          customWatchlist.splice(toIdx, 0, movedItem);
+        }
+
+        saveWatchlist();
+        renderWatchlist(document.getElementById('watchlist-search')?.value || '');
+      });
+    }
 
     renderWatchlist();
     updateWatchlistPrices();
@@ -2688,8 +2796,9 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/history') {
     const symbol = parsedUrl.query.symbol || 'BINANCE:BTCUSDT';
     const timeframe = parsedUrl.query.timeframe || '1';
+    const range = parseInt(parsedUrl.query.range, 10) || 5000;
     try {
-      const result = await getHistory(symbol, timeframe);
+      const result = await getHistory(symbol, timeframe, range);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));
     } catch (err) {
