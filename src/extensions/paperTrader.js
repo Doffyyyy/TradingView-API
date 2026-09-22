@@ -595,6 +595,8 @@ class PaperTradingEngine {
         };
       }),
       recentTrades: this.portfolio.trades.slice(0, 15),
+      allTrades: this.portfolio.trades,
+      dailyHistory: this.portfolio.dailyHistory || [],
       winRate: Math.round(winRate * 10) / 10,
       totalTrades,
       logs: this.portfolio.logs.slice(0, 15),

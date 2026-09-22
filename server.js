@@ -462,6 +462,248 @@ const htmlContent = `<!DOCTYPE html>
       background: rgba(239, 83, 80, 0.15); border: 1px solid #ef5350; color: #f87171;
     }
     .exec-btn-sell:hover { background: #ef5350; color: #fff; box-shadow: 0 0 10px rgba(239, 83, 80, 0.4); }
+
+    /* ========================================================
+       TRADESYNC JOURNALING DASHBOARD STYLES
+       ======================================================== */
+    .ts-dashboard {
+      flex: 1; overflow-y: auto; background: #0c0d10; padding: 18px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "JetBrains Mono", sans-serif;
+      color: #e4e7eb; box-sizing: border-box;
+    }
+    .ts-dashboard::-webkit-scrollbar { width: 6px; }
+    .ts-dashboard::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
+
+    /* Top Navigation within Journal */
+    .ts-top-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .ts-title-left {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ts-title {
+      font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.2px; margin: 0;
+    }
+    .ts-top-right {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .ts-status-badge {
+      display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3);
+      font-size: 11px; font-weight: 600; color: #10b981;
+    }
+    .ts-status-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #10b981;
+      box-shadow: 0 0 8px #10b981; animation: pulse 1.8s infinite;
+    }
+    .ts-icon-btn {
+      background: #181a20; border: 1px solid #262a36; border-radius: 6px;
+      color: #8c93a3; width: 28px; height: 28px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; transition: all 0.15s; position: relative;
+    }
+    .ts-icon-btn:hover { background: #222634; color: #fff; border-color: #38bdf8; }
+    .ts-notif-dot {
+      position: absolute; top: -2px; right: -2px; width: 7px; height: 7px;
+      border-radius: 50%; background: #ef4444; border: 1px solid #0c0d10;
+    }
+
+    /* Filter & Action Toolbars */
+    .ts-toolbar {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .ts-pill-group {
+      display: inline-flex; background: #151820; border: 1px solid #232733; border-radius: 999px; padding: 2px;
+    }
+    .ts-pill-btn {
+      padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer;
+      color: #8c93a3; background: transparent; border: none; transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+    }
+    .ts-pill-btn.active {
+      background: #fff; color: #0c0d10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-weight: 700;
+    }
+    .ts-pill-btn:hover:not(.active) { color: #fff; }
+    .ts-dropdowns {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .ts-select {
+      background: #151820; border: 1px solid #232733; border-radius: 6px; color: #e4e7eb;
+      font-size: 11px; font-weight: 600; padding: 6px 10px; cursor: pointer; outline: none;
+    }
+    .ts-select:hover { border-color: #3a4254; }
+
+    .ts-subtabs {
+      display: inline-flex; background: #151820; border: 1px solid #232733; border-radius: 6px; padding: 3px; gap: 2px;
+    }
+    .ts-subtab-btn {
+      padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+      color: #8c93a3; background: transparent; border: none; transition: all 0.15s;
+    }
+    .ts-subtab-btn.active {
+      background: #232733; color: #fff; font-weight: 700;
+    }
+    .ts-btn-outline {
+      background: #151820; border: 1px solid #262a36; border-radius: 6px; color: #e4e7eb;
+      font-size: 11px; font-weight: 600; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    }
+    .ts-btn-outline:hover { background: #222634; border-color: #38bdf8; color: #fff; }
+    .ts-btn-white {
+      background: #fff; color: #0c0d10; border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
+      padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    }
+    .ts-btn-white:hover { background: #e2e8f0; }
+    .ts-btn-primary {
+      background: #38bdf8; color: #0c0d10; border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
+      padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    }
+    .ts-btn-primary:hover { background: #7dd3fc; }
+    .ts-badge-free {
+      background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 800;
+    }
+
+    /* 5 KPI Summary Ribbon */
+    .ts-kpi-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 14px;
+    }
+    .ts-kpi-card {
+      background: #14161d; border: 1px solid #202430; border-radius: 8px; padding: 12px 14px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 105px;
+    }
+    .ts-kpi-head {
+      display: flex; justify-content: space-between; align-items: center; font-size: 10px;
+      font-weight: 700; color: #8c93a3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .ts-kpi-val {
+      font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 2px;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .ts-kpi-val.green { color: #10b981; }
+    .ts-kpi-val.red { color: #ef4444; }
+    .ts-kpi-sub {
+      font-size: 10px; color: #8c93a3; margin-bottom: 8px; font-weight: 500;
+    }
+    .ts-bar-dual {
+      display: flex; height: 5px; border-radius: 3px; overflow: hidden; background: #262a36; margin: 4px 0;
+    }
+    .ts-bar-dual-green { background: #10b981; }
+    .ts-bar-dual-red { background: #ef4444; }
+    .ts-kpi-split-foot {
+      display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; margin-top: 4px;
+    }
+    .ts-sub-bar-row {
+      display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: 3px;
+    }
+    .ts-sub-bar-track {
+      flex: 1; height: 4px; border-radius: 2px; background: #202430; margin: 0 6px; overflow: hidden;
+    }
+
+    /* 4 Performance & Sparkline Cards */
+    .ts-perf-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+    }
+    .ts-perf-card {
+      background: #14161d; border: 1px solid #202430; border-radius: 8px; padding: 12px 14px;
+      display: flex; flex-direction: column; justify-content: space-between; height: 140px; position: relative; overflow: hidden;
+    }
+    .ts-perf-head {
+      display: flex; justify-content: space-between; align-items: center; font-size: 10px;
+      font-weight: 700; color: #8c93a3; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .ts-score-badge {
+      background: #202430; padding: 2px 7px; border-radius: 999px; font-size: 9.5px; color: #fff; font-weight: 700;
+    }
+    .ts-perf-val {
+      font-size: 20px; font-weight: 800; color: #10b981; font-family: "JetBrains Mono", monospace;
+    }
+    .ts-perf-val.red { color: #ef4444; }
+    .ts-sparkline-svg {
+      width: 100%; height: 60px; margin-top: auto;
+    }
+
+    /* Interactive Calendar View */
+    .ts-calendar-card {
+      background: #14161d; border: 1px solid #202430; border-radius: 10px; padding: 16px;
+    }
+    .ts-cal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px;
+      border-bottom: 1px solid #202430;
+    }
+    .ts-cal-brand {
+      display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: #fff;
+    }
+    .ts-cal-nav {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .ts-cal-nav-btn {
+      background: #1a1e28; border: 1px solid #292f3d; color: #8c93a3; width: 26px; height: 26px;
+      border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;
+    }
+    .ts-cal-nav-btn:hover { background: #262c3a; color: #fff; border-color: #38bdf8; }
+    .ts-cal-nav-title {
+      font-size: 13px; font-weight: 800; color: #fff; min-width: 110px; text-align: center;
+    }
+
+    .ts-cal-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+    }
+    .ts-cal-col-head {
+      text-align: center; font-size: 11px; font-weight: 700; color: #717684; padding: 6px 0; text-transform: uppercase;
+    }
+    .ts-cal-col-head.weekly { color: #38bdf8; }
+    .ts-cal-cell {
+      background: #101217; border: 1px solid #1c202a; border-radius: 6px; min-height: 72px; padding: 6px 8px;
+      display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: all 0.15s; position: relative;
+    }
+    .ts-cal-cell:hover {
+      background: #181b24; border-color: #2e3547; transform: translateY(-1px);
+    }
+    .ts-cal-cell.empty {
+      background: #0d0f14; border-color: #171922; cursor: default;
+    }
+    .ts-cal-cell.empty:hover { transform: none; background: #0d0f14; border-color: #171922; }
+    .ts-cal-cell.active-day {
+      border: 1.5px solid #fff !important; box-shadow: 0 0 14px rgba(255, 255, 255, 0.15);
+      background: #161a24;
+    }
+    .ts-cell-daynum {
+      font-size: 10px; font-weight: 700; color: #525866; line-height: 1;
+    }
+    .ts-cell-daynum.active { color: #fff; }
+    .ts-cell-pnl {
+      font-size: 12px; font-weight: 800; text-align: center; font-family: "JetBrains Mono", monospace; margin: 4px 0 2px 0;
+    }
+    .ts-cell-pnl.green { color: #10b981; }
+    .ts-cell-pnl.red { color: #ef4444; }
+    .ts-cell-trades {
+      font-size: 9px; color: #717684; text-align: center; font-weight: 600;
+    }
+    .ts-weekly-cell {
+      background: #141722; border: 1px solid #232a3d; border-radius: 6px; min-height: 72px; padding: 6px 8px;
+      display: flex; flex-direction: column; justify-content: space-between; text-align: center;
+    }
+    .ts-weekly-title {
+      font-size: 9.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase;
+    }
+    .ts-weekly-pnl {
+      font-size: 12.5px; font-weight: 800; font-family: "JetBrains Mono", monospace;
+    }
+    .ts-weekly-trades {
+      font-size: 9px; color: #8c93a3; font-weight: 600;
+    }
+
+    /* Modal / Drawer for Day Journal Details */
+    .ts-modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 999;
+      align-items: center; justify-content: center;
+    }
+    .ts-modal-box {
+      background: #14161f; border: 1px solid #282d3d; border-radius: 12px; width: 680px; max-width: 90%;
+      max-height: 80vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+    .ts-modal-head {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid #222634;
+    }
   </style>
 </head>
 <body>
@@ -473,6 +715,7 @@ const htmlContent = `<!DOCTYPE html>
     <div class="nav-tabs" id="main-nav">
       <button class="tab-btn active" data-target="view-chart">📈 Live Chart</button>
       <button class="tab-btn" data-target="view-paper" style="background: rgba(38, 166, 154, 0.15); color: #4ade80; border: 1px solid #26a69a;">💼 Paper Trade ($10k)</button>
+      <button class="tab-btn" data-target="view-journal" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); font-weight: 700;">📅 Daily PnL Journal</button>
       <button class="tab-btn" data-target="view-validation">🛡️ Validation Bot (26 TA)</button>
       <button class="tab-btn" data-target="view-backtest">🧪 Astra Backtest</button>
       <button class="tab-btn" data-target="view-replay">⏪ Replay Engine</button>
@@ -960,6 +1203,342 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- VIEW: TRADESYNC DAILY PNL JOURNAL -->
+    <div class="view-panel" id="view-journal">
+      <div class="ts-dashboard">
+        <!-- Top App Bar & Market Status -->
+        <div class="ts-top-header">
+          <div class="ts-title-left">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <h1 class="ts-title">Journaling Dashboard</h1>
+          </div>
+          <div class="ts-top-right">
+            <div class="ts-status-badge">
+              <span class="ts-status-dot"></span>
+              <span>Market Open</span>
+            </div>
+            <button class="ts-icon-btn" title="Toggle theme">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button class="ts-icon-btn" title="Notifications">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span class="ts-notif-dot"></span>
+            </button>
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;">
+              T
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar (Row 1) -->
+        <div class="ts-toolbar">
+          <div class="ts-pill-group">
+            <button class="ts-pill-btn active" data-ts-source="all">All Journals</button>
+            <button class="ts-pill-btn" data-ts-source="verified">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Verified
+            </button>
+            <button class="ts-pill-btn" data-ts-source="manual">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              Manual
+            </button>
+          </div>
+          <div class="ts-dropdowns">
+            <select class="ts-select" id="ts-filter-account">
+              <option value="all">All Accounts (Paper $10k & Live)</option>
+              <option value="paper">Paper Trade $10,000 USD</option>
+              <option value="hyperliquid">Hyperliquid Mainnet</option>
+            </select>
+            <select class="ts-select" id="ts-filter-strategy">
+              <option value="all">All Strategies</option>
+              <option value="Supertrend">Supertrend + MACD</option>
+              <option value="Sniper">Sniper A+ Confluence</option>
+              <option value="Manual">Manual Execution</option>
+            </select>
+            <select class="ts-select" id="ts-filter-timeframe">
+              <option value="all">All Time</option>
+              <option value="month">This Month</option>
+              <option value="week">This Week</option>
+            </select>
+            <select class="ts-select" id="ts-month-mode" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 700;">
+              <option value="march2026">📅 March 2026 (Demo Showcase)</option>
+              <option value="current">⚡ Current Live Paper Trading</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Toolbar (Row 2) -->
+        <div class="ts-toolbar" style="margin-bottom: 16px;">
+          <div class="ts-subtabs">
+            <button class="ts-subtab-btn active" data-ts-view="journal">📋 Journal</button>
+            <button class="ts-subtab-btn" data-ts-view="comparison">⚖️ Comparison</button>
+            <button class="ts-subtab-btn" data-ts-view="analysis">📈 Analysis</button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="ts-btn-outline" id="btn-ts-export">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export CSV
+            </button>
+            <button class="ts-btn-outline" id="btn-ts-import">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Manual Import <span class="ts-badge-free">Free</span>
+            </button>
+            <button class="ts-btn-white" id="btn-ts-sync">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Sync
+            </button>
+            <button class="ts-btn-primary" id="btn-ts-new">
+              <span>＋</span> New Journal
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: 5 KPI Summary Cards -->
+        <div class="ts-kpi-grid">
+          <!-- Card 1: DAY WIN % -->
+          <div class="ts-kpi-card">
+            <div>
+              <div class="ts-kpi-head"><span>&lt; DAY WIN %</span></div>
+              <div class="ts-kpi-val" id="ts-kpi-winrate">72.7%</div>
+              <div class="ts-kpi-sub" id="ts-kpi-winloss-count">16W - 6L</div>
+            </div>
+            <div>
+              <div class="ts-bar-dual">
+                <div class="ts-bar-dual-green" id="ts-kpi-winbar" style="width: 72.7%;"></div>
+                <div class="ts-bar-dual-red" id="ts-kpi-lossbar" style="width: 27.3%;"></div>
+              </div>
+              <div class="ts-kpi-split-foot">
+                <span style="color: #10b981;" id="ts-kpi-wins-label">16 wins</span>
+                <span style="color: #ef4444;" id="ts-kpi-losses-label">6 losses</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: AVG WIN/LOSS -->
+          <div class="ts-kpi-card">
+            <div>
+              <div class="ts-kpi-head"><span>AVG WIN/LOSS</span></div>
+              <div class="ts-kpi-val" id="ts-kpi-avg-winloss">$131.59</div>
+              <div class="ts-kpi-sub">Per trade</div>
+            </div>
+            <div>
+              <div class="ts-sub-bar-row">
+                <span style="color: #10b981; font-weight: 700; width: 62px;" id="ts-kpi-avg-win-val">+$250.31</span>
+                <div class="ts-sub-bar-track"><div style="height: 100%; width: 75%; background: #10b981; border-radius: 2px;"></div></div>
+              </div>
+              <div class="ts-sub-bar-row">
+                <span style="color: #ef4444; font-weight: 700; width: 62px;" id="ts-kpi-avg-loss-val">-$185.00</span>
+                <div class="ts-sub-bar-track"><div style="height: 100%; width: 55%; background: #ef4444; border-radius: 2px;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: LONG VS SHORT -->
+          <div class="ts-kpi-card">
+            <div>
+              <div class="ts-kpi-head"><span>LONG VS SHORT</span></div>
+              <div class="ts-kpi-val green" id="ts-kpi-ls-total">+$2,895</div>
+              <div class="ts-kpi-sub">Total PnL</div>
+            </div>
+            <div>
+              <div class="ts-sub-bar-row">
+                <span style="color: #8c93a3; font-weight: 700;">L</span>
+                <div class="ts-sub-bar-track"><div style="height: 100%; width: 68%; background: #10b981; border-radius: 2px;"></div></div>
+                <span style="color: #10b981; font-weight: 700;" id="ts-kpi-long-val">+$1,630 &gt;</span>
+              </div>
+              <div class="ts-sub-bar-row">
+                <span style="color: #8c93a3; font-weight: 700;">S</span>
+                <div class="ts-sub-bar-track"><div style="height: 100%; width: 52%; background: #10b981; border-radius: 2px;"></div></div>
+                <span style="color: #10b981; font-weight: 700;" id="ts-kpi-short-val">+$1,265 &gt;</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: MAX STREAKS -->
+          <div class="ts-kpi-card">
+            <div>
+              <div class="ts-kpi-head"><span>MAX STREAKS</span></div>
+              <div class="ts-kpi-val green" id="ts-kpi-streak-val">6</div>
+              <div class="ts-kpi-sub">Best win streak</div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+                <span style="color: #8c93a3;">Consecutive wins</span>
+                <strong style="color: #10b981;" id="ts-kpi-streak-win">6</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                <span style="color: #8c93a3;">Consecutive losses</span>
+                <strong style="color: #ef4444;" id="ts-kpi-streak-loss">1</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: AVG DURATION -->
+          <div class="ts-kpi-card">
+            <div>
+              <div class="ts-kpi-head"><span>AVG DURATION</span></div>
+              <div class="ts-kpi-val" id="ts-kpi-avg-duration">2h 20m</div>
+              <div class="ts-kpi-sub">Per trade</div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #8c93a3; margin-top: 4px;">
+              <span>Fastest: <strong style="color: #fff;">14m</strong></span>
+              <span>Longest: <strong style="color: #fff;">8h 15m</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: 4 Performance & Sparkline Cards -->
+        <div class="ts-perf-grid">
+          <!-- Card 1: Tradesyncer Score -->
+          <div class="ts-perf-card">
+            <div class="ts-perf-head">
+              <span>TRADESYNCER SCORE</span>
+              <span class="ts-score-badge" id="ts-score-badge-val">50 / 100</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <svg width="100" height="90" viewBox="0 0 100 90">
+                <polygon points="50,15 85,75 15,75" fill="none" stroke="#262a38" stroke-width="1.2" />
+                <polygon points="50,30 72,70 28,70" fill="none" stroke="#1f2330" stroke-width="1" />
+                <line x1="50" y1="15" x2="50" y2="75" stroke="#262a38" stroke-width="0.8" stroke-dasharray="2,2" />
+                <polygon points="50,22 75,68 30,72" fill="rgba(56, 189, 248, 0.25)" stroke="#38bdf8" stroke-width="1.8" />
+                <text x="50" y="10" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="middle">R/W</text>
+                <text x="94" y="80" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="end">Win %</text>
+                <text x="6" y="80" fill="#8c93a3" font-size="7.5" font-weight="700">P.F.</text>
+              </svg>
+              <div style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; gap: 6px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
+                    <span>BIAS</span><span style="color: #fff;">73</span>
+                  </div>
+                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
+                    <div style="width: 73%; height: 100%; background: #38bdf8;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
+                    <span>R/R</span><span style="color: #fff;">45</span>
+                  </div>
+                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
+                    <div style="width: 45%; height: 100%; background: #a855f7;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
+                    <span>P.F.</span><span style="color: #fff;">34</span>
+                  </div>
+                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
+                    <div style="width: 34%; height: 100%; background: #10b981;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: DAILY CUMULATIVE PNL -->
+          <div class="ts-perf-card">
+            <div class="ts-perf-head">
+              <span>DAILY CUMULATIVE PNL</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            </div>
+            <div class="ts-perf-val" id="ts-cum-pnl-val">+$2,895</div>
+            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+              <defs>
+                <linearGradient id="tsGradCum" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6 L 175 50 L 0 50 Z" fill="url(#tsGradCum)" />
+              <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+              <circle cx="175" cy="6" r="3" fill="#10b981" />
+            </svg>
+          </div>
+
+          <!-- Card 3: DRAWDOWN -->
+          <div class="ts-perf-card">
+            <div class="ts-perf-head">
+              <span>DRAWDOWN</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+            </div>
+            <div class="ts-perf-val red" id="ts-dd-val">-$150.00 <span style="font-size: 11px; font-weight: 500; color: #8c93a3;">current</span></div>
+            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+              <defs>
+                <linearGradient id="tsGradDD" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44 L 175 50 L 0 50 Z" fill="url(#tsGradDD)" />
+              <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+              <circle cx="175" cy="44" r="3" fill="#ef4444" />
+            </svg>
+          </div>
+
+          <!-- Card 4: P&L -->
+          <div class="ts-perf-card">
+            <div class="ts-perf-head">
+              <span>PNL</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            </div>
+            <div class="ts-perf-val" id="ts-today-pnl-val">+$250</div>
+            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+              <path d="M 0 35 Q 25 15, 50 25 T 100 20 T 140 10 T 175 6" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+              <circle cx="175" cy="6" r="3" fill="#10b981" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Section 4: Interactive Tradesyncer Calendar View -->
+        <div class="ts-calendar-card">
+          <div class="ts-cal-header">
+            <div class="ts-cal-brand">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
+                <circle cx="9" cy="12" r="5"></circle>
+                <circle cx="15" cy="12" r="5"></circle>
+              </svg>
+              <span>Tradesync Tradesyncer Calendar</span>
+            </div>
+            <div class="ts-cal-nav">
+              <button class="ts-cal-nav-btn" id="btn-ts-prev-month" title="Previous month">&lt;</button>
+              <div class="ts-cal-nav-title" id="ts-cal-title">March 2026</div>
+              <button class="ts-cal-nav-btn" id="btn-ts-next-month" title="Next month">&gt;</button>
+            </div>
+            <div>
+              <button class="ts-btn-outline" id="btn-ts-journal-card" style="font-size: 11px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                Journal Card
+              </button>
+            </div>
+          </div>
+
+          <!-- 8-Column Calendar Grid -->
+          <div class="ts-cal-grid" id="ts-cal-grid-body">
+            <!-- Headers and Cells will be dynamically generated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day Journal Detail Modal -->
+    <div class="ts-modal-overlay" id="ts-modal-overlay">
+      <div class="ts-modal-box">
+        <div class="ts-modal-head">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <strong style="font-size: 14px; color: #fff;" id="ts-modal-date-title">Trade Details — March 19, 2026</strong>
+          </div>
+          <button id="btn-ts-modal-close" style="background: transparent; border: none; color: #8c93a3; font-size: 18px; cursor: pointer; padding: 0 4px;">✕</button>
+        </div>
+        <div id="ts-modal-summary" style="display: flex; gap: 12px; margin-bottom: 14px;"></div>
+        <div id="ts-modal-trades-list"></div>
+      </div>
+    </div>
+
     <!-- VIEW 2: VALIDATION BOT (26 TA) -->
     <div class="view-panel" id="view-validation">
       <div class="controls-bar">
@@ -1120,6 +1699,9 @@ const htmlContent = `<!DOCTYPE html>
         btn.classList.add('active');
         const target = document.getElementById(btn.dataset.target);
         if (target) target.classList.add('active');
+        if (btn.dataset.target === 'view-journal' && typeof renderJournalDashboard === 'function') {
+          renderJournalDashboard();
+        }
       });
     });
 
@@ -2448,11 +3030,453 @@ const htmlContent = `<!DOCTYPE html>
     }
     document.getElementById('btn-hub-refresh').addEventListener('click', refreshHub);
 
+    // --- Tradesync Journaling Dashboard Client Logic ---
+    const MARCH_2026_DEMO_DAYS = {
+      "2026-03-03": {
+        pnl: 100.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 82450.0, exitPrice: 82950.0, pnl: 60.0, pnlPercent: 1.5, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.5%)", time: "10:24 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2680.0, exitPrice: 2720.0, pnl: 40.0, pnlPercent: 1.5, strategy: "Fibo Golden Pocket", reason: "Take Profit hit (+1.5%)", time: "02:15 PM" }
+        ]
+      },
+      "2026-03-05": {
+        pnl: 240.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 114.2, exitPrice: 116.5, pnl: 240.0, pnlPercent: 2.0, strategy: "Supertrend + MACD", reason: "Trailing Stop hit at high (+2.0%)", time: "11:40 AM" }
+        ]
+      },
+      "2026-03-07": {
+        pnl: 130.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83100.0, exitPrice: 83750.0, pnl: 80.0, pnlPercent: 1.2, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.2%)", time: "09:12 AM" },
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 91.5, exitPrice: 92.8, pnl: 50.0, pnlPercent: 1.4, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.4%)", time: "04:30 PM" }
+        ]
+      },
+      "2026-03-10": {
+        pnl: 360.0,
+        trades: [
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2710.0, exitPrice: 2785.0, pnl: 360.0, pnlPercent: 2.76, strategy: "Supertrend + MACD", reason: "Trend Runner Take Profit (+2.76%)", time: "08:45 AM" }
+        ]
+      },
+      "2026-03-11": {
+        pnl: 110.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 115.0, exitPrice: 116.2, pnl: 60.0, pnlPercent: 1.04, strategy: "Supertrend Momentum", reason: "Trailing Stop (+1.04%)", time: "11:15 AM" },
+          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.25, exitPrice: 4.34, pnl: 50.0, pnlPercent: 2.12, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+2.12%)", time: "03:50 PM" }
+        ]
+      },
+      "2026-03-12": {
+        pnl: 270.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83500.0, exitPrice: 84600.0, pnl: 270.0, pnlPercent: 1.32, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.32%)", time: "02:20 PM" }
+        ]
+      },
+      "2026-03-13": {
+        pnl: 300.0,
+        trades: [
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 92.0, exitPrice: 93.6, pnl: 120.0, pnlPercent: 1.74, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.74%)", time: "09:05 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2740.0, exitPrice: 2780.0, pnl: 100.0, pnlPercent: 1.46, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.46%)", time: "01:30 PM" },
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 116.5, exitPrice: 118.0, pnl: 80.0, pnlPercent: 1.29, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.29%)", time: "06:10 PM" }
+        ]
+      },
+      "2026-03-14": {
+        pnl: 40.0,
+        trades: [
+          { symbol: "BINANCE:BNBUSDT", side: "LONG", entryPrice: 780.0, exitPrice: 788.0, pnl: 40.0, pnlPercent: 1.02, strategy: "Supertrend Momentum", reason: "Trailing Stop hit (+1.02%)", time: "10:00 AM" }
+        ]
+      },
+      "2026-03-15": {
+        pnl: 615.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 84000.0, exitPrice: 85400.0, pnl: 350.0, pnlPercent: 1.67, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.67%)", time: "08:20 AM" },
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 117.0, exitPrice: 121.2, pnl: 265.0, pnlPercent: 3.59, strategy: "Sniper A+ Setup", reason: "Trend Runner TP (+3.59%)", time: "02:40 PM" }
+        ]
+      },
+      "2026-03-16": {
+        pnl: 480.0,
+        trades: [
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2760.0, exitPrice: 2840.0, pnl: 280.0, pnlPercent: 2.9, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.9%)", time: "11:10 AM" },
+          { symbol: "BINANCE:TAOUSDT", side: "LONG", entryPrice: 300.0, exitPrice: 312.0, pnl: 200.0, pnlPercent: 4.0, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+4.0%)", time: "05:15 PM" }
+        ]
+      },
+      "2026-03-17": {
+        pnl: 400.0,
+        trades: [
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 93.0, exitPrice: 95.5, pnl: 250.0, pnlPercent: 2.69, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.69%)", time: "09:30 AM" },
+          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.30, exitPrice: 4.45, pnl: 150.0, pnlPercent: 3.49, strategy: "Supertrend Momentum", reason: "Take Profit hit (+3.49%)", time: "03:00 PM" }
+        ]
+      },
+      "2026-03-18": {
+        pnl: -400.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 85200.0, exitPrice: 84350.0, pnl: -220.0, pnlPercent: -1.0, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-1.0%)", time: "10:15 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2830.0, exitPrice: 2802.0, pnl: -180.0, pnlPercent: -0.99, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-0.99%)", time: "01:45 PM" }
+        ]
+      },
+      "2026-03-19": {
+        pnl: 250.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 118.5, exitPrice: 121.5, pnl: 250.0, pnlPercent: 2.53, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.53%)", time: "11:20 AM" }
+        ]
+      }
+    };
+
+    let currentJournalMode = "march2026";
+    let currentSelectedDate = "2026-03-19";
+    let cachedPaperStatus = null;
+
+    function renderJournalDashboard() {
+      const modeSelect = document.getElementById("ts-month-mode");
+      if (modeSelect) currentJournalMode = modeSelect.value;
+
+      const calTitle = document.getElementById("ts-cal-title");
+      const gridBody = document.getElementById("ts-cal-grid-body");
+      if (!gridBody) return;
+
+      let daysMap = {};
+      let totalPnl = 0;
+      let winCount = 0;
+      let lossCount = 0;
+      let winSum = 0;
+      let lossSum = 0;
+      let longPnl = 0;
+      let shortPnl = 0;
+      let year = 2026;
+      let month = 2;
+
+      if (currentJournalMode === "march2026") {
+        if (calTitle) calTitle.textContent = "March 2026";
+        year = 2026;
+        month = 2;
+        daysMap = MARCH_2026_DEMO_DAYS;
+        totalPnl = 2895.0;
+        winCount = 16;
+        lossCount = 6;
+        winSum = 4005.0;
+        lossSum = 1110.0;
+        longPnl = 1630.0;
+        shortPnl = 1265.0;
+      } else {
+        const now = new Date();
+        year = now.getFullYear();
+        month = now.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        if (calTitle) calTitle.textContent = monthNames[month] + " " + year;
+
+        const allTrades = (cachedPaperStatus && cachedPaperStatus.allTrades) || [];
+        allTrades.forEach(t => {
+          const exitTime = t.exitTime || t.entryTime;
+          if (!exitTime) return;
+          const dStr = exitTime.slice(0, 10);
+          if (!daysMap[dStr]) daysMap[dStr] = { pnl: 0, trades: [] };
+          daysMap[dStr].pnl += (t.pnl || 0);
+          daysMap[dStr].trades.push({
+            symbol: t.symbol,
+            side: t.side,
+            entryPrice: t.entryPrice,
+            exitPrice: t.exitPrice,
+            pnl: t.pnl,
+            pnlPercent: t.pnlPercent,
+            strategy: t.strategy,
+            reason: t.reason,
+            time: new Date(exitTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          });
+
+          if (t.pnl > 0) {
+            winCount++;
+            winSum += t.pnl;
+          } else {
+            lossCount++;
+            lossSum += Math.abs(t.pnl);
+          }
+          if (t.side === "LONG") longPnl += t.pnl;
+          else shortPnl += t.pnl;
+          totalPnl += t.pnl;
+        });
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        if (cachedPaperStatus && cachedPaperStatus.dailyPnl !== undefined && !daysMap[todayStr]) {
+          daysMap[todayStr] = {
+            pnl: cachedPaperStatus.dailyPnl,
+            trades: cachedPaperStatus.recentTrades || []
+          };
+        }
+      }
+
+      // 1. Update 5 KPI Cards
+      const totalTradesCount = winCount + lossCount || 1;
+      const winRatePct = Math.round((winCount / totalTradesCount) * 1000) / 10;
+      const elWinRate = document.getElementById("ts-kpi-winrate");
+      if (elWinRate) elWinRate.textContent = winRatePct + "%";
+      const elWinLossCount = document.getElementById("ts-kpi-winloss-count");
+      if (elWinLossCount) elWinLossCount.textContent = winCount + "W - " + lossCount + "L";
+      const elWinBar = document.getElementById("ts-kpi-winbar");
+      const elLossBar = document.getElementById("ts-kpi-lossbar");
+      if (elWinBar && elLossBar) {
+        elWinBar.style.width = winRatePct + "%";
+        elLossBar.style.width = (100 - winRatePct) + "%";
+      }
+      const elWinsLbl = document.getElementById("ts-kpi-wins-label");
+      const elLossesLbl = document.getElementById("ts-kpi-losses-label");
+      if (elWinsLbl) elWinsLbl.textContent = winCount + " wins";
+      if (elLossesLbl) elLossesLbl.textContent = lossCount + " losses";
+
+      const avgWin = winCount > 0 ? (winSum / winCount) : 0;
+      const avgLoss = lossCount > 0 ? (lossSum / lossCount) : 0;
+      const avgWinLoss = (winSum - lossSum) / totalTradesCount;
+      const elAvgWinLoss = document.getElementById("ts-kpi-avg-winloss");
+      if (elAvgWinLoss) elAvgWinLoss.textContent = "$" + Math.abs(avgWinLoss).toFixed(2);
+      const elAvgWinVal = document.getElementById("ts-kpi-avg-win-val");
+      const elAvgLossVal = document.getElementById("ts-kpi-avg-loss-val");
+      if (elAvgWinVal) elAvgWinVal.textContent = "+$" + avgWin.toFixed(2);
+      if (elAvgLossVal) elAvgLossVal.textContent = "-$" + avgLoss.toFixed(2);
+
+      const elLsTotal = document.getElementById("ts-kpi-ls-total");
+      if (elLsTotal) {
+        elLsTotal.textContent = (totalPnl >= 0 ? "+$" : "-$") + Math.abs(totalPnl).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        elLsTotal.className = "ts-kpi-val " + (totalPnl >= 0 ? "green" : "red");
+      }
+      const elLongVal = document.getElementById("ts-kpi-long-val");
+      const elShortVal = document.getElementById("ts-kpi-short-val");
+      if (elLongVal) elLongVal.textContent = (longPnl >= 0 ? "+$" : "-$") + Math.abs(longPnl).toLocaleString("en-US") + " >";
+      if (elShortVal) elShortVal.textContent = (shortPnl >= 0 ? "+$" : "-$") + Math.abs(shortPnl).toLocaleString("en-US") + " >";
+
+      // 2. Performance Sparkline Cards
+      const elCumPnlVal = document.getElementById("ts-cum-pnl-val");
+      if (elCumPnlVal) elCumPnlVal.textContent = (totalPnl >= 0 ? "+$" : "-$") + Math.abs(totalPnl).toLocaleString("en-US");
+
+      // 3. Build 8-Column Calendar Grid
+      let html = "";
+      const colHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Weekly"];
+      colHeaders.forEach(col => {
+        html += '<div class="ts-cal-col-head ' + (col === "Weekly" ? "weekly" : "") + '">' + col + '</div>';
+      });
+
+      const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sun
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      let currentDay = 1;
+      let weekPnl = 0;
+      let weekTrades = 0;
+
+      for (let row = 0; row < 5; row++) {
+        weekPnl = 0;
+        weekTrades = 0;
+
+        for (let col = 0; col < 7; col++) {
+          if ((row === 0 && col < firstDayOfMonth) || currentDay > daysInMonth) {
+            html += '<div class="ts-cal-cell empty"></div>';
+          } else {
+            const dateStr = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(currentDay).padStart(2, "0");
+            const dayData = daysMap[dateStr];
+            const isSelected = dateStr === currentSelectedDate;
+
+            let pnlHtml = "";
+            let tradeCountHtml = "";
+
+            if (dayData && dayData.trades && dayData.trades.length > 0) {
+              const p = dayData.pnl;
+              const pClass = p >= 0 ? "green" : "red";
+              const pSign = p >= 0 ? "+$" : "-$";
+              pnlHtml = '<div class="ts-cell-pnl ' + pClass + '">' + pSign + Math.abs(p).toFixed(2) + '</div>';
+              const tCount = dayData.trades.length;
+              tradeCountHtml = '<div class="ts-cell-trades">' + tCount + ' trade' + (tCount > 1 ? 's' : '') + '</div>';
+              weekPnl += p;
+              weekTrades += tCount;
+            }
+
+            html += '<div class="ts-cal-cell ' + (isSelected ? "active-day" : "") + '" data-ts-date="' + dateStr + '">' +
+              '<div class="ts-cell-daynum ' + (dayData ? "active" : "") + '">' + currentDay + '</div>' +
+              pnlHtml +
+              tradeCountHtml +
+              '</div>';
+            currentDay++;
+          }
+        }
+
+        const wClass = weekPnl >= 0 ? "green" : "red";
+        const wSign = weekPnl >= 0 ? "+$" : "-$";
+        const wPnlText = weekTrades > 0 ? (wSign + Math.abs(weekPnl).toFixed(2)) : "--";
+        const wTradeText = weekTrades > 0 ? (weekTrades + " trade" + (weekTrades > 1 ? "s" : "")) : "0 trades";
+
+        html += '<div class="ts-weekly-cell">' +
+          '<div class="ts-weekly-title">Week ' + (row + 1) + '</div>' +
+          '<div class="ts-weekly-pnl ' + (weekTrades > 0 ? wClass : "") + '">' + wPnlText + '</div>' +
+          '<div class="ts-weekly-trades">' + wTradeText + '</div>' +
+          '</div>';
+
+        if (currentDay > daysInMonth) break;
+      }
+
+      gridBody.innerHTML = html;
+
+      gridBody.querySelectorAll(".ts-cal-cell:not(.empty)").forEach(cell => {
+        cell.addEventListener("click", () => {
+          gridBody.querySelectorAll(".ts-cal-cell").forEach(c => c.classList.remove("active-day"));
+          cell.classList.add("active-day");
+          const dateStr = cell.dataset.tsDate;
+          currentSelectedDate = dateStr;
+          openDayJournalModal(dateStr, daysMap[dateStr]);
+        });
+      });
+    }
+
+    function openDayJournalModal(dateStr, dayData) {
+      const modal = document.getElementById("ts-modal-overlay");
+      const titleEl = document.getElementById("ts-modal-date-title");
+      const summaryEl = document.getElementById("ts-modal-summary");
+      const listEl = document.getElementById("ts-modal-trades-list");
+      if (!modal || !titleEl || !summaryEl || !listEl) return;
+
+      titleEl.textContent = "Journal Card — " + dateStr;
+
+      if (!dayData || !dayData.trades || dayData.trades.length === 0) {
+        summaryEl.innerHTML = '<span style="color: #8c93a3; font-size: 12px;">No executed trades recorded on this day.</span>';
+        listEl.innerHTML = '<div style="text-align: center; color: #717684; padding: 20px; font-size: 12px;">Market idle or no setups matched entry confluence criteria.</div>';
+      } else {
+        const p = dayData.pnl;
+        const pClass = p >= 0 ? "val-green" : "val-red";
+        const pSign = p >= 0 ? "+$" : "-$";
+        summaryEl.innerHTML = '<div style="background: #181b24; padding: 8px 12px; border-radius: 6px; border: 1px solid #232838;">' +
+            '<div style="font-size: 9px; color: #8c93a3; text-transform: uppercase;">Net P&L</div>' +
+            '<div style="font-size: 16px; font-weight: 800; font-family: monospace;" class="' + pClass + '">' + pSign + Math.abs(p).toFixed(2) + '</div>' +
+          '</div>' +
+          '<div style="background: #181b24; padding: 8px 12px; border-radius: 6px; border: 1px solid #232838;">' +
+            '<div style="font-size: 9px; color: #8c93a3; text-transform: uppercase;">Total Trades</div>' +
+            '<div style="font-size: 16px; font-weight: 800; color: #fff;">' + dayData.trades.length + '</div>' +
+          '</div>';
+
+        let tRows = "";
+        dayData.trades.forEach(t => {
+          tRows += '<tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">' +
+            '<td style="padding: 8px 4px; color: #8c93a3;">' + (t.time || "--") + '</td>' +
+            '<td style="padding: 8px 4px; font-weight: 700; color: #fff;">' + t.symbol + '</td>' +
+            '<td style="padding: 8px 4px;"><span class="action-badge ' + (t.side === "LONG" ? "action-buy" : "action-sell") + '">' + t.side + '</span></td>' +
+            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">$' + (t.entryPrice ? t.entryPrice.toLocaleString() : "--") + '</td>' +
+            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">$' + (t.exitPrice ? t.exitPrice.toLocaleString() : "--") + '</td>' +
+            '<td style="padding: 8px 4px; text-align: right; font-weight: 700; font-family: monospace;" class="' + (t.pnl >= 0 ? "val-green" : "val-red") + '">' +
+              (t.pnl >= 0 ? "+" : "") + "$" + (t.pnl ? t.pnl.toFixed(2) : "0.00") + ' (' + (t.pnlPercent || 0) + '%)' +
+            '</td>' +
+            '<td style="padding: 8px 4px; color: #9ca3af; font-size: 10.5px;">' + (t.reason || t.strategy) + '</td>' +
+          '</tr>';
+        });
+
+        listEl.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">' +
+          '<thead>' +
+            '<tr style="border-bottom: 1px solid #222634; color: #8c93a3; font-size: 10px;">' +
+              '<th style="padding: 6px 4px; text-align: left;">TIME</th>' +
+              '<th style="padding: 6px 4px; text-align: left;">SYMBOL</th>' +
+              '<th style="padding: 6px 4px; text-align: left;">SIDE</th>' +
+              '<th style="padding: 6px 4px; text-align: right;">ENTRY</th>' +
+              '<th style="padding: 6px 4px; text-align: right;">EXIT</th>' +
+              '<th style="padding: 6px 4px; text-align: right;">NET PNL</th>' +
+              '<th style="padding: 6px 4px; text-align: left;">REASON / STRATEGY</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + tRows + '</tbody>' +
+        '</table>';
+      }
+
+      modal.style.display = "flex";
+    }
+
+    // Modal Close
+    document.getElementById("btn-ts-modal-close")?.addEventListener("click", () => {
+      document.getElementById("ts-modal-overlay").style.display = "none";
+    });
+    document.getElementById("ts-modal-overlay")?.addEventListener("click", (e) => {
+      if (e.target.id === "ts-modal-overlay") {
+        document.getElementById("ts-modal-overlay").style.display = "none";
+      }
+    });
+
+    // Month mode switcher
+    document.getElementById("ts-month-mode")?.addEventListener("change", (e) => {
+      currentJournalMode = e.target.value;
+      renderJournalDashboard();
+    });
+
+    // Month Navigation
+    document.getElementById("btn-ts-prev-month")?.addEventListener("click", () => {
+      currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
+      const sel = document.getElementById("ts-month-mode");
+      if (sel) sel.value = currentJournalMode;
+      renderJournalDashboard();
+    });
+    document.getElementById("btn-ts-next-month")?.addEventListener("click", () => {
+      currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
+      const sel = document.getElementById("ts-month-mode");
+      if (sel) sel.value = currentJournalMode;
+      renderJournalDashboard();
+    });
+
+    // Journal Card quick button
+    document.getElementById("btn-ts-journal-card")?.addEventListener("click", () => {
+      const days = currentJournalMode === "march2026" ? MARCH_2026_DEMO_DAYS : {};
+      openDayJournalModal(currentSelectedDate, days[currentSelectedDate]);
+    });
+
+    // Export CSV
+    document.getElementById("btn-ts-export")?.addEventListener("click", () => {
+      const tradesToExport = currentJournalMode === "march2026"
+        ? Object.entries(MARCH_2026_DEMO_DAYS).flatMap(([d, v]) => v.trades.map(t => ({ date: d, ...t })))
+        : ((cachedPaperStatus && cachedPaperStatus.allTrades) || []);
+
+      if (tradesToExport.length === 0) {
+        alert("No trades available to export.");
+        return;
+      }
+
+      const csvRows = ["Date,Symbol,Side,EntryPrice,ExitPrice,PnL,PnLPercent,Strategy,Reason"];
+      tradesToExport.forEach(t => {
+        csvRows.push([
+          '"' + (t.date || t.exitTime || "") + '"',
+          '"' + t.symbol + '"',
+          '"' + t.side + '"',
+          t.entryPrice,
+          t.exitPrice,
+          t.pnl,
+          '"' + t.pnlPercent + '%"',
+          '"' + (t.strategy || "") + '"',
+          '"' + (t.reason || "").replace(/"/g, "") + '"'
+        ].join(","));
+      });
+      const csv = csvRows.join(String.fromCharCode(10));
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "tradesync_journal_" + currentJournalMode + "_" + Date.now() + ".csv";
+      a.click();
+    });
+
+    // Sync button
+    document.getElementById("btn-ts-sync")?.addEventListener("click", () => {
+      refreshPaperStatus();
+      renderJournalDashboard();
+    });
+
+    // Link from Paper Trade View
+    document.getElementById("btn-goto-journal")?.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      const jTab = document.querySelector('.tab-btn[data-target="view-journal"]');
+      const jView = document.getElementById("view-journal");
+      if (jTab) jTab.classList.add("active");
+      if (jView) jView.classList.add("active");
+      renderJournalDashboard();
+    });
+
+    // Initial render
+    setTimeout(renderJournalDashboard, 100);
+
+
     // --- Paper Trader Client Logic ---
     async function refreshPaperStatus() {
       try {
         const res = await fetch('/api/paper/status');
         const data = await res.json();
+        cachedPaperStatus = data;
 
         document.getElementById('paper-equity').textContent = '$' + data.equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('paper-cash').textContent = '$' + data.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
