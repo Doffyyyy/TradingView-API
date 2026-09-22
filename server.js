@@ -28,6 +28,31 @@ function parseBody(req) {
 }
 
 function getHistory(symbol, timeframe) {
+  // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
+  if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
+    return new Promise(async (resolve) => {
+      try {
+        const axios = require('axios');
+        const tfParam = (timeframe === 'D' || timeframe === 'W' || timeframe === 'M') ? 'day' : 'hour';
+        const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP/ohlcv/${tfParam}?limit=150`;
+        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000 });
+        const list = res.data?.data?.attributes?.ohlcv_list || [];
+        if (list.length > 0) {
+          const candles = list.slice().reverse().map(item => ({
+            time: item[0],
+            open: item[1],
+            high: item[2],
+            low: item[3],
+            close: item[4],
+            volume: item[5] || 0,
+          }));
+          return resolve({ candles, infos: { name: 'KLEDAI / Wrapped SOL', description: 'Meteora Dynamic Pool' } });
+        }
+      } catch (err) {}
+      resolve({ candles: [], infos: {} });
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
@@ -1084,6 +1109,28 @@ const htmlContent = `<!DOCTYPE html>
     let lastLoadedCandle = null;
     let currentCandlesCache = [];
 
+    // --- Proliquid Trading & Execution Dock Variables ---
+    let currentDockCoin = 'BTC';
+    let currentDockPrice = 80000;
+    let currentDockOrderType = 'MARKET';
+    let currentDockMode = 'PAPER';
+    let isReduceOnly = false;
+    let isTpSlActive = false;
+    let dockAvailableBalance = 10000;
+
+    function syncDockCoin(sym) {
+      let c = (sym || 'BTC').toUpperCase();
+      if (c.includes(':')) c = c.split(':')[1];
+      c = c.replace(/USDT|USDC|USD|\.P|_/gi, '').trim() || 'BTC';
+      currentDockCoin = c;
+      const coinBadge = document.getElementById('ob-coin-badge');
+      const denomBadge = document.getElementById('exec-coin-denom');
+      if (coinBadge) coinBadge.textContent = c;
+      if (denomBadge) denomBadge.textContent = c;
+      if (typeof updateDockData === 'function') updateDockData();
+      if (typeof updateTickerBar === 'function') updateTickerBar(c);
+    }
+
     let fiboEnabled = true;
     let fiboPeriod = 200;
     let fiboPriceLines = [];
@@ -1729,14 +1776,6 @@ const htmlContent = `<!DOCTYPE html>
     setInterval(updateWatchlistPrices, 8000);
 
     // --- Proliquid Trading & Execution Dock Logic ---
-    let currentDockCoin = 'BTC';
-    let currentDockPrice = 80000;
-    let currentDockOrderType = 'MARKET';
-    let currentDockMode = 'PAPER';
-    let isReduceOnly = false;
-    let isTpSlActive = false;
-    let dockAvailableBalance = 10000;
-
     const btnToggleDock = document.getElementById('btn-toggle-dock');
     const tradingDockEl = document.getElementById('trading-dock');
     if (btnToggleDock && tradingDockEl) {
@@ -1748,18 +1787,7 @@ const htmlContent = `<!DOCTYPE html>
       });
     }
 
-    function syncDockCoin(sym) {
-      let c = (sym || 'BTC').toUpperCase();
-      if (c.includes(':')) c = c.split(':')[1];
-      c = c.replace(/USDT|USDC|USD|\.P|_/gi, '').trim() || 'BTC';
-      currentDockCoin = c;
-      const coinBadge = document.getElementById('ob-coin-badge');
-      const denomBadge = document.getElementById('exec-coin-denom');
-      if (coinBadge) coinBadge.textContent = c;
-      if (denomBadge) denomBadge.textContent = c;
-      updateDockData();
-      updateTickerBar(c);
-    }
+    // syncDockCoin is defined at the top scope
 
     async function updateDockData() {
       const c = currentDockCoin;
@@ -2553,27 +2581,105 @@ const server = http.createServer(async (req, res) => {
     const symbols = body.symbols || [];
     const prices = {};
     if (symbols.length > 0) {
-      try {
-        const axios = require('axios');
-        const resScanner = await axios.post(
-          'https://scanner.tradingview.com/crypto/scan',
-          {
-            symbols: { tickers: symbols },
-            columns: ['close', 'change', 'change_abs', 'volume'],
-          },
-          { timeout: 4000 }
-        );
-        if (resScanner.data && resScanner.data.data) {
-          resScanner.data.data.forEach(item => {
-            prices[item.s] = {
-              close: item.d[0],
-              change: item.d[1],
-              change_abs: item.d[2],
-              volume: item.d[3],
+      const axios = require('axios');
+
+      // Separate into groups: US stock (SPCX etc.), Dex pairs, and Crypto
+      const stockSymbols = symbols.filter(s => s.startsWith('NASDAQ:') || s.startsWith('NYSE:') || s.startsWith('AMEX:'));
+      const cryptoSymbols = symbols.filter(s => !stockSymbols.includes(s) && !s.includes('METEORA:') && !s.includes('4SBYWY'));
+
+      // 1. Query Crypto Scanner
+      if (cryptoSymbols.length > 0) {
+        try {
+          const resScanner = await axios.post(
+            'https://scanner.tradingview.com/crypto/scan',
+            {
+              symbols: { tickers: cryptoSymbols },
+              columns: ['close', 'change', 'change_abs', 'volume'],
+            },
+            { timeout: 4000 }
+          );
+          if (resScanner.data && resScanner.data.data) {
+            resScanner.data.data.forEach(item => {
+              prices[item.s] = {
+                close: item.d[0],
+                change: item.d[1],
+                change_abs: item.d[2],
+                volume: item.d[3],
+              };
+            });
+          }
+        } catch (e) {}
+      }
+
+      // 2. Query America / Stock Scanner (for NASDAQ:SPCX, etc.)
+      if (stockSymbols.length > 0) {
+        try {
+          const resStock = await axios.post(
+            'https://scanner.tradingview.com/america/scan',
+            {
+              symbols: { tickers: stockSymbols },
+              columns: ['close', 'change', 'change_abs', 'volume'],
+            },
+            { timeout: 4000 }
+          );
+          if (resStock.data && resStock.data.data) {
+            resStock.data.data.forEach(item => {
+              prices[item.s] = {
+                close: item.d[0],
+                change: item.d[1],
+                change_abs: item.d[2],
+                volume: item.d[3],
+              };
+            });
+          }
+        } catch (e) {}
+      }
+
+      // 3. DEX Fallback via DexScreener public API for KLEDSOL & any missing tokens
+      const hasKled = symbols.some(s => s.includes('KLED'));
+      if (hasKled) {
+        try {
+          const resDex = await axios.get(
+            'https://api.dexscreener.com/latest/dex/pairs/solana/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP',
+            { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 }
+          );
+          const p = resDex.data?.pair;
+          if (p && p.priceUsd) {
+            const price = parseFloat(p.priceUsd);
+            const chg24 = parseFloat(p.priceChange?.h24 || 0);
+            const chgAbs = price * (chg24 / 100);
+            const vol = parseFloat(p.volume?.h24 || 0);
+            const kledKey = symbols.find(s => s.includes('KLED')) || 'METEORA:KLEDSOL_4SBYWY.USD';
+            prices[kledKey] = {
+              close: price,
+              change: chg24,
+              change_abs: chgAbs,
+              volume: vol,
             };
-          });
+          }
+        } catch (e) {}
+      }
+
+      // 4. Fallback for any remaining unquoted tokens (like CRYPTO:LITLUSD, CRYPTO:NOCKUSD) using TV History candles
+      for (const s of symbols) {
+        if (!prices[s] && (s.startsWith('CRYPTO:') || s.includes('NOCK') || s.includes('LITL'))) {
+          try {
+            const hist = await getHistory(s, 'D');
+            if (hist && hist.candles && hist.candles.length > 0) {
+              const latest = hist.candles[hist.candles.length - 1];
+              const openP = latest.open || latest.close;
+              const closeP = latest.close;
+              const chg = openP > 0 ? ((closeP - openP) / openP) * 100 : 0;
+              prices[s] = {
+                close: closeP,
+                change: chg,
+                change_abs: closeP - openP,
+                volume: latest.volume || 0,
+              };
+            }
+          } catch (err) {}
         }
-      } catch (e) {}
+      }
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ prices }));
