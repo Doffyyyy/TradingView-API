@@ -856,20 +856,77 @@ const htmlContent = `<!DOCTYPE html>
                   <span>Indicators</span>
                   <span style="font-size: 8px; color: #8c93a3;">⌄</span>
                 </button>
-                <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #181b24; border: 1px solid #2b3040; border-radius: 6px; padding: 8px 10px; z-index: 100; width: 220px; box-shadow: 0 6px 20px rgba(0,0,0,0.7);">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🎯 FiboRadar</span>
-                    <button class="btn active" id="btn-toggle-fibo" style="padding: 2px 6px; font-size: 9.5px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">ON</button>
+                <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #131722; border: 1px solid #2b3040; border-radius: 8px; padding: 10px 12px; z-index: 100; width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+                  <div style="font-size: 11px; font-weight: 800; color: #fff; margin-bottom: 8px; border-bottom: 1px solid #2a2e39; padding-bottom: 4px; display: flex; justify-content: space-between;">
+                    <span>INDICATORS REPOSITORY</span>
+                    <span style="font-size: 10px; color: #8c93a3;">3 Active Tools</span>
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                    <span>Bars period:</span>
-                    <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
-                      <option value="999999">Full / All bars</option>
-                      <option value="500">500 bars</option>
-                      <option value="200" selected>200 bars</option>
-                      <option value="100">100 bars</option>
-                      <option value="50">50 bars</option>
-                    </select>
+
+                  <!-- 1. FiboRadar -->
+                  <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
+                      <button class="btn active" id="btn-toggle-fibo" style="padding: 2px 8px; font-size: 9.5px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7;">ON</button>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Bars period:</span>
+                      <select id="select-fibo-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="999999">Full / All bars</option>
+                        <option value="500">500 bars</option>
+                        <option value="200" selected>200 bars</option>
+                        <option value="100">100 bars</option>
+                        <option value="50">50 bars</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 2. Galton Volume Profile -->
+                  <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">📊 Galton Volume Profile</span>
+                      <button class="btn" id="btn-toggle-galton" style="padding: 2px 8px; font-size: 9.5px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;">OFF</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">ata_sabanci • BVC & Galton Binomial Flow</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Volume Engine:</span>
+                      <select id="select-galton-engine" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="BVC" selected>BVC (Bulk Volume)</option>
+                        <option value="GEOMETRIC">Geometric (Close/HL)</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Lookback:</span>
+                      <select id="select-galton-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="200">200 bars</option>
+                        <option value="100" selected>100 bars</option>
+                        <option value="50">50 bars</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 3. Volume Footprint: Math & Geometry -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #818cf8;">👣 Volume Footprint</span>
+                      <button class="btn" id="btn-toggle-footprint" style="padding: 2px 8px; font-size: 9.5px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;">OFF</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">ata_sabanci • Gaussian Footprint & Imbalance</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Window Bars:</span>
+                      <select id="select-footprint-window" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="5" selected>5 bars (Classic)</option>
+                        <option value="10">10 bars</option>
+                        <option value="15">15 bars</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Imbalance Ratio:</span>
+                      <select id="select-footprint-imbalance" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="3.0" selected>300% (3x)</option>
+                        <option value="2.0">200% (2x)</option>
+                        <option value="4.0">400% (4x)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -900,15 +957,88 @@ const htmlContent = `<!DOCTYPE html>
               <span class="legend-item"><span class="legend-label">C:</span><span id="leg-close">--</span></span>
               <span class="legend-item"><span class="legend-label">Vol:</span><span id="leg-vol">--</span></span>
             </div>
-            <div id="fiboradar-hud" style="position: absolute; top: 12px; right: 16px; z-index: 10; background: rgba(15, 17, 23, 0.88); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 230px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
-                <span id="fibo-swing-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(74, 222, 128, 0.2); color: #4ade80;">BULL</span>
+            <!-- Indicators Floating HUD Container -->
+            <div id="indicators-hud-stack" style="position: absolute; top: 12px; right: 16px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 24px); overflow-y: auto; pointer-events: none;">
+              <!-- 1. FiboRadar HUD -->
+              <div id="fiboradar-hud" style="pointer-events: auto; background: rgba(15, 17, 23, 0.90); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
+                  <span id="fibo-swing-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(74, 222, 128, 0.2); color: #4ade80;">BULL</span>
+                </div>
+                <div style="margin-bottom: 6px; font-size: 10px; color: var(--text-secondary);">
+                  Zone: <strong id="fibo-current-zone" style="color: #fbbf24;">--</strong>
+                </div>
+                <div id="fibo-levels-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
               </div>
-              <div style="margin-bottom: 6px; font-size: 10px; color: var(--text-secondary);">
-                Zone: <strong id="fibo-current-zone" style="color: #fbbf24;">--</strong>
+
+              <!-- 2. Galton Volume Profile HUD -->
+              <div id="galton-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.92); backdrop-filter: blur(8px); border: 1px solid #0284c7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 260px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 800; color: #38bdf8;">📊 Galton Volume Profile</span>
+                  <span id="galton-engine-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">BVC</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                  <span>Buy/Sell Flow:</span>
+                  <span id="galton-flow-delta" style="font-weight: 700;">--</span>
+                </div>
+                <!-- Buy vs Sell Flow Bar -->
+                <div style="width: 100%; height: 6px; background: #222634; border-radius: 3px; overflow: hidden; display: flex; margin-bottom: 6px;">
+                  <div id="galton-buy-bar" style="width: 50%; height: 100%; background: #2979ff;"></div>
+                  <div id="galton-sell-bar" style="width: 50%; height: 100%; background: #ff1744;"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align: center; margin-bottom: 6px; font-size: 9.5px;">
+                  <div style="background: rgba(255,255,255,0.03); padding: 3px; border-radius: 4px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">VAL (70%)</div>
+                    <div id="galton-val" style="color: #38bdf8; font-weight: 700;">--</div>
+                  </div>
+                  <div style="background: rgba(251, 191, 36, 0.08); padding: 3px; border-radius: 4px; border: 1px solid rgba(251, 191, 36, 0.2);">
+                    <div style="color: #fbbf24; font-size: 8.5px; font-weight: 700;">● POC</div>
+                    <div id="galton-poc" style="color: #fbbf24; font-weight: 800;">--</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); padding: 3px; border-radius: 4px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">VAH (70%)</div>
+                    <div id="galton-vah" style="color: #38bdf8; font-weight: 700;">--</div>
+                  </div>
+                </div>
+                <!-- Mini Profile Distribution Graph -->
+                <div id="galton-profile-bars" style="display: flex; flex-direction: column; gap: 1px; max-height: 70px; overflow: hidden;"></div>
               </div>
-              <div id="fibo-levels-list" style="display: flex; flex-direction: column; gap: 2px;"></div>
+
+              <!-- 3. Volume Footprint: Math & Geometry HUD -->
+              <div id="footprint-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.92); backdrop-filter: blur(8px); border: 1px solid #6366f1; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 260px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 800; color: #818cf8;">👣 Volume Footprint</span>
+                  <span id="footprint-window-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(99, 102, 241, 0.15); color: #818cf8;">5 BARS</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; font-size: 10px;">
+                  <div style="background: rgba(255,255,255,0.03); padding: 4px; border-radius: 4px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">BAR VOL / Δ</div>
+                    <div id="footprint-bar-vol" style="font-weight: 700; color: #e2e8f0;">--</div>
+                    <div id="footprint-bar-delta" style="font-size: 9px; font-weight: 800;">--</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); padding: 4px; border-radius: 4px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">WIN VOL / WIN Δ</div>
+                    <div id="footprint-win-vol" style="font-weight: 700; color: #e2e8f0;">--</div>
+                    <div id="footprint-win-delta" style="font-size: 9px; font-weight: 800;">--</div>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Window POC:</span>
+                  <strong id="footprint-poc" style="color: #a5b4fc;">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Value Area (VAH/VAL):</span>
+                  <span id="footprint-va" style="color: #cbd5e1; font-weight: 700;">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Diagonal Imbalance:</span>
+                  <span id="footprint-imbalance-status" style="font-weight: 700; color: #4ade80;">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                  <span style="color: #94a3b8;">Overlap / Balance (OVL):</span>
+                  <span id="footprint-overlap" style="font-weight: 700; color: #fbbf24;">--</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1735,6 +1865,24 @@ const htmlContent = `<!DOCTYPE html>
       if (typeof updateTickerBar === 'function') updateTickerBar(c);
     }
 
+    // --- Technical Indicator Calculations & Math Library ---
+    function normalCDF(z) {
+      const t = 1 / (1 + 0.2316419 * Math.abs(z));
+      const d = 0.3989422804014327 * Math.exp(-z * z / 2);
+      const prob = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+      return z > 0 ? 1 - prob : prob;
+    }
+
+    function fmtVol(v) {
+      const abs = Math.abs(v || 0);
+      const sign = (v || 0) < 0 ? '-' : '';
+      if (abs >= 1e9) return sign + (abs / 1e9).toFixed(2) + 'B';
+      if (abs >= 1e6) return sign + (abs / 1e6).toFixed(2) + 'M';
+      if (abs >= 1e3) return sign + (abs / 1e3).toFixed(1) + 'K';
+      return sign + abs.toFixed(1);
+    }
+
+    // 1. FiboRadar
     let fiboEnabled = true;
     let fiboPeriod = 200;
     let fiboPriceLines = [];
@@ -1746,8 +1894,439 @@ const htmlContent = `<!DOCTYPE html>
       fiboPriceLines = [];
     }
 
-    function updateFiboRadar(candles) {
+    // 2. Galton Volume Profile (ata_sabanci)
+    let galtonEnabled = false;
+    let galtonPeriod = 100;
+    let galtonEngine = 'BVC'; // 'BVC' or 'GEOMETRIC'
+    let galtonPriceLines = [];
+
+    function clearGaltonLines() {
+      galtonPriceLines.forEach(l => {
+        try { candleSeries.removePriceLine(l); } catch (e) {}
+      });
+      galtonPriceLines = [];
+    }
+
+    function updateGaltonProfile(candles) {
+      clearGaltonLines();
+      const hud = document.getElementById('galton-hud');
+      if (!galtonEnabled || !candles || candles.length < 5) {
+        if (hud) hud.style.display = 'none';
+        return;
+      }
+      if (hud) hud.style.display = 'block';
+
+      const slice = candles.slice(-Math.min(candles.length, galtonPeriod));
+      const n = slice.length;
+
+      // Price differences and standard deviation for BVC
+      let deltaPs = [];
+      for (let i = 1; i < n; i++) {
+        deltaPs.push(slice[i].close - slice[i - 1].close);
+      }
+      const meanDP = deltaPs.reduce((a, b) => a + b, 0) / Math.max(1, deltaPs.length);
+      const varianceDP = deltaPs.reduce((a, b) => a + Math.pow(b - meanDP, 2), 0) / Math.max(1, deltaPs.length);
+      const stdDP = Math.sqrt(varianceDP) || 0.0001;
+
+      // Price boundaries
+      let minLow = Infinity, maxHigh = -Infinity;
+      slice.forEach(c => {
+        if (c.low < minLow) minLow = c.low;
+        if (c.high > maxHigh) maxHigh = c.high;
+      });
+      if (maxHigh <= minLow) return;
+
+      const binCount = 40;
+      const binStep = (maxHigh - minLow) / binCount;
+      let buyBins = new Array(binCount).fill(0);
+      let sellBins = new Array(binCount).fill(0);
+
+      let totalBuyVol = 0, totalSellVol = 0;
+
+      for (let i = 0; i < n; i++) {
+        const c = slice[i];
+        const prevC = i > 0 ? slice[i - 1].close : c.open;
+        const vol = c.volume || 1;
+        const dp = c.close - prevC;
+
+        let buyRatio = 0.5;
+        if (galtonEngine === 'BVC') {
+          const z = dp / stdDP;
+          buyRatio = normalCDF(z);
+        } else {
+          const range = c.high - c.low;
+          buyRatio = range > 0 ? (c.close - c.low) / range : 0.5;
+        }
+        const buyVol = vol * buyRatio;
+        const sellVol = vol * (1 - buyRatio);
+        totalBuyVol += buyVol;
+        totalSellVol += sellVol;
+
+        // Galton binomial/Gaussian distribution outward from Close
+        const candleSpread = Math.max(c.high - c.low, binStep) / 3.0;
+        const twoSigSq = 2 * Math.pow(candleSpread, 2);
+
+        let weights = [];
+        let sumW = 0;
+        for (let k = 0; k < binCount; k++) {
+          const binCenter = minLow + (k + 0.5) * binStep;
+          if (binCenter >= c.low - binStep && binCenter <= c.high + binStep) {
+            const dist = binCenter - c.close;
+            const w = Math.exp(- (dist * dist) / twoSigSq);
+            weights.push({ k, w });
+            sumW += w;
+          }
+        }
+
+        if (sumW > 0) {
+          weights.forEach(item => {
+            const normW = item.w / sumW;
+            buyBins[item.k] += buyVol * normW;
+            sellBins[item.k] += sellVol * normW;
+          });
+        }
+      }
+
+      // Galton POC
+      let maxBinVol = -1, pocIdx = 0;
+      let totBins = new Array(binCount);
+      let sumPeriodVol = 0;
+      for (let k = 0; k < binCount; k++) {
+        totBins[k] = buyBins[k] + sellBins[k];
+        sumPeriodVol += totBins[k];
+        if (totBins[k] > maxBinVol) {
+          maxBinVol = totBins[k];
+          pocIdx = k;
+        }
+      }
+      const pocPrice = minLow + (pocIdx + 0.5) * binStep;
+
+      // Value Area (70%)
+      const targetVA = sumPeriodVol * 0.70;
+      let vaVol = totBins[pocIdx];
+      let upIdx = pocIdx, downIdx = pocIdx;
+      while (vaVol < targetVA && (upIdx < binCount - 1 || downIdx > 0)) {
+        const nextUp = upIdx < binCount - 1 ? totBins[upIdx + 1] : 0;
+        const nextDown = downIdx > 0 ? totBins[downIdx - 1] : 0;
+        if (nextUp >= nextDown && upIdx < binCount - 1) {
+          upIdx++;
+          vaVol += totBins[upIdx];
+        } else if (downIdx > 0) {
+          downIdx--;
+          vaVol += totBins[downIdx];
+        } else if (upIdx < binCount - 1) {
+          upIdx++;
+          vaVol += totBins[upIdx];
+        } else {
+          break;
+        }
+      }
+      const valPrice = minLow + (downIdx + 0.5) * binStep;
+      const vahPrice = minLow + (upIdx + 0.5) * binStep;
+
+      // Chart Price Lines
+      const pocLine = candleSeries.createPriceLine({
+        price: pocPrice,
+        color: '#fbbf24',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: 'Galton POC',
+      });
+      galtonPriceLines.push(pocLine);
+
+      const vahLine = candleSeries.createPriceLine({
+        price: vahPrice,
+        color: '#38bdf8',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Galton VAH',
+      });
+      galtonPriceLines.push(vahLine);
+
+      const valLine = candleSeries.createPriceLine({
+        price: valPrice,
+        color: '#38bdf8',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Galton VAL',
+      });
+      galtonPriceLines.push(valLine);
+
+      // Update HUD
+      const deltaVol = totalBuyVol - totalSellVol;
+      const totVol = Math.max(1, totalBuyVol + totalSellVol);
+      const buyPct = Math.round((totalBuyVol / totVol) * 100);
+      const sellPct = 100 - buyPct;
+
+      const flowDeltaEl = document.getElementById('galton-flow-delta');
+      if (flowDeltaEl) {
+        flowDeltaEl.textContent = (deltaVol >= 0 ? '+' : '') + fmtVol(deltaVol) + ' (' + buyPct + '% Buy)';
+        flowDeltaEl.style.color = deltaVol >= 0 ? '#38bdf8' : '#ff1744';
+      }
+      const buyBar = document.getElementById('galton-buy-bar');
+      const sellBar = document.getElementById('galton-sell-bar');
+      if (buyBar && sellBar) {
+        buyBar.style.width = buyPct + '%';
+        sellBar.style.width = sellPct + '%';
+      }
+      const pocEl = document.getElementById('galton-poc');
+      const vahEl = document.getElementById('galton-vah');
+      const valEl = document.getElementById('galton-val');
+      if (pocEl) pocEl.textContent = '$' + fmtP(pocPrice);
+      if (vahEl) vahEl.textContent = '$' + fmtP(vahPrice);
+      if (valEl) valEl.textContent = '$' + fmtP(valPrice);
+
+      const engineBadge = document.getElementById('galton-engine-badge');
+      if (engineBadge) engineBadge.textContent = galtonEngine;
+
+      // Mini Profile Bars
+      const barsContainer = document.getElementById('galton-profile-bars');
+      if (barsContainer) {
+        let rowsHtml = '';
+        const stepSample = Math.max(1, Math.floor(binCount / 8));
+        for (let k = binCount - 1; k >= 0; k -= stepSample) {
+          const bV = buyBins[k] || 0;
+          const sV = sellBins[k] || 0;
+          const tot = bV + sV;
+          const pct = maxBinVol > 0 ? (tot / maxBinVol) * 100 : 0;
+          const isPoc = k === pocIdx;
+          const pLabel = fmtP(minLow + (k + 0.5) * binStep);
+          const bPct = ((bV / Math.max(1, tot)) * pct).toFixed(1);
+          const sPct = ((sV / Math.max(1, tot)) * pct).toFixed(1);
+          const pColor = isPoc ? "#fbbf24" : "#64748b";
+          const pWeight = isPoc ? "800" : "400";
+          rowsHtml += '<div style="display: flex; align-items: center; gap: 4px; height: 7px;">' +
+            '<div style="width: 28px; font-size: 7.5px; color: ' + pColor + '; text-align: right; font-weight: ' + pWeight + ';">' + pLabel + '</div>' +
+            '<div style="flex: 1; height: 100%; background: #1e293b; border-radius: 2px; overflow: hidden; display: flex;">' +
+              '<div style="width: ' + bPct + '%; background: #2979ff; height: 100%;"></div>' +
+              '<div style="width: ' + sPct + '%; background: #ff1744; height: 100%;"></div>' +
+            '</div></div>';
+        }
+        barsContainer.innerHTML = rowsHtml;
+      }
+    }
+
+    // 3. Volume Footprint: Math & Geometry (ata_sabanci)
+    let footprintEnabled = false;
+    let footprintWindow = 5;
+    let footprintImbalance = 3.0;
+    let footprintPriceLines = [];
+
+    function clearFootprintLines() {
+      footprintPriceLines.forEach(l => {
+        try { candleSeries.removePriceLine(l); } catch (e) {}
+      });
+      footprintPriceLines = [];
+    }
+
+    function updateVolumeFootprint(candles) {
+      clearFootprintLines();
+      const hud = document.getElementById('footprint-hud');
+      if (!footprintEnabled || !candles || candles.length < 3) {
+        if (hud) hud.style.display = 'none';
+        return;
+      }
+      if (hud) hud.style.display = 'block';
+
+      const slice = candles.slice(-Math.min(candles.length, footprintWindow));
+      const curBar = slice[slice.length - 1];
+
+      // Current bar Buy/Sell
+      const curRange = curBar.high - curBar.low;
+      const curBuyRatio = curRange > 0 ? (curBar.close - curBar.low) / curRange : 0.5;
+      const curBuyVol = (curBar.volume || 1) * curBuyRatio;
+      const curSellVol = (curBar.volume || 1) * (1 - curBuyRatio);
+      const curDelta = curBuyVol - curSellVol;
+
+      // Window totals
+      let winBuyVol = 0, winSellVol = 0;
+      let minLow = Infinity, maxHigh = -Infinity;
+      slice.forEach(c => {
+        if (c.low < minLow) minLow = c.low;
+        if (c.high > maxHigh) maxHigh = c.high;
+        const r = c.high - c.low;
+        const bR = r > 0 ? (c.close - c.low) / r : 0.5;
+        winBuyVol += (c.volume || 1) * bR;
+        winSellVol += (c.volume || 1) * (1 - bR);
+      });
+      const winTotVol = winBuyVol + winSellVol;
+      const winDelta = winBuyVol - winSellVol;
+
+      // Price rows for Gaussian footprint
+      const rowCount = 20;
+      const rowStep = (maxHigh - minLow) / rowCount;
+      let rowBuys = new Array(rowCount).fill(0);
+      let rowSells = new Array(rowCount).fill(0);
+
+      slice.forEach(c => {
+        const vol = c.volume || 1;
+        const r = c.high - c.low;
+        const bR = r > 0 ? (c.close - c.low) / r : 0.5;
+        const bV = vol * bR;
+        const sV = vol * (1 - bR);
+        const sigma = Math.max(r, rowStep) / 3.0; // Volume Concentration = 3.0
+        const twoSigSq = 2 * sigma * sigma;
+
+        let weights = [];
+        let sumW = 0;
+        for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+          const price = minLow + (rIdx + 0.5) * rowStep;
+          if (price >= c.low - rowStep && price <= c.high + rowStep) {
+            const dist = price - c.close;
+            const w = Math.exp(- (dist * dist) / twoSigSq);
+            weights.push({ rIdx, w });
+            sumW += w;
+          }
+        }
+        if (sumW > 0) {
+          weights.forEach(item => {
+            const normW = item.w / sumW;
+            rowBuys[item.rIdx] += bV * normW;
+            rowSells[item.rIdx] += sV * normW;
+          });
+        }
+      });
+
+      // Diagonal Imbalances
+      let buyImbCount = 0, sellImbCount = 0;
+      for (let rIdx = 1; rIdx < rowCount; rIdx++) {
+        if (rowBuys[rIdx] > (rowSells[rIdx - 1] * footprintImbalance) && rowBuys[rIdx] > 10) {
+          buyImbCount++;
+        }
+        if (rowSells[rIdx - 1] > (rowBuys[rIdx] * footprintImbalance) && rowSells[rIdx - 1] > 10) {
+          sellImbCount++;
+        }
+      }
+
+      // Window POC
+      let maxRowVol = -1, winPocIdx = 0;
+      let totRows = new Array(rowCount);
+      let overlapMin = 0, overlapMax = 0;
+
+      for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+        totRows[rIdx] = rowBuys[rIdx] + rowSells[rIdx];
+        overlapMin += Math.min(rowBuys[rIdx], rowSells[rIdx]);
+        overlapMax += Math.max(rowBuys[rIdx], rowSells[rIdx]);
+        if (totRows[rIdx] > maxRowVol) {
+          maxRowVol = totRows[rIdx];
+          winPocIdx = rIdx;
+        }
+      }
+
+      const footprintPocPrice = minLow + (winPocIdx + 0.5) * rowStep;
+      const ovlScore = overlapMax > 0 ? (overlapMin / overlapMax) : 1.0;
+
+      // Value Area (70%)
+      const targetVA = winTotVol * 0.70;
+      let vaVol = totRows[winPocIdx];
+      let upIdx = winPocIdx, downIdx = winPocIdx;
+      while (vaVol < targetVA && (upIdx < rowCount - 1 || downIdx > 0)) {
+        const nextUp = upIdx < rowCount - 1 ? totRows[upIdx + 1] : 0;
+        const nextDown = downIdx > 0 ? totRows[downIdx - 1] : 0;
+        if (nextUp >= nextDown && upIdx < rowCount - 1) {
+          upIdx++;
+          vaVol += totRows[upIdx];
+        } else if (downIdx > 0) {
+          downIdx--;
+          vaVol += totRows[downIdx];
+        } else if (upIdx < rowCount - 1) {
+          upIdx++;
+          vaVol += totRows[upIdx];
+        } else {
+          break;
+        }
+      }
+      const footprintValPrice = minLow + (downIdx + 0.5) * rowStep;
+      const footprintVahPrice = minLow + (upIdx + 0.5) * rowStep;
+
+      // Chart Price Lines
+      const pocLine = candleSeries.createPriceLine({
+        price: footprintPocPrice,
+        color: '#60a5fa',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: 'Footprint POC',
+      });
+      footprintPriceLines.push(pocLine);
+
+      const vahLine = candleSeries.createPriceLine({
+        price: footprintVahPrice,
+        color: '#818cf8',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Footprint VAH',
+      });
+      footprintPriceLines.push(vahLine);
+
+      const valLine = candleSeries.createPriceLine({
+        price: footprintValPrice,
+        color: '#818cf8',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Footprint VAL',
+      });
+      footprintPriceLines.push(valLine);
+
+      // Update HUD
+      const winBadge = document.getElementById('footprint-window-badge');
+      if (winBadge) winBadge.textContent = footprintWindow + ' BARS';
+
+      const barVolEl = document.getElementById('footprint-bar-vol');
+      const barDeltaEl = document.getElementById('footprint-bar-delta');
+      if (barVolEl) barVolEl.textContent = fmtVol(curBar.volume || 0);
+      if (barDeltaEl) {
+        barDeltaEl.textContent = (curDelta >= 0 ? '+' : '') + fmtVol(curDelta) + ' (' + (curDelta >= 0 ? 'BUY' : 'SELL') + ')';
+        barDeltaEl.style.color = curDelta >= 0 ? '#4ade80' : '#ef5350';
+      }
+
+      const winVolEl = document.getElementById('footprint-win-vol');
+      const winDeltaEl = document.getElementById('footprint-win-delta');
+      if (winVolEl) winVolEl.textContent = fmtVol(winTotVol);
+      if (winDeltaEl) {
+        winDeltaEl.textContent = (winDelta >= 0 ? '+' : '') + fmtVol(winDelta);
+        winDeltaEl.style.color = winDelta >= 0 ? '#4ade80' : '#ef5350';
+      }
+
+      const pocEl = document.getElementById('footprint-poc');
+      if (pocEl) pocEl.textContent = '$' + fmtP(footprintPocPrice);
+
+      const vaEl = document.getElementById('footprint-va');
+      if (vaEl) vaEl.textContent = '$' + fmtP(footprintValPrice) + ' - $' + fmtP(footprintVahPrice);
+
+      const imbEl = document.getElementById('footprint-imbalance-status');
+      if (imbEl) {
+        imbEl.textContent = buyImbCount + " ↗ Buy / " + sellImbCount + " ↘ Sell";
+        imbEl.style.color = buyImbCount > sellImbCount ? '#38bdf8' : (sellImbCount > buyImbCount ? '#f87171' : '#94a3b8');
+      }
+
+      const ovlEl = document.getElementById('footprint-overlap');
+      if (ovlEl) {
+        const ovlPct = (ovlScore * 100).toFixed(0);
+        ovlEl.textContent = ovlPct + "% (" + (ovlScore > 0.65 ? "Balanced" : "Directional") + ")";
+        ovlEl.style.color = ovlScore > 0.65 ? '#fbbf24' : '#38bdf8';
+      }
+    }
+
+    function clearAllIndicatorLines() {
       clearFiboLines();
+      clearGaltonLines();
+      clearFootprintLines();
+    }
+
+    function updateActiveIndicators(candles) {
+      updateFiboRadar(candles);
+      updateGaltonProfile(candles);
+      updateVolumeFootprint(candles);
+    }
+
+    function updateFiboRadar(candles) {
+      clearAllIndicatorLines();
       const hud = document.getElementById('fiboradar-hud');
       if (!fiboEnabled || !candles || candles.length < 5) {
         if (hud) hud.style.display = 'none';
@@ -1905,116 +2484,6 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    async function loadChart(sym, tf) {
-      if (eventSource) eventSource.close();
-      clearFiboLines();
-
-      if (typeof syncDockCoin === 'function') {
-        syncDockCoin(sym);
-      }
-
-      const titleEl = document.getElementById('active-symbol-title');
-      const exEl = document.getElementById('active-exchange-badge');
-      const logoEl = document.getElementById('active-symbol-logo');
-      if (titleEl && exEl) {
-        const parts = sym.split(':');
-        const name = parts.length > 1 ? parts[1] : sym;
-        const ex = parts.length > 1 ? parts[0] : 'MARKET';
-        exEl.textContent = ex;
-        titleEl.textContent = name;
-        if (logoEl) {
-          const foundItem = (typeof customWatchlist !== 'undefined') ? customWatchlist.find(w => w.symbol === sym || w.name === name) : null;
-          const logo = foundItem?.logoId || ((typeof LOGO_MAP !== 'undefined') ? (LOGO_MAP[sym] || LOGO_MAP[name]) : null);
-          if (logo) {
-            logoEl.src = 'https://s3-symbol-logo.tradingview.com/' + logo + '.svg';
-            logoEl.style.display = 'inline-block';
-          } else {
-            logoEl.style.display = 'none';
-          }
-        }
-      }
-
-      try {
-        chart.priceScale('right').applyOptions({ autoScale: true });
-      } catch (e) {}
-      const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
-      const data = await res.json();
-      if (data.candles && data.candles.length > 0) {
-        currentCandlesCache = data.candles;
-        try {
-          chart.priceScale('right').applyOptions({ autoScale: true });
-        } catch (e) {}
-        candleSeries.setData(data.candles);
-        volumeSeries.setData(data.candles.map(c => ({
-          time: c.time,
-          value: c.volume || 0,
-          color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
-        })));
-        try {
-          chart.priceScale('right').applyOptions({ autoScale: true });
-          const len = data.candles.length;
-          chart.timeScale().setVisibleLogicalRange({
-            from: Math.max(0, len - 160),
-            to: len + 4,
-          });
-        } catch (e) {}
-        lastLoadedCandle = data.candles[data.candles.length - 1];
-        setLegendOHLC(lastLoadedCandle);
-        updateFiboRadar(currentCandlesCache);
-
-        setTimeout(() => {
-          try {
-            chart.priceScale('right').applyOptions({ autoScale: true });
-            const len = data.candles.length;
-            chart.timeScale().setVisibleLogicalRange({
-              from: Math.max(0, len - 160),
-              to: len + 4,
-            });
-          } catch (e) {}
-        }, 60);
-      }
-      eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
-      eventSource.onmessage = (e) => {
-        const d = JSON.parse(e.data);
-        if (d.candle) {
-          lastLoadedCandle = d.candle;
-          candleSeries.update(d.candle);
-          volumeSeries.update({
-            time: d.candle.time,
-            value: d.candle.volume || 0,
-            color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
-          });
-          setLegendOHLC(d.candle);
-          if (currentCandlesCache.length > 0) {
-            currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
-            updateFiboRadar(currentCandlesCache);
-          }
-        }
-      };
-    }
-    loadChart(currentSymbol, currentTimeframe);
-
-    // FiboRadar Controls
-    const btnToggleFibo = document.getElementById('btn-toggle-fibo');
-    if (btnToggleFibo) {
-      btnToggleFibo.addEventListener('click', () => {
-        fiboEnabled = !fiboEnabled;
-        btnToggleFibo.textContent = fiboEnabled ? '🎯 FiboRadar: ON' : '🎯 FiboRadar: OFF';
-        btnToggleFibo.style.background = fiboEnabled ? 'rgba(168, 85, 247, 0.2)' : 'var(--bg-tertiary)';
-        btnToggleFibo.style.color = fiboEnabled ? '#c084fc' : 'var(--text-secondary)';
-        btnToggleFibo.style.borderColor = fiboEnabled ? '#a855f7' : 'transparent';
-        updateFiboRadar(currentCandlesCache);
-      });
-    }
-
-    const selectFiboPeriod = document.getElementById('select-fibo-period');
-    if (selectFiboPeriod) {
-      selectFiboPeriod.addEventListener('change', () => {
-        fiboPeriod = parseInt(selectFiboPeriod.value, 10) || 200;
-        updateFiboRadar(currentCandlesCache);
-      });
-    }
-
     // --- Proliquid Watchlist Logic ---
     const LOGO_MAP = {
       'BINANCE:BTCUSDT': 'crypto/XTVCBTC',
@@ -2143,7 +2612,175 @@ const htmlContent = `<!DOCTYPE html>
       return sign + a.toPrecision(3);
     }
 
-    function renderWatchlist(filter = '') {
+
+    async function loadChart(sym, tf) {
+      if (eventSource) eventSource.close();
+      clearAllIndicatorLines();
+
+      if (typeof syncDockCoin === 'function') {
+        syncDockCoin(sym);
+      }
+
+      const titleEl = document.getElementById('active-symbol-title');
+      const exEl = document.getElementById('active-exchange-badge');
+      const logoEl = document.getElementById('active-symbol-logo');
+      if (titleEl && exEl) {
+        const parts = sym.split(':');
+        const name = parts.length > 1 ? parts[1] : sym;
+        const ex = parts.length > 1 ? parts[0] : 'MARKET';
+        exEl.textContent = ex;
+        titleEl.textContent = name;
+        if (logoEl) {
+          const foundItem = (typeof customWatchlist !== 'undefined') ? customWatchlist.find(w => w.symbol === sym || w.name === name) : null;
+          const logo = foundItem?.logoId || ((typeof LOGO_MAP !== 'undefined') ? (LOGO_MAP[sym] || LOGO_MAP[name]) : null);
+          if (logo) {
+            logoEl.src = 'https://s3-symbol-logo.tradingview.com/' + logo + '.svg';
+            logoEl.style.display = 'inline-block';
+          } else {
+            logoEl.style.display = 'none';
+          }
+        }
+      }
+
+      try {
+        chart.priceScale('right').applyOptions({ autoScale: true });
+      } catch (e) {}
+      const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
+      const data = await res.json();
+      if (data.candles && data.candles.length > 0) {
+        currentCandlesCache = data.candles;
+        try {
+          chart.priceScale('right').applyOptions({ autoScale: true });
+        } catch (e) {}
+        candleSeries.setData(data.candles);
+        volumeSeries.setData(data.candles.map(c => ({
+          time: c.time,
+          value: c.volume || 0,
+          color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+        })));
+        try {
+          chart.priceScale('right').applyOptions({ autoScale: true });
+          const len = data.candles.length;
+          chart.timeScale().setVisibleLogicalRange({
+            from: Math.max(0, len - 160),
+            to: len + 4,
+          });
+        } catch (e) {}
+        lastLoadedCandle = data.candles[data.candles.length - 1];
+        setLegendOHLC(lastLoadedCandle);
+        updateActiveIndicators(currentCandlesCache);
+
+        setTimeout(() => {
+          try {
+            chart.priceScale('right').applyOptions({ autoScale: true });
+            const len = data.candles.length;
+            chart.timeScale().setVisibleLogicalRange({
+              from: Math.max(0, len - 160),
+              to: len + 4,
+            });
+          } catch (e) {}
+        }, 60);
+      }
+      eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
+      eventSource.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.candle) {
+          lastLoadedCandle = d.candle;
+          candleSeries.update(d.candle);
+          volumeSeries.update({
+            time: d.candle.time,
+            value: d.candle.volume || 0,
+            color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+          });
+          setLegendOHLC(d.candle);
+          if (currentCandlesCache.length > 0) {
+            currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
+            updateActiveIndicators(currentCandlesCache);
+          }
+        }
+      };
+    }
+    loadChart(currentSymbol, currentTimeframe);
+
+    // FiboRadar Controls
+    const btnToggleFibo = document.getElementById('btn-toggle-fibo');
+    if (btnToggleFibo) {
+      btnToggleFibo.addEventListener('click', () => {
+        fiboEnabled = !fiboEnabled;
+        btnToggleFibo.textContent = fiboEnabled ? '🎯 FiboRadar: ON' : '🎯 FiboRadar: OFF';
+        btnToggleFibo.style.background = fiboEnabled ? 'rgba(168, 85, 247, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleFibo.style.color = fiboEnabled ? '#c084fc' : 'var(--text-secondary)';
+        btnToggleFibo.style.borderColor = fiboEnabled ? '#a855f7' : 'transparent';
+        updateActiveIndicators(currentCandlesCache);
+      });
+    }
+
+    const selectFiboPeriod = document.getElementById('select-fibo-period');
+    if (selectFiboPeriod) {
+      selectFiboPeriod.addEventListener('change', () => {
+        fiboPeriod = parseInt(selectFiboPeriod.value, 10) || 200;
+        updateActiveIndicators(currentCandlesCache);
+      });
+    }
+
+    // Galton Volume Profile Controls
+    const btnToggleGalton = document.getElementById('btn-toggle-galton');
+    if (btnToggleGalton) {
+      btnToggleGalton.addEventListener('click', () => {
+        galtonEnabled = !galtonEnabled;
+        btnToggleGalton.textContent = galtonEnabled ? 'ON' : 'OFF';
+        btnToggleGalton.style.background = galtonEnabled ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleGalton.style.color = galtonEnabled ? '#38bdf8' : 'var(--text-secondary)';
+        btnToggleGalton.style.borderColor = galtonEnabled ? '#0284c7' : 'transparent';
+        updateGaltonProfile(currentCandlesCache);
+      });
+    }
+
+    const selectGaltonEngine = document.getElementById('select-galton-engine');
+    if (selectGaltonEngine) {
+      selectGaltonEngine.addEventListener('change', () => {
+        galtonEngine = selectGaltonEngine.value;
+        updateGaltonProfile(currentCandlesCache);
+      });
+    }
+
+    const selectGaltonPeriod = document.getElementById('select-galton-period');
+    if (selectGaltonPeriod) {
+      selectGaltonPeriod.addEventListener('change', () => {
+        galtonPeriod = parseInt(selectGaltonPeriod.value, 10) || 100;
+        updateGaltonProfile(currentCandlesCache);
+      });
+    }
+
+    // Volume Footprint: Math & Geometry Controls
+    const btnToggleFootprint = document.getElementById('btn-toggle-footprint');
+    if (btnToggleFootprint) {
+      btnToggleFootprint.addEventListener('click', () => {
+        footprintEnabled = !footprintEnabled;
+        btnToggleFootprint.textContent = footprintEnabled ? 'ON' : 'OFF';
+        btnToggleFootprint.style.background = footprintEnabled ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleFootprint.style.color = footprintEnabled ? '#818cf8' : 'var(--text-secondary)';
+        btnToggleFootprint.style.borderColor = footprintEnabled ? '#6366f1' : 'transparent';
+        updateVolumeFootprint(currentCandlesCache);
+      });
+    }
+
+    const selectFootprintWindow = document.getElementById('select-footprint-window');
+    if (selectFootprintWindow) {
+      selectFootprintWindow.addEventListener('change', () => {
+        footprintWindow = parseInt(selectFootprintWindow.value, 10) || 5;
+        updateVolumeFootprint(currentCandlesCache);
+      });
+    }
+
+    const selectFootprintImbalance = document.getElementById('select-footprint-imbalance');
+    if (selectFootprintImbalance) {
+      selectFootprintImbalance.addEventListener('change', () => {
+        footprintImbalance = parseFloat(selectFootprintImbalance.value) || 3.0;
+        updateVolumeFootprint(currentCandlesCache);
+      });
+    }
+        function renderWatchlist(filter = '') {
       const listEl = document.getElementById('watchlist-list');
       const countEl = document.getElementById('wl-total-count');
       if (!listEl) return;
