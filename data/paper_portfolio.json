@@ -22,7 +22,9 @@
       "takeProfit": 98.526,
       "entryTime": "2026-09-22T22:30:55.312Z",
       "strategy": "Supertrend + MACD Momentum",
-      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 59.59, 26-TA Buy consensus (17/26)."
+      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 59.59, 26-TA Buy consensus (17/26).",
+      "leverage": 1,
+      "margin": 2500
     },
     {
       "id": "pos_1790127970194",
@@ -364,9 +366,9 @@
   ],
   "logs": [
     "[8:46:10 AM] OPENED LONG on BINANCE:BTCUSDT @ $86,265.52 [2x Lev | Margin: $1800, Notional: $3600]. Target TP: $87,559.50 (+1.5%), SL: $85,575.40 (-0.8%) [Strategy: High Confluence Long]",
-    "[8:46:10 AM] 🚀 Entry Signal: BINANCE:BTCUSDT LONG (2x Lev) | Reason: High Confluence Long [2x]: Supertrend Bullish, MACD Bullish, RSI 47.99, 26-TA Buy consensus (17/26, sell: 3).",
+    "[8:46:10 AM] \ud83d\ude80 Entry Signal: BINANCE:BTCUSDT LONG (2x Lev) | Reason: High Confluence Long [2x]: Supertrend Bullish, MACD Bullish, RSI 47.99, 26-TA Buy consensus (17/26, sell: 3).",
     "[8:46:09 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
-    "[6:06:15 AM] ✅ Daily Target Achieved (+$64.53 >= $50/day). Preserving daily profit: Pausing normal entries, only sniping A+ setups.",
+    "[6:06:15 AM] \u2705 Daily Target Achieved (+$64.53 >= $50/day). Preserving daily profit: Pausing normal entries, only sniping A+ setups.",
     "[6:06:15 AM] CLOSED LONG BINANCE:ZECUSDT: Net PnL $64.53 (3.33%). Take Profit hit at $1,600.26 (+3.43%)",
     "[6:06:15 AM] Trailing Stop locked for LONG BINANCE:ZECUSDT at breakeven+$ ($1,550.25)",
     "[5:46:38 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
@@ -375,11 +377,11 @@
     "[5:30:55 AM] OPENED LONG on BINANCE:ZECUSDT @ $1,547.16. Target TP: $1,570.37, SL: $1,534.78 [Strategy: Supertrend + MACD Momentum]",
     "[5:30:55 AM] OPENED LONG on BYBIT:HYPEUSDT @ $97.07. Target TP: $98.53, SL: $96.29 [Strategy: Supertrend + MACD Momentum]",
     "[5:30:53 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
-    "[7:25:01 PM] 🛑 DAILY STOP LOSS REACHED (-$114.14 <= -$100). All new trades halted for today to protect capital until 00:00 UTC+7.",
+    "[7:25:01 PM] \ud83d\uded1 DAILY STOP LOSS REACHED (-$114.14 <= -$100). All new trades halted for today to protect capital until 00:00 UTC+7.",
     "[7:25:01 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
-    "[12:18:47 PM] 🛑 DAILY STOP LOSS REACHED (-$114.14 <= -$100). All new trades halted for today to protect capital until 00:00 UTC+7.",
+    "[12:18:47 PM] \ud83d\uded1 DAILY STOP LOSS REACHED (-$114.14 <= -$100). All new trades halted for today to protect capital until 00:00 UTC+7.",
     "[12:18:47 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $-26.44 (-1.06%). Stop Loss / Trailing Stop hit at $0.004446 (-0.96%)",
-    "[12:18:47 PM] ⏳ Cooldown active for BINANCE:PUMPUSDT (30 mins until 12:48:47) after loss.",
+    "[12:18:47 PM] \u23f3 Cooldown active for BINANCE:PUMPUSDT (30 mins until 12:48:47) after loss.",
     "[12:17:41 PM] Auto-trading switched to: ACTIVE",
     "[12:17:32 PM] Auto-trading switched to: PAUSED",
     "[12:15:47 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.004489. Target TP: $0.004556, SL: $0.004453 [Strategy: Supertrend + MACD Momentum]",
