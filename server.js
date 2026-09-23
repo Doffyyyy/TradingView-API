@@ -366,69 +366,106 @@ const htmlContent = `<!DOCTYPE html>
     }
     .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
 
-    /* Proliquid Trading Dock Styles */
+    /* Proliquid Trading Dock Styles - Modular Blocks */
     .dock-panel {
-      width: 430px; background: var(--bg-secondary); border-left: 1px solid var(--border-color);
+      width: 400px; background: #0c0e14; border-left: 1px solid #1a1e2b;
       display: flex; flex-direction: column; height: 100%; z-index: 5; flex-shrink: 0;
+      overflow-y: auto; overflow-x: hidden; padding: 10px; gap: 10px;
     }
-    .dock-grid-top {
-      display: grid; grid-template-columns: 1.15fr 1fr; border-bottom: 1px solid var(--border-color);
-      background: var(--bg-secondary);
+    .dock-panel::-webkit-scrollbar { width: 5px; }
+    .dock-panel::-webkit-scrollbar-thumb { background: #262b3d; border-radius: 3px; }
+
+    /* Top Dock Navigation Segment */
+    .dock-segmented-bar {
+      display: flex; background: #131722; border: 1px solid #222736; border-radius: 6px;
+      padding: 2px; gap: 2px; flex-shrink: 0;
     }
-    .dock-grid-bottom {
-      display: grid; grid-template-columns: 1.15fr 1fr; flex: 1; min-height: 0;
-      background: var(--bg-secondary);
+    .dock-seg-btn {
+      flex: 1; padding: 4px 6px; font-size: 10px; font-weight: 700; color: #8c93a3;
+      background: transparent; border: none; border-radius: 4px; cursor: pointer;
+      transition: all 0.15s; text-align: center; white-space: nowrap;
     }
-    .dock-card {
-      padding: 10px 12px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column;
-      position: relative; overflow: hidden;
+    .dock-seg-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .dock-seg-btn.active { color: #fff; background: #2962ff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+    /* Modular Dock Cards / Blocks */
+    .dock-block {
+      background: #11141c; border: 1px solid #1f2433; border-radius: 8px;
+      padding: 10px 12px; display: flex; flex-direction: column; position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
-    .dock-card:last-child { border-right: none; }
-    .dock-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
-      font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-secondary);
+    .dock-block-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+      padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: #fff;
     }
     
-    /* Screener */
+    /* Account & Web3 Connect */
+    .badge-paper {
+      font-size: 8.5px; padding: 2px 6px; border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 800; border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .badge-hl-live {
+      font-size: 8.5px; padding: 2px 6px; border-radius: 4px;
+      background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .btn-wallet-connect {
+      display: flex; align-items: center; gap: 5px; padding: 4px 8px; font-size: 10px; font-weight: 700;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: 1px solid #3b82f6;
+      border-radius: 5px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+    .btn-wallet-connect:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563eb); transform: translateY(-1px);
+    }
+    .account-details-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px;
+    }
+    .acc-stat-box {
+      background: #161a25; border: 1px solid #23293a; border-radius: 6px; padding: 6px 8px;
+    }
+    .acc-stat-lbl { font-size: 8.5px; color: #787f94; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .acc-stat-val { font-size: 12px; font-weight: 800; color: #fff; font-family: monospace; }
+    
+    /* Screener Table */
+    .scr-table { width: 100%; display: flex; flex-direction: column; }
     .scr-header-row, .scr-row {
-      display: grid; grid-template-columns: 1.15fr 1fr 1fr; font-size: 11px; padding: 3px 0;
+      display: grid; grid-template-columns: 1.2fr 1fr 1fr; font-size: 11px; padding: 4px 0;
       align-items: center;
     }
     .scr-row {
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
     .scr-header-row {
-      margin-bottom: 4px; padding-bottom: 5px;
+      margin-bottom: 2px; padding-bottom: 5px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .scr-col-th {
-      text-align: right; font-size: 9.5px; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;
+      text-align: right; font-size: 9.5px; color: #8c93a3; font-weight: 700; letter-spacing: 0.5px;
     }
-    .scr-label { color: var(--text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; }
-    .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 10.5px; }
+    .scr-label { color: #8c93a3; font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
+    .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 11px; }
     
-    /* Orderbook */
-    .ob-table { width: 100%; font-size: 10.5px; font-family: monospace; border-collapse: collapse; }
-    .ob-row { position: relative; display: flex; justify-content: space-between; padding: 2px 4px; font-size: 10px; cursor: pointer; }
-    .ob-row:hover { background: rgba(255,255,255,0.06); }
-    .ob-bg { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.18; pointer-events: none; z-index: 1; transition: width 0.15s; }
+    /* Orderbook L2 */
+    .ob-row { position: relative; display: flex; justify-content: space-between; padding: 2.5px 6px; font-size: 10px; cursor: pointer; transition: background 0.1s; }
+    .ob-row:hover { background: rgba(255,255,255,0.07); }
+    .ob-bg { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.22; pointer-events: none; z-index: 1; transition: width 0.15s; }
     .ob-bg-ask { background: #ef5350; }
     .ob-bg-bid { background: #26a69a; }
     .ob-cell { z-index: 2; text-align: right; font-family: monospace; }
     .ob-cell-price { z-index: 2; text-align: left; font-weight: 700; font-family: monospace; }
     .ob-spread-bar {
-      padding: 4px 6px; margin: 3px 0; background: var(--bg-tertiary); border-radius: 4px;
-      display: flex; justify-content: space-between; align-items: center; font-size: 9px;
+      padding: 5px 8px; margin: 4px 0; background: #161a25; border: 1px solid #23293a; border-radius: 5px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 9.5px;
     }
     .ob-ratio-bar {
-      width: 100%; height: 3px; background: #ef5350; border-radius: 2px; overflow: hidden; margin-top: 1px;
+      width: 100%; height: 4px; background: #ef5350; border-radius: 2px; overflow: hidden; margin-top: 2px;
       display: flex;
     }
     .ob-ratio-bid { background: #26a69a; height: 100%; }
 
     /* Execution Panel */
     .exec-input-group {
-      background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 5px;
+      background: #161a25; border: 1px solid #23293a; border-radius: 6px;
       padding: 5px 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;
     }
     .exec-input-group:focus-within { border-color: var(--accent-blue); }
@@ -438,7 +475,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     .exec-slider {
       width: 100%; -webkit-appearance: none; height: 4px; border-radius: 2px;
-      background: var(--bg-tertiary); outline: none; margin: 6px 0;
+      background: #1e2433; outline: none; margin: 6px 0;
     }
     .exec-slider::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%;
@@ -446,22 +483,46 @@ const htmlContent = `<!DOCTYPE html>
     }
     .pct-chips { display: flex; gap: 4px; margin-bottom: 6px; }
     .pct-chip {
-      flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);
-      border-radius: 3px; font-size: 9px; font-weight: 600; padding: 2px 0; text-align: center; cursor: pointer;
+      flex: 1; background: #161a25; border: 1px solid #23293a; color: var(--text-secondary);
+      border-radius: 4px; font-size: 9px; font-weight: 700; padding: 3px 0; text-align: center; cursor: pointer;
+      transition: all 0.15s;
     }
     .pct-chip:hover, .pct-chip.active { background: rgba(41, 98, 255, 0.2); color: #fff; border-color: var(--accent-blue); }
     .exec-btn {
-      width: 100%; padding: 8px 10px; border-radius: 5px; font-size: 11px; font-weight: 800; cursor: pointer;
+      width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s;
     }
     .exec-btn-buy {
       background: rgba(38, 166, 154, 0.15); border: 1px solid #26a69a; color: #4ade80;
     }
-    .exec-btn-buy:hover { background: #26a69a; color: #fff; box-shadow: 0 0 10px rgba(38, 166, 154, 0.4); }
+    .exec-btn-buy:hover { background: #26a69a; color: #fff; box-shadow: 0 0 12px rgba(38, 166, 154, 0.4); }
     .exec-btn-sell {
       background: rgba(239, 83, 80, 0.15); border: 1px solid #ef5350; color: #f87171;
     }
-    .exec-btn-sell:hover { background: #ef5350; color: #fff; box-shadow: 0 0 10px rgba(239, 83, 80, 0.4); }
+    .exec-btn-sell:hover { background: #ef5350; color: #fff; box-shadow: 0 0 12px rgba(239, 83, 80, 0.4); }
+
+    /* Web3 Wallet Modal */
+    .web3-modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center;
+    }
+    .web3-modal-card {
+      background: #11141c; border: 1px solid #283044; border-radius: 12px; width: 380px; max-width: 90vw;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8); overflow: hidden; animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .web3-wallet-option {
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+      border: 1px solid #222736; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+      background: #161a24; transition: all 0.18s;
+    }
+    .web3-wallet-option:hover {
+      background: #1d2331; border-color: #3b82f6; transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
 
     /* ========================================================
        TRADESYNC JOURNALING DASHBOARD STYLES
@@ -1043,14 +1104,66 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Right: Proliquid Trading & Execution Dock (Hyperliquid Integration) -->
+        <!-- Right: Proliquid Trading & Execution Dock (Modular Blocks) -->
         <div id="trading-dock" class="dock-panel">
-          <!-- Top Row: Screener (Left) + Account (Right) -->
-          <div class="dock-grid-top">
-            <!-- Screener Card -->
-            <div class="dock-card">
+          <!-- Dock Top View Filter Bar -->
+          <div class="dock-segmented-bar">
+            <button class="dock-seg-btn active" data-dock-tab="all">🎛️ All Blocks</button>
+            <button class="dock-seg-btn" data-dock-tab="screener">📊 Screener</button>
+            <button class="dock-seg-btn" data-dock-tab="orderbook">📖 Orderbook</button>
+            <button class="dock-seg-btn" data-dock-tab="exec">⚡ Execution</button>
+          </div>
+
+          <!-- Block 1: Account & Web3 Connect -->
+          <div class="dock-block" id="dock-block-account">
+            <div class="dock-block-header">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #fff; font-weight: 800;">💼 ACCOUNT</span>
+                <span id="account-mode-badge" class="badge-paper">● PAPER $10K</span>
+              </div>
+              <button class="btn-wallet-connect" id="btn-dock-mode-toggle" title="Connect Web3 Wallet (MetaMask, Rabby, Phantom)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                <span id="wallet-btn-label">Connect Wallet</span>
+              </button>
+            </div>
+            
+            <div class="account-details-grid">
+              <div class="acc-stat-box">
+                <div class="acc-stat-lbl">AVAILABLE CAPITAL</div>
+                <div class="acc-stat-val" id="dock-avail-bal">$10,214.44</div>
+              </div>
+              <div class="acc-stat-box">
+                <div class="acc-stat-lbl">ACTIVE POSITION</div>
+                <div class="acc-stat-val" id="dock-active-pos">--</div>
+              </div>
+            </div>
+
+            <!-- Connected Wallet Ribbon -->
+            <div id="wallet-connected-bar" style="display: none; align-items: center; justify-content: space-between; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 5px 8px; margin-top: 6px; font-size: 10.5px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="wallet-provider-icon" style="font-size: 13px;">🦊</span>
+                <span id="wallet-address-display" style="font-family: monospace; color: #38bdf8; font-weight: 700;">0x...</span>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button class="btn" id="btn-copy-wallet" style="padding: 2px 6px; font-size: 9px;" title="Copy Address">📋</button>
+                <button class="btn" id="btn-disconnect-hl-wallet" style="padding: 2px 6px; font-size: 9px; color: #ef5350; background: rgba(239, 83, 80, 0.15);">Disconnect</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Block 2: Market Screener -->
+          <div class="dock-block" id="dock-block-screener">
+            <div class="dock-block-header">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #fff; font-weight: 800;">📊 SCREENER</span>
+                <span id="scr-coin-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">BTC</span>
+              </div>
+              <span style="font-size: 9.5px; color: var(--text-secondary);">Market Velocity</span>
+            </div>
+            
+            <div class="scr-table">
               <div class="scr-header-row">
-                <span style="color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 0.5px;">SCREENER</span>
+                <span class="scr-col-th" style="text-align: left;">METRIC</span>
                 <span class="scr-col-th">5 M</span>
                 <span class="scr-col-th">15 M</span>
               </div>
@@ -1075,155 +1188,194 @@ const htmlContent = `<!DOCTYPE html>
                 <span class="scr-val" id="scr-vdelta-15m">--</span>
               </div>
             </div>
-
-            <!-- Account Card -->
-            <div class="dock-card">
-              <div class="dock-header">
-                <span style="color: #fff; font-weight: 800;">ACCOUNT</span>
-                <span id="account-mode-badge" style="font-size: 8.5px; padding: 1px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #4ade80; font-weight: 700;">PAPER $10K</span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 1px;">
-                <div style="display: flex; justify-content: space-between; font-size: 10.5px;">
-                  <span style="color: var(--text-secondary);">AVAILABLE:</span>
-                  <strong id="dock-avail-bal" style="color: #fff; font-family: monospace;">$10,214.44</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 10.5px;">
-                  <span style="color: var(--text-secondary);">POSITION:</span>
-                  <span id="dock-active-pos" style="color: #4ade80; font-weight: 700; font-family: monospace;">--</span>
-                </div>
-                <div style="display: flex; gap: 4px; margin-top: 2px;">
-                  <button class="btn" id="btn-dock-mode-toggle" style="flex: 1; padding: 3px 5px; font-size: 9.5px; background: var(--bg-tertiary);" title="Toggle Live Hyperliquid connection">⚡ Connect HL</button>
-                </div>
-                <div id="hl-connect-modal" style="display: none; padding: 6px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; margin-top: 2px;">
-                  <input type="text" id="input-hl-wallet" placeholder="0x... Hyperliquid address" style="width: 100%; background: transparent; border: 1px solid var(--border-color); color: #fff; padding: 3px 5px; font-size: 9.5px; border-radius: 3px; outline: none; margin-bottom: 4px;">
-                  <div style="display: flex; gap: 4px;">
-                    <button class="btn active" id="btn-save-hl-wallet" style="flex: 1; padding: 3px; font-size: 9.5px;">Connect</button>
-                    <button class="btn" id="btn-disconnect-hl-wallet" style="padding: 3px 6px; font-size: 9.5px;">Paper</button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <!-- Bottom Row: Orderbook (Left) + Trade Execution (Right) -->
-          <div class="dock-grid-bottom">
-            <!-- Orderbook Card -->
-            <div class="dock-card" style="display: flex; flex-direction: column;">
-              <div class="dock-header" style="margin-bottom: 4px;">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                  <span>ORDERBOOK</span>
-                  <span id="ob-coin-badge" style="font-size: 9px; padding: 1px 4px; border-radius: 2px; background: var(--bg-tertiary); color: var(--accent-blue); font-weight: 800;">BTC</span>
-                </div>
-                <div style="font-size: 9px; color: var(--text-secondary);">Tick: <strong>1</strong></div>
+          <!-- Block 3: L2 Orderbook -->
+          <div class="dock-block" id="dock-block-orderbook">
+            <div class="dock-block-header">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #fff; font-weight: 800;">📖 L2 ORDERBOOK</span>
+                <span id="ob-coin-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(41, 98, 255, 0.2); color: #78a9ff; font-weight: 800;">BTC</span>
               </div>
-
-              <!-- Header cols -->
-              <div style="display: flex; justify-content: space-between; padding: 2px 4px; font-size: 9px; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">
-                <span>PRICE</span>
-                <span>SIZE</span>
-                <span>TOTAL</span>
-              </div>
-
-              <!-- Asks Container -->
-              <div id="ob-asks-list" style="display: flex; flex-direction: column; justify-content: flex-end; height: 115px; overflow: hidden; margin-top: 2px;"></div>
-
-              <!-- Spread bar -->
-              <div class="ob-spread-bar">
-                <div>
-                  <span id="ob-spread-val" style="font-weight: 700; color: #fff;">SPREAD --</span>
-                  <span id="ob-spread-bp" style="color: var(--text-secondary); font-size: 8px;">(--BP)</span>
-                </div>
-                <div style="text-align: right;">
-                  <span style="color: var(--text-secondary); font-size: 8px;">MAX</span>
-                  <span id="ob-max-depth" style="font-family: monospace; font-weight: 600; color: #fff;">--</span>
-                </div>
-              </div>
-              <div class="ob-ratio-bar">
-                <div id="ob-ratio-bid" class="ob-ratio-bid" style="width: 50%;"></div>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-secondary); margin: 2px 0 3px 0;">
-                <span>BID <strong id="ob-bid-pct" style="color: #4ade80;">50%</strong></span>
-                <span>ASK <strong id="ob-ask-pct" style="color: #f87171;">50%</strong></span>
-              </div>
-
-              <!-- Bids Container -->
-              <div id="ob-bids-list" style="display: flex; flex-direction: column; height: 115px; overflow: hidden;"></div>
+              <div style="font-size: 9.5px; color: var(--text-secondary);">Tick: <strong>1</strong></div>
             </div>
 
-            <!-- Trade Execution Card -->
-            <div class="dock-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-              <div>
-                <div class="dock-header" style="margin-bottom: 6px;">
-                  <div style="display: flex; gap: 3px;">
-                    <button class="btn active" id="btn-ord-market" style="padding: 2px 5px; font-size: 9px;">MARKET</button>
-                    <button class="btn" id="btn-ord-limit" style="padding: 2px 5px; font-size: 9px;">LIMIT</button>
-                  </div>
-                  <span id="dock-market-price" style="font-family: monospace; font-size: 11px; font-weight: 800; color: #4ade80;">--</span>
-                </div>
+            <!-- Table Header -->
+            <div style="display: flex; justify-content: space-between; padding: 3px 6px; font-size: 9.5px; color: #8c93a3; border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: 700;">
+              <span>PRICE (USDC)</span>
+              <span>SIZE</span>
+              <span>TOTAL</span>
+            </div>
 
-                <div id="limit-price-group" style="display: none;" class="exec-input-group">
-                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">PRICE:</span>
-                  <input type="number" id="input-exec-price" class="exec-input" step="any" placeholder="Limit price">
-                  <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
-                </div>
+            <!-- Asks Container -->
+            <div id="ob-asks-list" style="display: flex; flex-direction: column; justify-content: flex-end; height: 110px; overflow: hidden; margin-top: 2px;"></div>
 
-                <div class="exec-input-group">
-                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">QTY:</span>
-                  <input type="number" id="input-exec-qty" class="exec-input" step="any" placeholder="0">
-                  <span id="exec-coin-denom" style="font-size: 9.5px; color: var(--text-secondary);">BTC</span>
-                </div>
+            <!-- Center Spread Bar & Mid Price -->
+            <div class="ob-spread-bar">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span id="ob-spread-val" style="font-weight: 800; color: #fff;">SPREAD --</span>
+                <span id="ob-spread-bp" style="color: #8c93a3; font-size: 8.5px;">(--BP)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="dock-market-price" style="font-family: monospace; font-size: 11px; font-weight: 800; color: #4ade80;">--</span>
+                <span id="ob-max-depth" style="font-family: monospace; font-weight: 600; color: #8c93a3; font-size: 8.5px;">MAX --</span>
+              </div>
+            </div>
+            
+            <div class="ob-ratio-bar">
+              <div id="ob-ratio-bid" class="ob-ratio-bid" style="width: 50%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 8.5px; color: #8c93a3; margin: 2px 0 4px 0;">
+              <span>BID <strong id="ob-bid-pct" style="color: #4ade80;">50%</strong></span>
+              <span>ASK <strong id="ob-ask-pct" style="color: #f87171;">50%</strong></span>
+            </div>
 
-                <div class="exec-input-group">
-                  <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">NOTIONAL:</span>
-                  <input type="number" id="input-exec-notional" class="exec-input" step="any" placeholder="0">
-                  <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
-                </div>
+            <!-- Bids Container -->
+            <div id="ob-bids-list" style="display: flex; flex-direction: column; height: 110px; overflow: hidden;"></div>
+          </div>
 
-                <!-- Slider & Chips -->
-                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-secondary); margin-top: 1px;">
-                  <span>SLIDER</span>
-                  <span id="exec-pct-display" style="color: #fff; font-weight: 700;">0 %</span>
-                </div>
-                <input type="range" id="exec-pct-slider" class="exec-slider" min="0" max="100" step="5" value="0">
-                <div class="pct-chips">
-                  <div class="pct-chip" data-pct="25">25%</div>
-                  <div class="pct-chip" data-pct="50">50%</div>
-                  <div class="pct-chip" data-pct="75">75%</div>
-                  <div class="pct-chip" data-pct="100">100%</div>
-                </div>
+          <!-- Block 4: Trade Execution Dock -->
+          <div class="dock-block" id="dock-block-exec">
+            <div class="dock-block-header">
+              <span style="color: #fff; font-weight: 800;">⚡ ORDER EXECUTION</span>
+              <div style="display: flex; gap: 3px;">
+                <button class="btn active" id="btn-ord-market" style="padding: 2px 6px; font-size: 9.5px;">MARKET</button>
+                <button class="btn" id="btn-ord-limit" style="padding: 2px 6px; font-size: 9.5px;">LIMIT</button>
+              </div>
+            </div>
 
-                <!-- Options -->
-                <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                  <button class="btn" id="btn-toggle-reduce" style="flex: 1; padding: 3px 0; font-size: 8.5px;">REDUCE ONLY</button>
-                  <button class="btn" id="btn-toggle-tpsl" style="flex: 1; padding: 3px 0; font-size: 8.5px;">TP / SL</button>
-                </div>
-
-                <div id="tpsl-inputs-container" style="display: none; margin-bottom: 6px;">
-                  <div class="exec-input-group" style="margin-bottom: 3px; padding: 3px 6px;">
-                    <span style="font-size: 9px; color: #4ade80; margin-right: 4px;">TP:</span>
-                    <input type="number" id="input-exec-tp" class="exec-input" placeholder="Take Profit price">
-                  </div>
-                  <div class="exec-input-group" style="margin-bottom: 0; padding: 3px 6px;">
-                    <span style="font-size: 9px; color: #f87171; margin-right: 4px;">SL:</span>
-                    <input type="number" id="input-exec-sl" class="exec-input" placeholder="Stop Loss price">
-                  </div>
-                </div>
+            <div>
+              <div id="limit-price-group" style="display: none;" class="exec-input-group">
+                <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">LIMIT PRICE:</span>
+                <input type="number" id="input-exec-price" class="exec-input" step="any" placeholder="Enter limit price">
+                <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
               </div>
 
-              <!-- Action buttons -->
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <button class="exec-btn exec-btn-buy" id="btn-exec-buy">
-                  <span>BUY / LONG</span>
-                  <span id="exec-buy-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
-                </button>
-                <button class="exec-btn exec-btn-sell" id="btn-exec-sell">
-                  <span>SELL / SHORT</span>
-                  <span id="exec-sell-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
-                </button>
+              <div class="exec-input-group">
+                <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">QTY:</span>
+                <input type="number" id="input-exec-qty" class="exec-input" step="any" placeholder="0">
+                <span id="exec-coin-denom" style="font-size: 9.5px; color: var(--text-secondary);">BTC</span>
               </div>
+
+              <div class="exec-input-group">
+                <span style="font-size: 9.5px; color: var(--text-secondary); margin-right: 4px;">NOTIONAL:</span>
+                <input type="number" id="input-exec-notional" class="exec-input" step="any" placeholder="0">
+                <span style="font-size: 9.5px; color: var(--text-secondary);">USDC</span>
+              </div>
+
+              <!-- Slider & Chips -->
+              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-secondary); margin-top: 1px;">
+                <span>ALLOCATION</span>
+                <span id="exec-pct-display" style="color: #fff; font-weight: 700;">0 %</span>
+              </div>
+              <input type="range" id="exec-pct-slider" class="exec-slider" min="0" max="100" step="5" value="0">
+              <div class="pct-chips">
+                <div class="pct-chip" data-pct="25">25%</div>
+                <div class="pct-chip" data-pct="50">50%</div>
+                <div class="pct-chip" data-pct="75">75%</div>
+                <div class="pct-chip" data-pct="100">100%</div>
+              </div>
+
+              <!-- Options -->
+              <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                <button class="btn" id="btn-toggle-reduce" style="flex: 1; padding: 3px 0; font-size: 9px;">REDUCE ONLY</button>
+                <button class="btn" id="btn-toggle-tpsl" style="flex: 1; padding: 3px 0; font-size: 9px;">TP / SL</button>
+              </div>
+
+              <div id="tpsl-inputs-container" style="display: none; margin-bottom: 6px;">
+                <div class="exec-input-group" style="margin-bottom: 3px; padding: 4px 6px;">
+                  <span style="font-size: 9px; color: #4ade80; margin-right: 4px;">TP:</span>
+                  <input type="number" id="input-exec-tp" class="exec-input" placeholder="Take Profit price">
+                </div>
+                <div class="exec-input-group" style="margin-bottom: 0; padding: 4px 6px;">
+                  <span style="font-size: 9px; color: #f87171; margin-right: 4px;">SL:</span>
+                  <input type="number" id="input-exec-sl" class="exec-input" placeholder="Stop Loss price">
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 4px;">
+              <button class="exec-btn exec-btn-buy" id="btn-exec-buy">
+                <span>BUY / LONG</span>
+                <span id="exec-buy-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
+              </button>
+              <button class="exec-btn exec-btn-sell" id="btn-exec-sell">
+                <span>SELL / SHORT</span>
+                <span id="exec-sell-sub" style="font-size: 8.5px; font-weight: 500; opacity: 0.85;">0 BTC @ $0</span>
+              </button>
             </div>
           </div>
         </div>
+
+        <!-- Web3 Wallet Selection Modal -->
+        <div id="web3-wallet-modal" class="web3-modal-overlay" style="display: none;">
+          <div class="web3-modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1f2536;">
+              <div>
+                <div style="font-size: 13px; font-weight: 800; color: #fff;">Connect to Hyperliquid</div>
+                <div style="font-size: 10px; color: #8c93a3;">Select your Web3 wallet provider or enter read-only address</div>
+              </div>
+              <button id="btn-close-web3-modal" style="background: none; border: none; color: #8c93a3; font-size: 16px; cursor: pointer; padding: 4px;">✕</button>
+            </div>
+
+            <div style="padding: 14px 16px;">
+              <!-- 1. MetaMask -->
+              <div class="web3-wallet-option" id="btn-connect-metamask">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">🦊</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">MetaMask</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Connect browser extension (EVM)</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <!-- 2. Rabby Wallet -->
+              <div class="web3-wallet-option" id="btn-connect-rabby">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">🐰</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Rabby Wallet</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Game-changing wallet for Hyperliquid</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <!-- 3. Phantom -->
+              <div class="web3-wallet-option" id="btn-connect-phantom">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">👻</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Phantom</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Multi-chain EVM & Solana wallet</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
+                <div style="flex: 1; height: 1px; background: #222736;"></div>
+                <span style="font-size: 9px; color: #64748b; font-weight: 700;">OR MANUAL ADDRESS</span>
+                <div style="flex: 1; height: 1px; background: #222736;"></div>
+              </div>
+
+              <!-- 4. Manual Address Input -->
+              <div>
+                <input type="text" id="input-hl-wallet" placeholder="0x... Enter Hyperliquid address (Read-only)" style="width: 100%; background: #161a24; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none; margin-bottom: 8px;">
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn active" id="btn-save-hl-wallet" style="flex: 1; padding: 6px; font-size: 10.5px; font-weight: 700;">Watch Address</button>
+                  <button class="btn" id="btn-switch-paper-modal" style="padding: 6px 12px; font-size: 10.5px; background: rgba(34, 197, 94, 0.15); color: #4ade80;">Use Paper ($10k)</button>
+                </div>
+              </div>
+
+              <!-- Status / Error message -->
+              <div id="web3-status-msg" style="display: none; margin-top: 10px; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 600;"></div>
+            </div>
+          </div>
+        </div>        </div>
       </div>
     </div>
 
@@ -3196,7 +3348,10 @@ const htmlContent = `<!DOCTYPE html>
 
       // 3. Fetch Account
       try {
-        const res = await fetch('/api/hyperliquid/account');
+        const accountUrl = (currentDockMode === 'HYPERLIQUID_LIVE' && connectedWalletAddress)
+          ? '/api/hyperliquid/account?address=' + encodeURIComponent(connectedWalletAddress)
+          : '/api/hyperliquid/account';
+        const res = await fetch(accountUrl);
         const acc = await res.json();
         if (acc) {
           dockAvailableBalance = acc.available || 10000;
@@ -3332,32 +3487,211 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    // Connect Hyperliquid wallet toggle
-    const btnHlToggle = document.getElementById('btn-dock-mode-toggle');
-    const hlModal = document.getElementById('hl-connect-modal');
-    btnHlToggle?.addEventListener('click', () => {
-      const isHidden = hlModal.style.display === 'none';
-      hlModal.style.display = isHidden ? 'block' : 'none';
+    // --- Modular Dock Tabs Navigation (All, Screener, Orderbook, Execution) ---
+    document.querySelectorAll('.dock-seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.dock-seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.dockTab;
+        const bAcc = document.getElementById('dock-block-account');
+        const bScr = document.getElementById('dock-block-screener');
+        const bOb = document.getElementById('dock-block-orderbook');
+        const bExec = document.getElementById('dock-block-exec');
+
+        if (tab === 'all') {
+          if (bAcc) bAcc.style.display = 'flex';
+          if (bScr) bScr.style.display = 'flex';
+          if (bOb) bOb.style.display = 'flex';
+          if (bExec) bExec.style.display = 'flex';
+        } else if (tab === 'screener') {
+          if (bAcc) bAcc.style.display = 'flex';
+          if (bScr) bScr.style.display = 'flex';
+          if (bOb) bOb.style.display = 'none';
+          if (bExec) bExec.style.display = 'none';
+        } else if (tab === 'orderbook') {
+          if (bAcc) bAcc.style.display = 'none';
+          if (bScr) bScr.style.display = 'none';
+          if (bOb) bOb.style.display = 'flex';
+          if (bExec) bExec.style.display = 'none';
+        } else if (tab === 'exec') {
+          if (bAcc) bAcc.style.display = 'flex';
+          if (bScr) bScr.style.display = 'none';
+          if (bOb) bOb.style.display = 'none';
+          if (bExec) bExec.style.display = 'flex';
+        }
+      });
     });
-    document.getElementById('btn-save-hl-wallet')?.addEventListener('click', async () => {
-      const addr = document.getElementById('input-hl-wallet')?.value.trim();
-      if (addr) {
-        currentDockMode = 'HYPERLIQUID_LIVE';
-        document.getElementById('account-mode-badge').textContent = 'HL LIVE';
-        document.getElementById('account-mode-badge').style.background = 'rgba(41, 98, 255, 0.2)';
-        document.getElementById('account-mode-badge').style.color = '#78a9ff';
-        hlModal.style.display = 'none';
-        updateDockData();
+
+    // --- Web3 Wallet Modal & Connection Logic ---
+    let connectedWalletAddress = localStorage.getItem('hl_connected_address') || null;
+    let connectedWalletType = localStorage.getItem('hl_connected_wallet') || null;
+
+    const web3Modal = document.getElementById('web3-wallet-modal');
+    const btnOpenWallet = document.getElementById('btn-dock-mode-toggle');
+    const btnCloseWallet = document.getElementById('btn-close-web3-modal');
+    const web3StatusMsg = document.getElementById('web3-status-msg');
+
+    function showWeb3Status(msg, isError = false) {
+      if (!web3StatusMsg) return;
+      web3StatusMsg.textContent = msg;
+      web3StatusMsg.style.display = 'block';
+      web3StatusMsg.style.background = isError ? 'rgba(239, 83, 80, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+      web3StatusMsg.style.color = isError ? '#ef5350' : '#38bdf8';
+      web3StatusMsg.style.border = isError ? '1px solid rgba(239, 83, 80, 0.3)' : '1px solid rgba(56, 189, 248, 0.3)';
+    }
+
+    btnOpenWallet?.addEventListener('click', () => {
+      if (web3Modal) web3Modal.style.display = 'flex';
+      if (web3StatusMsg) web3StatusMsg.style.display = 'none';
+    });
+
+    btnCloseWallet?.addEventListener('click', () => {
+      if (web3Modal) web3Modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === web3Modal) web3Modal.style.display = 'none';
+    });
+
+    function applyWalletConnection(address, type = 'MetaMask', icon = '🦊') {
+      connectedWalletAddress = address;
+      connectedWalletType = type;
+      localStorage.setItem('hl_connected_address', address);
+      localStorage.setItem('hl_connected_wallet', type);
+
+      currentDockMode = 'HYPERLIQUID_LIVE';
+
+      const modeBadge = document.getElementById('account-mode-badge');
+      if (modeBadge) {
+        modeBadge.textContent = '● HL LIVE';
+        modeBadge.className = 'badge-hl-live';
+      }
+
+      const btnLabel = document.getElementById('wallet-btn-label');
+      if (btnLabel) btnLabel.textContent = address.slice(0, 6) + '...' + address.slice(-4);
+
+      const connBar = document.getElementById('wallet-connected-bar');
+      const pIcon = document.getElementById('wallet-provider-icon');
+      const pAddr = document.getElementById('wallet-address-display');
+      if (connBar) connBar.style.display = 'flex';
+      if (pIcon) pIcon.textContent = icon;
+      if (pAddr) pAddr.textContent = address.slice(0, 6) + '...' + address.slice(-4);
+
+      if (web3Modal) web3Modal.style.display = 'none';
+      updateDockData();
+    }
+
+    function disconnectWallet() {
+      connectedWalletAddress = null;
+      connectedWalletType = null;
+      localStorage.removeItem('hl_connected_address');
+      localStorage.removeItem('hl_connected_wallet');
+
+      currentDockMode = 'PAPER';
+
+      const modeBadge = document.getElementById('account-mode-badge');
+      if (modeBadge) {
+        modeBadge.textContent = '● PAPER $10K';
+        modeBadge.className = 'badge-paper';
+      }
+
+      const btnLabel = document.getElementById('wallet-btn-label');
+      if (btnLabel) btnLabel.textContent = 'Connect Wallet';
+
+      const connBar = document.getElementById('wallet-connected-bar');
+      if (connBar) connBar.style.display = 'none';
+
+      if (web3Modal) web3Modal.style.display = 'none';
+      updateDockData();
+    }
+
+    document.getElementById('btn-disconnect-hl-wallet')?.addEventListener('click', disconnectWallet);
+    document.getElementById('btn-switch-paper-modal')?.addEventListener('click', disconnectWallet);
+
+    document.getElementById('btn-copy-wallet')?.addEventListener('click', () => {
+      if (connectedWalletAddress) {
+        navigator.clipboard?.writeText(connectedWalletAddress).catch(() => {});
+        alert('Copied wallet address: ' + connectedWalletAddress);
       }
     });
-    document.getElementById('btn-disconnect-hl-wallet')?.addEventListener('click', () => {
-      currentDockMode = 'PAPER';
-      document.getElementById('account-mode-badge').textContent = 'PAPER $10K';
-      document.getElementById('account-mode-badge').style.background = 'rgba(34, 197, 94, 0.2)';
-      document.getElementById('account-mode-badge').style.color = '#4ade80';
-      hlModal.style.display = 'none';
-      updateDockData();
+
+    // 1. MetaMask Connect
+    document.getElementById('btn-connect-metamask')?.addEventListener('click', async () => {
+      const provider = window.ethereum;
+      if (provider) {
+        try {
+          showWeb3Status('Connecting to MetaMask...');
+          const accounts = await provider.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts[0]) {
+            applyWalletConnection(accounts[0], 'MetaMask', '🦊');
+          }
+        } catch (err) {
+          showWeb3Status(err.message || 'MetaMask connection rejected', true);
+        }
+      } else {
+        showWeb3Status('MetaMask extension not found in this browser. Enter read-only address below.', true);
+      }
     });
+
+    // 2. Rabby Connect
+    document.getElementById('btn-connect-rabby')?.addEventListener('click', async () => {
+      const provider = window.rabby || (window.ethereum?.isRabby ? window.ethereum : null);
+      if (provider) {
+        try {
+          showWeb3Status('Connecting to Rabby Wallet...');
+          const accounts = await provider.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts[0]) {
+            applyWalletConnection(accounts[0], 'Rabby', '🐰');
+          }
+        } catch (err) {
+          showWeb3Status(err.message || 'Rabby connection rejected', true);
+        }
+      } else {
+        showWeb3Status('Rabby Wallet extension not detected in this browser.', true);
+      }
+    });
+
+    // 3. Phantom Connect
+    document.getElementById('btn-connect-phantom')?.addEventListener('click', async () => {
+      const provider = window.phantom?.ethereum || window.phantom?.solana;
+      if (provider) {
+        try {
+          showWeb3Status('Connecting to Phantom...');
+          if (window.phantom?.ethereum) {
+            const accounts = await window.phantom.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts[0]) {
+              applyWalletConnection(accounts[0], 'Phantom', '👻');
+              return;
+            }
+          }
+          if (window.phantom?.solana) {
+            const resp = await window.phantom.solana.connect();
+            if (resp && resp.publicKey) {
+              applyWalletConnection(resp.publicKey.toString(), 'Phantom', '👻');
+            }
+          }
+        } catch (err) {
+          showWeb3Status(err.message || 'Phantom connection rejected', true);
+        }
+      } else {
+        showWeb3Status('Phantom wallet extension not detected in this browser.', true);
+      }
+    });
+
+    // 4. Manual Read-Only Address
+    document.getElementById('btn-save-hl-wallet')?.addEventListener('click', () => {
+      const addr = document.getElementById('input-hl-wallet')?.value.trim();
+      if (addr && addr.length > 5) {
+        applyWalletConnection(addr, 'Watch-Only', '👁️');
+      } else {
+        showWeb3Status('Please enter a valid wallet address.', true);
+      }
+    });
+
+    // Auto-restore saved wallet on reload if present
+    if (connectedWalletAddress) {
+      applyWalletConnection(connectedWalletAddress, connectedWalletType || 'Watch-Only', connectedWalletType === 'MetaMask' ? '🦊' : connectedWalletType === 'Rabby' ? '🐰' : connectedWalletType === 'Phantom' ? '👻' : '👁️');
+    }
 
     // Execute Trade handler
     async function handleTradeExecution(side) {
