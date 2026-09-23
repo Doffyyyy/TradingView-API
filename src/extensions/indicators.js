@@ -253,7 +253,230 @@ async function computeAllIndicators(symbol, timeframe = '60', requestedIndicator
     }
   }
 
+  if (reqSet.has('GALTON')) {
+    const galton = calcGaltonVolumeProfile(candles, 50);
+    if (galton) {
+      results.indicators.Galton = galton;
+    }
+  }
+
+  if (reqSet.has('FOOTPRINT')) {
+    const footprint = calcVolumeFootprint(candles, 5, 3.0);
+    if (footprint) {
+      results.indicators.Footprint = footprint;
+    }
+  }
+
   return results;
+}
+
+function normalCDF(z) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989422804014327 * Math.exp(-z * z / 2);
+  const prob = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return z > 0 ? 1 - prob : prob;
+}
+
+/**
+ * Galton Volume Profile (BVC Engine + Galton Binomial/Gaussian Distribution)
+ */
+function calcGaltonVolumeProfile(candles, period = 50) {
+  if (!candles || candles.length < 5) return null;
+  const slice = candles.slice(-Math.min(candles.length, period));
+  const n = slice.length;
+
+  let deltaPs = [];
+  for (let i = 1; i < n; i++) {
+    deltaPs.push(slice[i].close - slice[i - 1].close);
+  }
+  const meanDP = deltaPs.reduce((a, b) => a + b, 0) / Math.max(1, deltaPs.length);
+  const varianceDP = deltaPs.reduce((a, b) => a + Math.pow(b - meanDP, 2), 0) / Math.max(1, deltaPs.length);
+  const stdDP = Math.sqrt(varianceDP) || 0.0001;
+
+  let minLow = Infinity, maxHigh = -Infinity;
+  slice.forEach(c => {
+    if (c.low < minLow) minLow = c.low;
+    if (c.high > maxHigh) maxHigh = c.high;
+  });
+  if (maxHigh <= minLow) return null;
+
+  const binCount = 30;
+  const binStep = (maxHigh - minLow) / binCount;
+  let buyBins = new Array(binCount).fill(0);
+  let sellBins = new Array(binCount).fill(0);
+
+  let totalBuyVol = 0, totalSellVol = 0;
+
+  for (let i = 0; i < n; i++) {
+    const c = slice[i];
+    const prevC = i > 0 ? slice[i - 1].close : c.open;
+    const vol = c.volume || 1;
+    const dp = c.close - prevC;
+
+    const z = dp / stdDP;
+    const buyRatio = Math.max(0.01, Math.min(0.99, normalCDF(z)));
+    const buyVol = vol * buyRatio;
+    const sellVol = vol * (1 - buyRatio);
+    totalBuyVol += buyVol;
+    totalSellVol += sellVol;
+
+    const candleSpread = Math.max(c.high - c.low, binStep) / 3.0;
+    const twoSigSq = 2 * Math.pow(candleSpread, 2);
+
+    let weights = [];
+    let sumW = 0;
+    for (let k = 0; k < binCount; k++) {
+      const binCenter = minLow + (k + 0.5) * binStep;
+      if (binCenter >= c.low - binStep && binCenter <= c.high + binStep) {
+        const dist = binCenter - c.close;
+        const w = Math.exp(- (dist * dist) / twoSigSq);
+        weights.push({ k, w });
+        sumW += w;
+      }
+    }
+
+    if (sumW > 0) {
+      weights.forEach(item => {
+        const normW = item.w / sumW;
+        buyBins[item.k] += buyVol * normW;
+        sellBins[item.k] += sellVol * normW;
+      });
+    }
+  }
+
+  let maxBinVol = -1, pocIdx = 0;
+  let totBins = new Array(binCount);
+  let sumPeriodVol = 0;
+  for (let k = 0; k < binCount; k++) {
+    totBins[k] = buyBins[k] + sellBins[k];
+    sumPeriodVol += totBins[k];
+    if (totBins[k] > maxBinVol) {
+      maxBinVol = totBins[k];
+      pocIdx = k;
+    }
+  }
+  const pocPrice = minLow + (pocIdx + 0.5) * binStep;
+
+  // Value Area (70%)
+  const targetVA = sumPeriodVol * 0.70;
+  let vaVol = totBins[pocIdx];
+  let upIdx = pocIdx, downIdx = pocIdx;
+  while (vaVol < targetVA && (upIdx < binCount - 1 || downIdx > 0)) {
+    const nextUp = upIdx < binCount - 1 ? totBins[upIdx + 1] : 0;
+    const nextDown = downIdx > 0 ? totBins[downIdx - 1] : 0;
+    if (nextUp >= nextDown && upIdx < binCount - 1) {
+      upIdx++;
+      vaVol += totBins[upIdx];
+    } else if (downIdx > 0) {
+      downIdx--;
+      vaVol += totBins[downIdx];
+    } else if (upIdx < binCount - 1) {
+      upIdx++;
+      vaVol += totBins[upIdx];
+    } else {
+      break;
+    }
+  }
+  const valPrice = minLow + (downIdx + 0.5) * binStep;
+  const vahPrice = minLow + (upIdx + 0.5) * binStep;
+  const currentPrice = slice[slice.length - 1].close;
+
+  const totalVol = Math.max(1, totalBuyVol + totalSellVol);
+  const buyRatio = totalBuyVol / totalVol;
+  const sellRatio = totalSellVol / totalVol;
+
+  return {
+    buyRatio: Math.round(buyRatio * 1000) / 1000,
+    sellRatio: Math.round(sellRatio * 1000) / 1000,
+    flowDelta: Math.round(totalBuyVol - totalSellVol),
+    pocPrice: Math.round(pocPrice * 100) / 100,
+    vahPrice: Math.round(vahPrice * 100) / 100,
+    valPrice: Math.round(valPrice * 100) / 100,
+    currentPrice,
+    isAbovePoc: currentPrice >= pocPrice,
+    isWithinValueArea: currentPrice >= valPrice && currentPrice <= vahPrice,
+    priceVsPocPercent: Math.round(((currentPrice - pocPrice) / pocPrice) * 10000) / 100,
+  };
+}
+
+/**
+ * Volume Footprint (Gaussian Row Distribution & Diagonal Imbalance)
+ */
+function calcVolumeFootprint(candles, windowBars = 5, imbalanceRatio = 3.0) {
+  if (!candles || candles.length < 3) return null;
+  const slice = candles.slice(-Math.min(candles.length, windowBars));
+
+  let minLow = Infinity, maxHigh = -Infinity;
+  slice.forEach(c => {
+    if (c.low < minLow) minLow = c.low;
+    if (c.high > maxHigh) maxHigh = c.high;
+  });
+  if (maxHigh <= minLow) return null;
+
+  const rowCount = 20;
+  const rowStep = (maxHigh - minLow) / rowCount;
+  let rowBuys = new Array(rowCount).fill(0);
+  let rowSells = new Array(rowCount).fill(0);
+
+  slice.forEach(c => {
+    const vol = c.volume || 1;
+    const r = c.high - c.low;
+    const bR = r > 0 ? (c.close - c.low) / r : 0.5;
+    const bV = vol * bR;
+    const sV = vol * (1 - bR);
+    const sigma = Math.max(r, rowStep) / 3.0;
+    const twoSigSq = 2 * sigma * sigma;
+
+    let weights = [];
+    let sumW = 0;
+    for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+      const price = minLow + (rIdx + 0.5) * rowStep;
+      if (price >= c.low - rowStep && price <= c.high + rowStep) {
+        const dist = price - c.close;
+        const w = Math.exp(- (dist * dist) / twoSigSq);
+        weights.push({ rIdx, w });
+        sumW += w;
+      }
+    }
+    if (sumW > 0) {
+      weights.forEach(item => {
+        const normW = item.w / sumW;
+        rowBuys[item.rIdx] += bV * normW;
+        rowSells[item.rIdx] += sV * normW;
+      });
+    }
+  });
+
+  let buyImbCount = 0, sellImbCount = 0;
+  let hasBearishAbsorptionTop = false;
+  let hasBullishAbsorptionBottom = false;
+
+  for (let rIdx = 1; rIdx < rowCount; rIdx++) {
+    if (rowBuys[rIdx] > (rowSells[rIdx - 1] * imbalanceRatio) && rowBuys[rIdx] > 10) {
+      buyImbCount++;
+      if (rIdx <= 4) hasBullishAbsorptionBottom = true;
+    }
+    if (rowSells[rIdx - 1] > (rowBuys[rIdx] * imbalanceRatio) && rowSells[rIdx - 1] > 10) {
+      sellImbCount++;
+      if (rIdx >= rowCount - 4) hasBearishAbsorptionTop = true;
+    }
+  }
+
+  let overlapMin = 0, overlapMax = 0;
+  for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+    overlapMin += Math.min(rowBuys[rIdx], rowSells[rIdx]);
+    overlapMax += Math.max(rowBuys[rIdx], rowSells[rIdx]);
+  }
+  const ovlScore = overlapMax > 0 ? (overlapMin / overlapMax) : 1.0;
+
+  return {
+    buyImbCount,
+    sellImbCount,
+    hasBearishAbsorptionTop,
+    hasBullishAbsorptionBottom,
+    ovlScore: Math.round(ovlScore * 100) / 100,
+    marketStructure: ovlScore < 0.48 ? 'DIRECTIONAL' : (ovlScore > 0.72 ? 'CHOPPY_ROTATION' : 'BALANCED'),
+  };
 }
 
 /**
@@ -276,5 +499,7 @@ module.exports = {
   calcMACD,
   calcSupertrend,
   calcIchimoku,
+  calcGaltonVolumeProfile,
+  calcVolumeFootprint,
   getPineIndicatorMetadata,
 };
