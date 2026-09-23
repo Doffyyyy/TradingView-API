@@ -1,10 +1,10 @@
 {
   "initialBalance": 10000,
-  "cash": 5812.465910002227,
-  "equity": 10249.95,
-  "dailyTargetMin": 50,
-  "dailyTargetMax": 100,
-  "dailyRealizedPnl": 0,
+  "cash": 6014.481622510713,
+  "equity": 10309.33,
+  "dailyTargetMin": 100,
+  "dailyTargetMax": 300,
+  "dailyRealizedPnl": 64.52571250848611,
   "lastResetDate": "2026-09-23",
   "autoTradeEnabled": true,
   "riskPerTradePercent": 1.5,
@@ -25,20 +25,38 @@
       "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 59.59, 26-TA Buy consensus (17/26)."
     },
     {
+      "id": "pos_1790127970194",
+      "symbol": "BINANCE:BTCUSDT",
+      "side": "LONG",
+      "entryPrice": 86265.52,
+      "size": 0.04173162116219783,
+      "margin": 1800,
+      "notional": 3600,
+      "leverage": 2,
+      "stopLoss": 85575.4,
+      "takeProfit": 87559.5,
+      "entryTime": "2026-09-23T01:46:10.194Z",
+      "strategy": "High Confluence Long [2x]",
+      "reason": "High Confluence Long [2x]: Supertrend Bullish, MACD Bullish, RSI 47.99, 26-TA Buy consensus (17/26, sell: 3)."
+    }
+  ],
+  "trades": [
+    {
       "id": "pos_1790116255754",
       "symbol": "BINANCE:ZECUSDT",
       "side": "LONG",
       "entryPrice": 1547.16,
+      "exitPrice": 1600.26,
       "size": 1.2522871821061874,
       "notional": 1937.49,
-      "stopLoss": 1534.78,
-      "takeProfit": 1570.37,
+      "pnl": 64.53,
+      "pnlPercent": 3.33,
+      "fee": 1.97,
       "entryTime": "2026-09-22T22:30:55.754Z",
-      "strategy": "Supertrend + MACD Momentum",
-      "reason": "Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI 61.38, 26-TA Buy consensus (17/26)."
-    }
-  ],
-  "trades": [
+      "exitTime": "2026-09-22T23:06:15.910Z",
+      "reason": "Take Profit hit at $1,600.26 (+3.43%)",
+      "strategy": "Supertrend + MACD Momentum"
+    },
     {
       "id": "pos_1790054147001",
       "symbol": "BINANCE:PUMPUSDT",
@@ -345,6 +363,12 @@
     }
   ],
   "logs": [
+    "[8:46:10 AM] OPENED LONG on BINANCE:BTCUSDT @ $86,265.52 [2x Lev | Margin: $1800, Notional: $3600]. Target TP: $87,559.50 (+1.5%), SL: $85,575.40 (-0.8%) [Strategy: High Confluence Long]",
+    "[8:46:10 AM] 🚀 Entry Signal: BINANCE:BTCUSDT LONG (2x Lev) | Reason: High Confluence Long [2x]: Supertrend Bullish, MACD Bullish, RSI 47.99, 26-TA Buy consensus (17/26, sell: 3).",
+    "[8:46:09 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[6:06:15 AM] ✅ Daily Target Achieved (+$64.53 >= $50/day). Preserving daily profit: Pausing normal entries, only sniping A+ setups.",
+    "[6:06:15 AM] CLOSED LONG BINANCE:ZECUSDT: Net PnL $64.53 (3.33%). Take Profit hit at $1,600.26 (+3.43%)",
+    "[6:06:15 AM] Trailing Stop locked for LONG BINANCE:ZECUSDT at breakeven+$ ($1,550.25)",
     "[5:46:38 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[5:41:00 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[5:38:39 AM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
@@ -388,13 +412,7 @@
     "[12:01:11 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.00. Target TP: $0.00, SL: $0.00 [Strategy: Supertrend + MACD Momentum]",
     "[12:00:59 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $-2.5 (-0.1%). Take Profit hit at $0.00 (+0.00%)",
     "[12:00:57 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.00. Target TP: $0.00, SL: $0.00 [Strategy: Supertrend + MACD Momentum]",
-    "[12:00:51 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $4.19 (0.17%). Take Profit hit at $0.00 (+0.27%)",
-    "[12:00:49 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.00. Target TP: $0.00, SL: $0.00 [Strategy: Supertrend + MACD Momentum]",
-    "[12:00:43 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $-2.5 (-0.1%). Take Profit hit at $0.00 (+0.00%)",
-    "[12:00:41 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.00. Target TP: $0.00, SL: $0.00 [Strategy: Supertrend + MACD Momentum]",
-    "[12:00:35 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $-2.5 (-0.1%). Take Profit hit at $0.00 (+0.00%)",
-    "[12:00:28 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.00. Target TP: $0.00, SL: $0.00 [Strategy: Supertrend + MACD Momentum]",
-    "[12:00:20 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $-9.17 (-0.37%). Take Profit hit at $0.00 (+-0.27%)"
+    "[12:00:51 PM] CLOSED LONG BINANCE:PUMPUSDT: Net PnL $4.19 (0.17%). Take Profit hit at $0.00 (+0.27%)"
   ],
   "dailyHistory": [
     {
@@ -417,5 +435,6 @@
       "realizedPnl": 253.14418854805646,
       "closingEquity": 10252.66
     }
-  ]
+  ],
+  "dailyStopLossMax": 180
 }

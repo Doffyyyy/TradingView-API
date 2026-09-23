@@ -1107,7 +1107,7 @@ const htmlContent = `<!DOCTYPE html>
           <button class="btn" id="btn-paper-reset" style="background: rgba(140, 147, 163, 0.15);">Reset $10k Fund</button>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 11px; color: var(--text-secondary);">Daily Target: <strong>$50 - $100 / day</strong></span>
+          <span style="font-size: 11px; color: var(--text-secondary);">Daily Target: <strong>1% - 3% ($100 - $300 / day) [Max 3x Lev]</strong></span>
           <span id="paper-engine-status" style="font-size: 12px; color: var(--accent-green);">● Auto-Engine Running</span>
         </div>
       </div>
@@ -1135,32 +1135,34 @@ const htmlContent = `<!DOCTYPE html>
         <!-- Daily Target & Stop Loss Progress Card -->
         <div class="card">
           <div class="card-title">
-            <span>Daily Profit Target ($50 - $100) & Stop Loss (-$100)</span>
+            <span>Daily Profit Target (1% - 3% | $100 - $300) & Stop Loss (-$180)</span>
             <span id="target-progress-text" style="color: #fbbf24; font-weight: 700;">0%</span>
           </div>
           <div style="width: 100%; height: 12px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; margin-top: 4px;">
             <div id="target-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #26a69a, #4ade80, #fbbf24); transition: width 0.3s;"></div>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--text-secondary);">
-            <span style="color: #ef5350; font-weight: 700;">-$100.00 (Daily Stop Loss Limit)</span>
+            <span style="color: #ef5350; font-weight: 700;">-$180.00 (Daily Stop Loss -1.8%)</span>
             <span>$0.00</span>
-            <span style="color: #38bdf8;">$50.00 (Min Target)</span>
-            <span style="color: #4ade80; font-weight: 700;">$100.00 (Max Target - Auto Lock)</span>
+            <span style="color: #38bdf8; font-weight: 700;">$100.00 (Min Target 1%)</span>
+            <span style="color: #4ade80; font-weight: 700;">$300.00 (Max Target 3% - Lock)</span>
           </div>
         </div>
 
         <!-- Open Positions -->
         <div class="card">
-          <div class="card-title">Active Paper Positions (Max 2 Concurrent)</div>
+          <div class="card-title">Active Paper Positions (Max 2 Concurrent | Leverage up to 3x)</div>
           <table id="table-paper-positions">
             <thead>
               <tr>
                 <th>Symbol</th>
                 <th>Side</th>
+                <th>Lev</th>
                 <th>Entry</th>
                 <th>Mark Price</th>
-                <th>TP (+1.5%)</th>
-                <th>SL (-0.8%)</th>
+                <th>TP</th>
+                <th>SL</th>
+                <th>Margin</th>
                 <th>Notional</th>
                 <th>Unrealized PnL</th>
                 <th>Action</th>
@@ -3500,17 +3502,22 @@ const htmlContent = `<!DOCTYPE html>
         const targetBarEl = document.getElementById('target-progress-bar');
 
         if (data.dailyStopLossHit) {
-          targetTextEl.textContent = '🛑 Daily Stop Loss Hit (-$' + Math.abs(data.dailyPnl).toFixed(2) + ' / -$' + (data.dailyStopLossMax || 100) + ') — Halted until 00:00 UTC+7';
+          targetTextEl.textContent = '🛑 Daily Stop Loss Hit (-$' + Math.abs(data.dailyPnl).toFixed(2) + ' / -$' + (data.dailyStopLossMax || 180) + ') — Halted until 00:00 UTC+7';
           targetTextEl.style.color = '#ef5350';
           targetBarEl.style.width = '100%';
           targetBarEl.style.background = '#ef5350';
-        } else if (data.dailyTargetHit) {
-          targetTextEl.textContent = '🎯 Target Achieved: $' + data.dailyPnl.toFixed(2) + ' — 🛡️ SNIPER MODE: Only A+ setups';
+        } else if (data.dailyTargetMaxHit) {
+          targetTextEl.textContent = '🏆 3% Max Target Reached (+$' + data.dailyPnl.toFixed(2) + ' >= $' + (data.dailyTargetMax || 300) + ') — Profit Locked for Today!';
           targetTextEl.style.color = '#4ade80';
           targetBarEl.style.width = '100%';
           targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #38bdf8)';
+        } else if (data.dailyTargetHit) {
+          targetTextEl.textContent = '🎯 1% Target Achieved (+$' + data.dailyPnl.toFixed(2) + ') — 🛡️ SNIPER MODE (A+ Only, Max 2x)';
+          targetTextEl.style.color = '#38bdf8';
+          targetBarEl.style.width = Math.min(100, Math.max(0, data.dailyTargetProgressPercent)) + '%';
+          targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #38bdf8)';
         } else {
-          targetTextEl.textContent = data.dailyTargetProgressPercent + '% ($' + data.dailyPnl.toFixed(2) + ' / $' + (data.dailyTargetMax || 100) + ')';
+          targetTextEl.textContent = data.dailyTargetProgressPercent + '% (+$' + data.dailyPnl.toFixed(2) + ' / $' + (data.dailyTargetMax || 300) + ' max)';
           targetTextEl.style.color = data.dailyPnl >= 0 ? '#fbbf24' : '#f87171';
           targetBarEl.style.width = Math.min(100, Math.max(0, data.dailyTargetProgressPercent)) + '%';
           targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #fbbf24)';
@@ -3525,20 +3532,25 @@ const htmlContent = `<!DOCTYPE html>
             btnToggle.style.background = '#b91c1c';
             statusEl.textContent = '● Daily Stop Loss Hit — Trading Halted until 00:00 UTC+7';
             statusEl.style.color = '#ef5350';
+          } else if (data.dailyTargetMaxHit) {
+            btnToggle.textContent = '🏆 Auto-Trade: 3% TARGET LOCKED';
+            btnToggle.style.background = '#059669';
+            statusEl.textContent = '● 3% Max Target Hit (+$' + data.dailyPnl.toFixed(2) + ') — Trading Locked to Preserve Gains';
+            statusEl.style.color = '#10b981';
           } else if (data.dailyTargetHit) {
             btnToggle.textContent = '🎯 Auto-Trade: TARGET MET (Sniper A+)';
             btnToggle.style.background = '#0284c7';
-            statusEl.textContent = '● Target Reached — Sniper Mode (Only A+ Setups)';
+            statusEl.textContent = '● 1% Target Met — Sniper Mode Active (A+ Setups, Max 2x)';
             statusEl.style.color = '#38bdf8';
           } else if (data.tradingMode && data.tradingMode.includes('DEFENSIVE')) {
             btnToggle.textContent = '⚠️ Auto-Trade: DEFENSIVE (Risk Reduced)';
             btnToggle.style.background = '#d97706';
-            statusEl.textContent = '● Defensive Mode (Drawdown protection active, max 1 position)';
+            statusEl.textContent = '● Defensive Mode (Drawdown protection, 1x Lev, 1 position)';
             statusEl.style.color = '#fbbf24';
           } else {
-            btnToggle.textContent = '🟢 Auto-Trade: ACTIVE';
+            btnToggle.textContent = '🟢 Auto-Trade: ACTIVE [Max 3x]';
             btnToggle.style.background = '#22c55e';
-            statusEl.textContent = '● Auto-Engine Running';
+            statusEl.textContent = '● Auto-Engine Running (Adaptive Leverage up to 3x)';
             statusEl.style.color = 'var(--accent-green)';
           }
         } else {
@@ -3551,19 +3563,21 @@ const htmlContent = `<!DOCTYPE html>
         // Open positions table
         const posBody = document.querySelector('#table-paper-positions tbody');
         if (!data.openPositions || data.openPositions.length === 0) {
-          posBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 16px;">No open positions. Monitoring market for next high-confluence entry...</td></tr>';
+          posBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">No open positions. Monitoring market for next high-confluence entry...</td></tr>';
         } else {
           posBody.innerHTML = data.openPositions.map(p => \`
             <tr>
               <td><strong>\${p.symbol}</strong></td>
               <td><span class="action-badge \${p.side === 'LONG' ? 'action-buy' : 'action-sell'}">\${p.side}</span></td>
+              <td><span class="action-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">\${p.leverage || 1}x</span></td>
               <td>$\${fmtP(p.entryPrice)}</td>
               <td>$\${fmtP(p.currentPrice || p.entryPrice)}</td>
               <td class="val-green">$\${fmtP(p.takeProfit)}</td>
               <td class="val-red">$\${fmtP(p.stopLoss)}</td>
-              <td>$\${p.notional}</td>
+              <td style="color: #e4e7eb;">$\${fmtP(p.margin || p.notional)}</td>
+              <td style="color: var(--text-secondary);">$\${fmtP(p.notional)}</td>
               <td class="\${p.unrealizedPnl >= 0 ? 'val-green' : 'val-red'}">
-                \${p.unrealizedPnl >= 0 ? '+' : ''}$\${p.unrealizedPnl} (\${p.unrealizedPnlPercent}%)
+                \${p.unrealizedPnl >= 0 ? '+' : ''}$\${p.unrealizedPnl} (\${p.unrealizedPnlPercent}% ROE)
               </td>
               <td>
                 <button class="btn" onclick="closePaperPosition('\${p.id}')" style="padding: 2px 8px; font-size: 11px; background: rgba(239, 83, 80, 0.2); color: #ef5350;">Close</button>

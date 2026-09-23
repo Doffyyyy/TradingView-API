@@ -27,16 +27,17 @@ const DEFAULT_PORTFOLIO = {
   initialBalance: 10000.0,
   cash: 10000.0,
   equity: 10000.0,
-  dailyTargetMin: 50.0,
-  dailyTargetMax: 100.0,
-  dailyStopLossMax: 100.0, // Max $100 loss per day (Circuit Breaker)
+  dailyTargetMin: 100.0, // 1% of equity ($100 at $10k)
+  dailyTargetMax: 300.0, // 3% of equity ($300 at $10k - Profit Lock)
+  dailyStopLossMax: 180.0, // 1.8% of equity ($180 at $10k - Circuit Breaker)
   dailyRealizedPnl: 0.0,
   lastResetDate: new Date().toISOString().slice(0, 10),
   autoTradeEnabled: true,
   riskPerTradePercent: 1.5, // 1.5% max capital risk per trade ($150)
-  maxPositionNotional: 2500.0, // Max 25% of account per trade
+  maxPositionMargin: 1800.0, // Max margin collateral per trade
+  maxLeverage: 3, // Max 3x leverage when conditions are pristine
   maxOpenPositions: 2,
-  positions: [], // { id, symbol, side, entryPrice, size, notional, stopLoss, takeProfit, entryTime, strategy, highestPrice, lowestPrice }
+  positions: [], // { id, symbol, side, entryPrice, size, margin, notional, leverage, stopLoss, takeProfit, entryTime, strategy, highestPrice, lowestPrice }
   trades: [],
   logs: [],
 };
@@ -151,14 +152,14 @@ class PaperTradingEngine {
     let totalPositionsValue = 0;
     this.portfolio.positions.forEach(pos => {
       const curr = this.latestPrices[pos.symbol]?.price || pos.entryPrice;
-      let posValue = 0;
+      const margin = pos.margin !== undefined ? pos.margin : pos.notional;
+      let pnl = 0;
       if (pos.side === 'LONG') {
-        posValue = curr * pos.size;
+        pnl = (curr - pos.entryPrice) * pos.size;
       } else {
-        const pnl = (pos.entryPrice - curr) * pos.size;
-        posValue = pos.notional + pnl;
+        pnl = (pos.entryPrice - curr) * pos.size;
       }
-      totalPositionsValue += posValue;
+      totalPositionsValue += (margin + pnl);
     });
     this.portfolio.equity = Math.round((this.portfolio.cash + totalPositionsValue) * 100) / 100;
   }
@@ -169,23 +170,24 @@ class PaperTradingEngine {
       const curr = this.latestPrices[pos.symbol]?.price;
       if (!curr) continue;
 
-      // Trailing stop / Break-even lock: if gain >= +0.8%, lock SL at +0.2%
+      // Trailing stop / Break-even lock:
+      // When price moves +0.7% (with 3x that's +2.1% ROE, 2x is +1.4% ROE), lock SL at +0.2%
       if (pos.side === 'LONG') {
         const gainPct = (curr - pos.entryPrice) / pos.entryPrice;
-        if (gainPct >= 0.008) {
+        if (gainPct >= 0.007) {
           const lockPrice = roundPriceForCoin(pos.entryPrice * 1.002);
           if (pos.stopLoss < lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for LONG ${pos.symbol} at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
+            this.log(`Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
           }
         }
       } else {
         const gainPct = (pos.entryPrice - curr) / pos.entryPrice;
-        if (gainPct >= 0.008) {
+        if (gainPct >= 0.007) {
           const lockPrice = roundPriceForCoin(pos.entryPrice * 0.998);
           if (pos.stopLoss > lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for SHORT ${pos.symbol} at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
+            this.log(`Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
           }
         }
       }
@@ -222,7 +224,8 @@ class PaperTradingEngine {
     if (idx === -1) return;
 
     const pos = this.portfolio.positions[idx];
-    const feeRate = 0.0005; // 0.05% taker fee
+    const margin = pos.margin !== undefined ? pos.margin : pos.notional;
+    const feeRate = 0.0005; // 0.05% taker fee on notional
     const fee = (pos.entryPrice * pos.size * feeRate) + (exitPrice * pos.size * feeRate);
 
     let grossPnl = 0;
@@ -233,7 +236,7 @@ class PaperTradingEngine {
     }
 
     const netPnl = grossPnl - fee;
-    this.portfolio.cash += (pos.notional + netPnl);
+    this.portfolio.cash += (margin + netPnl);
     this.portfolio.dailyRealizedPnl += netPnl;
 
     const closedTrade = {
@@ -243,9 +246,11 @@ class PaperTradingEngine {
       entryPrice: pos.entryPrice,
       exitPrice,
       size: pos.size,
+      margin,
       notional: pos.notional,
+      leverage: pos.leverage || 1,
       pnl: Math.round(netPnl * 100) / 100,
-      pnlPercent: Math.round((netPnl / pos.notional) * 10000) / 100,
+      pnlPercent: Math.round((netPnl / margin) * 10000) / 100,
       fee: Math.round(fee * 100) / 100,
       entryTime: pos.entryTime,
       exitTime: new Date().toISOString(),
@@ -265,11 +270,12 @@ class PaperTradingEngine {
       this.log(`⏳ Cooldown active for ${pos.symbol} (30 mins until ${new Date(cooldownUntil).toLocaleTimeString('vi-VN')}) after loss.`);
     }
 
-    this.log(`CLOSED ${pos.side} ${pos.symbol}: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}`);
+    this.log(`CLOSED ${pos.side} ${pos.symbol} [${pos.leverage || 1}x]: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}`);
 
     // Telegram notification
     try {
-      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} @ $${formatTokenPrice(exitPrice)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}%). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
+      const levBadge = pos.leverage && pos.leverage > 1 ? `[${pos.leverage}x] ` : '';
+      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} ${levBadge}@ $${formatTokenPrice(exitPrice)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
       sendTelegramAlert({
         instrument: pos.symbol,
         strategy: `AutoPaper: ${pos.strategy}`,
@@ -286,7 +292,7 @@ class PaperTradingEngine {
     } catch (e) {}
   }
 
-  async openPosition(symbol, side, strategy, reason) {
+  async openPosition(symbol, side, strategy, reason, leverage = 1) {
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
       return null;
     }
@@ -303,18 +309,32 @@ class PaperTradingEngine {
     const currPrice = this.latestPrices[symbol]?.price;
     if (!currPrice || currPrice <= 0) return null;
 
-    const notional = Math.min(this.portfolio.cash * 0.25, this.portfolio.maxPositionNotional);
-    if (notional < 100) {
-      this.log(`Insufficient cash ($${this.portfolio.cash.toFixed(2)}) to open position`);
+    const lev = Math.min(3, Math.max(1, parseInt(leverage, 10) || 1));
+    const maxMargin = this.portfolio.maxPositionMargin || 1800.0;
+    const targetMargin = Math.min(this.portfolio.cash * 0.35, maxMargin);
+    if (targetMargin < 100) {
+      this.log(`Insufficient cash ($${this.portfolio.cash.toFixed(2)}) to open position margin`);
       return null;
     }
 
+    const margin = Math.round(targetMargin * 100) / 100;
+    const notional = Math.round(margin * lev * 100) / 100;
     const size = notional / currPrice;
-    this.portfolio.cash -= notional;
+    this.portfolio.cash -= margin;
 
-    // Scalp / Short swing targets: TP 1.2% - 1.8%, SL 0.7% - 0.9% (RR ~ 1:2)
-    const slPercent = 0.008; // 0.8%
-    const tpPercent = 0.015; // 1.5%
+    // Scalp / Short swing targets tailored to leverage:
+    // 1x: TP 1.8%, SL 0.9% (RR 2:1)
+    // 2x: TP 1.5%, SL 0.8% (RR 1.9:1)
+    // 3x: TP 1.4%, SL 0.7% (RR 2:1)
+    let slPercent = 0.009;
+    let tpPercent = 0.018;
+    if (lev === 2) {
+      slPercent = 0.008;
+      tpPercent = 0.015;
+    } else if (lev === 3) {
+      slPercent = 0.007;
+      tpPercent = 0.014;
+    }
 
     let stopLoss = 0;
     let takeProfit = 0;
@@ -330,7 +350,7 @@ class PaperTradingEngine {
     // Critical sanity check: prevent 0 or negative SL/TP
     if (stopLoss <= 0 || takeProfit <= 0 || isNaN(stopLoss) || isNaN(takeProfit)) {
       this.log(`⚠️ Aborting trade on ${symbol}: Invalid calculated SL ($${stopLoss}) / TP ($${takeProfit}) for price $${currPrice}`);
-      this.portfolio.cash += notional;
+      this.portfolio.cash += margin;
       return null;
     }
 
@@ -340,11 +360,13 @@ class PaperTradingEngine {
       side,
       entryPrice: currPrice,
       size,
-      notional: Math.round(notional * 100) / 100,
+      margin,
+      notional,
+      leverage: lev,
       stopLoss,
       takeProfit,
       entryTime: new Date().toISOString(),
-      strategy,
+      strategy: `${strategy} [${lev}x]`,
       reason,
     };
 
@@ -352,15 +374,15 @@ class PaperTradingEngine {
     this.updateEquity();
     this.savePortfolio();
 
-    const openLog = `OPENED ${side} on ${symbol} @ $${formatTokenPrice(currPrice)}. Target TP: $${formatTokenPrice(takeProfit)}, SL: $${formatTokenPrice(stopLoss)} [Strategy: ${strategy}]`;
+    const openLog = `OPENED ${side} on ${symbol} @ $${formatTokenPrice(currPrice)} [${lev}x Lev | Margin: $${margin.toFixed(0)}, Notional: $${notional.toFixed(0)}]. Target TP: $${formatTokenPrice(takeProfit)} (+${(tpPercent * 100).toFixed(1)}%), SL: $${formatTokenPrice(stopLoss)} (-${(slPercent * 100).toFixed(1)}%) [Strategy: ${strategy}]`;
     this.log(openLog);
 
     // Notify Telegram
     try {
       sendTelegramAlert({
         instrument: symbol,
-        strategy: `AutoPaper: ${strategy}`,
-        action: `ENTER ${side} @ $${formatTokenPrice(currPrice)}`,
+        strategy: `AutoPaper: ${strategy} (${lev}x)`,
+        action: `ENTER ${side} [${lev}x] @ $${formatTokenPrice(currPrice)}`,
         customMessage: openLog,
         sharpe: 2.45,
         drawdown: '-2.5%',
@@ -368,7 +390,7 @@ class PaperTradingEngine {
         winLossRatio: 1.8,
         accountEquity: this.portfolio.equity,
         timeframe: '15',
-        notes: `New trade dispatched. TP: $${formatTokenPrice(takeProfit)} (+1.5%), SL: $${formatTokenPrice(stopLoss)} (-0.8%). ${reason}`,
+        notes: `New trade dispatched. Margin: $${margin} (${lev}x Lev). TP: $${formatTokenPrice(takeProfit)}, SL: $${formatTokenPrice(stopLoss)}. ${reason}`,
       }).catch(() => {});
     } catch (e) {}
 
@@ -387,6 +409,13 @@ class PaperTradingEngine {
       });
       this.portfolio.dailyRealizedPnl = 0.0;
       this.portfolio.lastResetDate = today;
+
+      // Recalculate dynamic daily targets & stop loss from starting equity:
+      const eq = this.portfolio.equity || 10000.0;
+      this.portfolio.dailyTargetMin = Math.round(eq * 0.01); // 1% ($100 at $10k)
+      this.portfolio.dailyTargetMax = Math.round(eq * 0.03); // 3% ($300 at $10k - Profit Lock)
+      this.portfolio.dailyStopLossMax = Math.round(eq * 0.018); // 1.8% ($180 at $10k - Circuit Breaker)
+
       this.hasLoggedDailyMin = false;
       this.hasLoggedDailyMax = false;
       this.hasLoggedDailyStopLoss = false;
@@ -396,10 +425,10 @@ class PaperTradingEngine {
   }
 
   async scanOpportunities() {
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 100.0;
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
     const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
 
-    // 1. Daily Circuit Breaker / Daily Stop Loss
+    // 1. Daily Circuit Breaker / Daily Stop Loss (1.8% = -$180)
     if (isDailyStopLossHit) {
       if (!this.hasLoggedDailyStopLoss) {
         const lossAmount = Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2);
@@ -409,7 +438,7 @@ class PaperTradingEngine {
         try {
           sendTelegramAlert({
             instrument: 'PORTFOLIO_RISK',
-            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached daily limit of -$${dailyLossLimit}). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached limit of -$${dailyLossLimit} [1.8%]). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
             accountEquity: this.portfolio.equity,
           }).catch(() => {});
         } catch (e) {}
@@ -417,35 +446,47 @@ class PaperTradingEngine {
       return; // Stop scanning, no new trades allowed today!
     }
 
-    const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
+    const dailyTargetMax = this.portfolio.dailyTargetMax || 300.0;
+    const dailyTargetMin = this.portfolio.dailyTargetMin || 100.0;
 
-    // Check daily milestones
-    if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMax) {
+    // 2. Maximum Daily Target Lock (3% = $300+)
+    if (this.portfolio.dailyRealizedPnl >= dailyTargetMax) {
       if (!this.hasLoggedDailyMax) {
-        this.log(`🎯 DAILY TARGET EXCEEDED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $100/day). Switching to Sniper / Ultra-High Confluence mode only.`);
+        this.log(`🏆 MAXIMUM DAILY TARGET ACHIEVED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $${dailyTargetMax} [3%]). Locking daily profit! Trading paused until tomorrow.`);
         this.hasLoggedDailyMax = true;
+
+        try {
+          sendTelegramAlert({
+            instrument: 'PORTFOLIO_TARGET',
+            customMessage: `🏆 MAX DAILY TARGET ACHIEVED! Daily Profit: +$${this.portfolio.dailyRealizedPnl.toFixed(2)} (>= 3% / $${dailyTargetMax}). Profit locked, auto-trading paused until tomorrow (00:00 UTC+7). Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            accountEquity: this.portfolio.equity,
+          }).catch(() => {});
+        } catch (e) {}
       }
-    } else if (this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin) {
-      if (!this.hasLoggedDailyMin) {
-        this.log(`✅ Daily Target Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $50/day). Preserving daily profit: Pausing normal entries, only sniping A+ setups.`);
-        this.hasLoggedDailyMin = true;
-      }
+      return; // Stop scanning, lock profit for the day!
     }
 
-    // 2. Check if slots available
+    // 3. Minimum Daily Target Met (1% = $100+) -> Switches to Sniper A+ mode
+    const isTargetHit = this.portfolio.dailyRealizedPnl >= dailyTargetMin;
+    if (isTargetHit && !this.hasLoggedDailyMin) {
+      this.log(`✅ Daily Target Minimum Achieved (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $${dailyTargetMin} [1%]). Preserving daily profit: Pausing normal entries, only sniping A+ setups (max 2x leverage, 1 position).`);
+      this.hasLoggedDailyMin = true;
+    }
+
+    // 4. Check if slots available
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
       return;
     }
 
     // Dynamic slot control:
-    // - Target reached ($50+): max 1 position
-    // - Near daily stop loss (loss >= -$50): Tier-1 defensive mode, max 1 position
+    // - Target Min reached ($100+): max 1 position to safeguard profit
+    // - Defensive mode (loss >= -$90, 50% of stoploss limit): max 1 position, 1x leverage only
     const isDefensive = this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5);
     if ((isTargetHit || isDefensive) && this.portfolio.positions.length >= 1) {
       return;
     }
 
-    // 3. Scan symbols for high win-rate confluence:
+    // 5. Scan symbols for high win-rate confluence:
     for (const sym of this.monitoredSymbols) {
       if (this.portfolio.positions.some(p => p.symbol === sym)) continue;
 
@@ -469,44 +510,97 @@ class PaperTradingEngine {
         const buyVotes = taValidation.consensus.buy;
         const sellVotes = taValidation.consensus.sell;
 
-        // Dynamic threshold:
-        // Normal mode (< $50 target): buyVotes >= 11/26
-        // Sniper / Ultra-High Confluence mode (>= $50 target):
-        // Needs A+ "Siêu đẹp" setup: 26-TA Buy votes >= 16, Sell votes <= 4, pristine RSI, aligned MACD & Supertrend
-        if (isTargetHit) {
-          // --- SNIPER A+ SETUP ONLY ---
-          // Long A+: Supertrend BUY + MACD BULLISH + RSI 48-65 + TA Consensus Buy >= 16 & Sell <= 4
-          if (supertrend === 'BUY' && macdTrend === 'BULLISH' && rsi >= 48 && rsi <= 65 && buyVotes >= 16 && sellVotes <= 4) {
-            const reason = `🎯 [SNIPER A+ SETUP] Target achieved ($${this.portfolio.dailyRealizedPnl.toFixed(2)}), exceptional confluence detected: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Consensus Buy (${buyVotes}/26, sell: ${sellVotes}).`;
-            this.log(`🔥 SIÊU ĐẸP LONG detected on ${sym} while daily target is achieved! Triggering sniper trade.`);
-            await this.openPosition(sym, 'LONG', 'Sniper A+ Confluence Long', reason);
-            if (this.portfolio.positions.length >= 1) break;
+        // Long Setup
+        if (supertrend === 'BUY' && macdTrend === 'BULLISH') {
+          let lev = 1;
+          let strategyName = 'Supertrend + MACD Momentum';
+
+          if (isDefensive) {
+            // Defensive: 1x leverage only, high confluence threshold
+            if (buyVotes >= 14 && sellVotes <= 6 && rsi >= 48 && rsi <= 65) {
+              lev = 1;
+              strategyName = 'Defensive Confluence Long';
+            } else {
+              continue;
+            }
+          } else if (isTargetHit) {
+            // Sniper A+ mode: Target 1% achieved, lock profit, allow max 2x on ultra clean setup
+            if (buyVotes >= 16 && sellVotes <= 4 && rsi >= 48 && rsi <= 62) {
+              lev = 2;
+              strategyName = 'Sniper A+ Profit-Lock Long';
+            } else {
+              continue;
+            }
+          } else {
+            // Normal Trading:
+            // Tier 3: 3x Leverage (Ultra A+ setup: buyVotes >= 17, sellVotes <= 4, pristine RSI 48-62)
+            if (buyVotes >= 17 && sellVotes <= 4 && rsi >= 48 && rsi <= 62) {
+              lev = 3;
+              strategyName = 'Ultra A+ Sniper Long';
+            }
+            // Tier 2: 2x Leverage (Strong setup: buyVotes >= 14, sellVotes <= 6, RSI 45-68)
+            else if (buyVotes >= 14 && sellVotes <= 6 && rsi >= 45 && rsi <= 68) {
+              lev = 2;
+              strategyName = 'High Confluence Long';
+            }
+            // Tier 1: 1x Leverage (Standard setup: buyVotes >= 11, sellVotes <= 8, RSI 45-72)
+            else if (buyVotes >= 11 && sellVotes <= 8 && rsi >= 45 && rsi <= 72) {
+              lev = 1;
+              strategyName = 'Standard Momentum Long';
+            } else {
+              continue;
+            }
           }
-          // Short A+: Supertrend SELL + MACD BEARISH + RSI 35-52 + TA Consensus Sell >= 16 & Buy <= 4
-          else if (supertrend === 'SELL' && macdTrend === 'BEARISH' && rsi >= 35 && rsi <= 52 && sellVotes >= 16 && buyVotes <= 4) {
-            const reason = `🎯 [SNIPER A+ SETUP] Target achieved ($${this.portfolio.dailyRealizedPnl.toFixed(2)}), exceptional confluence breakdown: Supertrend Bearish, MACD Bearish, RSI ${rsi}, 26-TA Consensus Sell (${sellVotes}/26, buy: ${buyVotes}).`;
-            this.log(`🔥 SIÊU ĐẸP SHORT detected on ${sym} while daily target is achieved! Triggering sniper trade.`);
-            await this.openPosition(sym, 'SHORT', 'Sniper A+ Confluence Breakdown', reason);
-            if (this.portfolio.positions.length >= 1) break;
-          }
-          continue;
+
+          const reason = `${strategyName} [${lev}x]: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Buy consensus (${buyVotes}/26, sell: ${sellVotes}).`;
+          this.log(`🚀 Entry Signal: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
+          await this.openPosition(sym, 'LONG', strategyName, reason, lev);
+          if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
         }
 
-        // --- NORMAL MODE (< $50 TARGET) ---
-        // Long Setup:
-        // Trend following: Supertrend = BUY + MACD Bullish + 26-TA Buy votes >= 11 + RSI between 45 and 75
-        if (supertrend === 'BUY' && macdTrend === 'BULLISH' && rsi >= 45 && rsi <= 75 && buyVotes >= 11 && sellVotes <= 8) {
-          const reason = `Confluence Trend Long: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Buy consensus (${buyVotes}/26).`;
-          await this.openPosition(sym, 'LONG', 'Supertrend + MACD Momentum', reason);
-          if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) break;
-        }
+        // Short Setup
+        else if (supertrend === 'SELL' && macdTrend === 'BEARISH') {
+          let lev = 1;
+          let strategyName = 'Supertrend + MACD Breakdown';
 
-        // Short Setup:
-        // Supertrend Bearish + MACD Bearish + 26-TA Sell votes >= 11 + RSI between 25 and 55
-        else if (supertrend === 'SELL' && macdTrend === 'BEARISH' && rsi >= 25 && rsi <= 55 && sellVotes >= 11 && buyVotes <= 8) {
-          const reason = `Confluence Trend Short: Supertrend Bearish, MACD Bearish, RSI ${rsi}, 26-TA Sell consensus (${sellVotes}/26).`;
-          await this.openPosition(sym, 'SHORT', 'Supertrend + MACD Breakdown', reason);
-          if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) break;
+          if (isDefensive) {
+            if (sellVotes >= 14 && buyVotes <= 6 && rsi >= 35 && rsi <= 52) {
+              lev = 1;
+              strategyName = 'Defensive Confluence Short';
+            } else {
+              continue;
+            }
+          } else if (isTargetHit) {
+            if (sellVotes >= 16 && buyVotes <= 4 && rsi >= 38 && rsi <= 52) {
+              lev = 2;
+              strategyName = 'Sniper A+ Profit-Lock Short';
+            } else {
+              continue;
+            }
+          } else {
+            // Tier 3: 3x Leverage (Ultra A+ setup: sellVotes >= 17, buyVotes <= 4, pristine RSI 38-52)
+            if (sellVotes >= 17 && buyVotes <= 4 && rsi >= 38 && rsi <= 52) {
+              lev = 3;
+              strategyName = 'Ultra A+ Sniper Short';
+            }
+            // Tier 2: 2x Leverage (Strong setup: sellVotes >= 14, buyVotes <= 6, RSI 32-55)
+            else if (sellVotes >= 14 && buyVotes <= 6 && rsi >= 32 && rsi <= 55) {
+              lev = 2;
+              strategyName = 'High Confluence Short';
+            }
+            // Tier 1: 1x Leverage (Standard setup: sellVotes >= 11, buyVotes <= 8, RSI 25-55)
+            else if (sellVotes >= 11 && buyVotes <= 8 && rsi >= 25 && rsi <= 55) {
+              lev = 1;
+              strategyName = 'Standard Momentum Short';
+            } else {
+              continue;
+            }
+          }
+
+          const reason = `${strategyName} [${lev}x]: Supertrend Bearish, MACD Bearish, RSI ${rsi}, 26-TA Sell consensus (${sellVotes}/26, buy: ${buyVotes}).`;
+          this.log(`🚀 Entry Signal: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
+          await this.openPosition(sym, 'SHORT', strategyName, reason, lev);
+          if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
         }
       } catch (err) {
         // Continue next symbol
@@ -554,17 +648,20 @@ class PaperTradingEngine {
     const wins = this.portfolio.trades.filter(t => t.pnl > 0).length;
     const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
     const targetProgress = Math.min(100, Math.max(0, (this.portfolio.dailyRealizedPnl / this.portfolio.dailyTargetMax) * 100));
-    const isTargetHit = this.portfolio.dailyRealizedPnl >= this.portfolio.dailyTargetMin;
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 100.0;
+    const isTargetHit = this.portfolio.dailyRealizedPnl >= (this.portfolio.dailyTargetMin || 100.0);
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
     const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
+    const isTargetMaxHit = this.portfolio.dailyRealizedPnl >= (this.portfolio.dailyTargetMax || 300.0);
 
     let tradingMode = 'ACTIVE (Normal Confluence)';
     if (isDailyStopLossHit) {
       tradingMode = 'HALTED (Daily Stop Loss Hit)';
+    } else if (isTargetMaxHit) {
+      tradingMode = 'LOCKED (Daily 3% Max Target Reached)';
     } else if (isTargetHit) {
-      tradingMode = 'SNIPER (A+ Setups Only)';
+      tradingMode = 'SNIPER (A+ Setups Only, 2x Max)';
     } else if (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5)) {
-      tradingMode = 'DEFENSIVE (Risk Reduced)';
+      tradingMode = 'DEFENSIVE (Risk Reduced, 1x Only)';
     }
 
     return {
@@ -572,12 +669,14 @@ class PaperTradingEngine {
       equity: Math.round(this.portfolio.equity * 100) / 100,
       initialBalance: this.portfolio.initialBalance,
       dailyPnl: Math.round(this.portfolio.dailyRealizedPnl * 100) / 100,
-      dailyTargetMin: this.portfolio.dailyTargetMin,
-      dailyTargetMax: this.portfolio.dailyTargetMax,
+      dailyTargetMin: this.portfolio.dailyTargetMin || 100.0,
+      dailyTargetMax: this.portfolio.dailyTargetMax || 300.0,
       dailyStopLossMax: dailyLossLimit,
       dailyTargetProgressPercent: Math.round(targetProgress * 10) / 10,
       dailyTargetHit: isTargetHit,
+      dailyTargetMaxHit: isTargetMaxHit,
       dailyStopLossHit: isDailyStopLossHit,
+      maxLeverage: this.portfolio.maxLeverage || 3,
       tradingMode,
       autoTradeEnabled: this.portfolio.autoTradeEnabled,
       monitoredSymbols: this.monitoredSymbols,
@@ -587,11 +686,12 @@ class PaperTradingEngine {
       openPositions: this.portfolio.positions.map(p => {
         const curr = this.latestPrices[p.symbol]?.price || p.entryPrice;
         let upnl = p.side === 'LONG' ? (curr - p.entryPrice) * p.size : (p.entryPrice - curr) * p.size;
+        const margin = p.margin !== undefined ? p.margin : p.notional;
         return {
           ...p,
           currentPrice: curr,
           unrealizedPnl: Math.round(upnl * 100) / 100,
-          unrealizedPnlPercent: Math.round((upnl / p.notional) * 10000) / 100,
+          unrealizedPnlPercent: Math.round((upnl / margin) * 10000) / 100,
         };
       }),
       recentTrades: this.portfolio.trades.slice(0, 15),
