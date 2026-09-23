@@ -2010,11 +2010,15 @@ const htmlContent = `<!DOCTYPE html>
       c = c.replace(/USDT|USDC|USD|\.P|_/gi, '').trim() || 'BTC';
       currentDockCoin = c;
       const coinBadge = document.getElementById('ob-coin-badge');
+      const scrBadge = document.getElementById('scr-coin-badge');
       const denomBadge = document.getElementById('exec-coin-denom');
       if (coinBadge) coinBadge.textContent = c;
+      if (scrBadge) scrBadge.textContent = c;
       if (denomBadge) denomBadge.textContent = c;
+      if (typeof subscribeHlWebSocket === 'function') subscribeHlWebSocket(c);
       if (typeof updateDockData === 'function') updateDockData();
       if (typeof updateTickerBar === 'function') updateTickerBar(c);
+      if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
     }
 
     // --- Technical Indicator Calculations & Math Library ---
@@ -3271,49 +3275,220 @@ const htmlContent = `<!DOCTYPE html>
 
     // syncDockCoin is defined at the top scope
 
+    // --- Hyperliquid Realtime WebSocket Streaming Engine ---
+    let hlWs = null;
+    let hlWsActiveCoin = null;
+    let hlWsReconnectTimer = null;
+    let hlWsPingTimer = null;
+
+    function renderOrderbookData(bids, asks, bestAsk, bestBid) {
+      if (!bids || !asks) return;
+      if (bestAsk || bestBid) {
+        currentDockPrice = bestAsk || bestBid || currentDockPrice;
+        const mktPriceEl = document.getElementById('dock-market-price');
+        if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
+      }
+
+      const asksEl = document.getElementById('ob-asks-list');
+      if (asksEl && asks.length > 0) {
+        let htmlAsks = '';
+        const sliceAsks = asks.slice(-6);
+        for (let i = 0; i < sliceAsks.length; i++) {
+          const a = sliceAsks[i];
+          const pxStr = a.price >= 1 ? a.price.toFixed(a.price < 10 ? 3 : 1) : a.price.toFixed(4);
+          const szStr = a.size >= 1 ? a.size.toFixed(2) : a.size.toFixed(4);
+          const totStr = a.total >= 1 ? a.total.toFixed(2) : a.total.toFixed(3);
+          const w = a.depthPercent || 0;
+          htmlAsks += '<div class="ob-row" data-price="' + a.price + '">' +
+            '<div class="ob-bg ob-bg-ask" style="width: ' + w + '%;"></div>' +
+            '<span class="ob-cell-price val-red">' + pxStr + '</span>' +
+            '<span class="ob-cell" style="color: #fff;">' + szStr + '</span>' +
+            '<span class="ob-cell" style="color: var(--text-secondary);">' + totStr + '</span>' +
+          '</div>';
+        }
+        asksEl.innerHTML = htmlAsks;
+      }
+
+      const bidsEl = document.getElementById('ob-bids-list');
+      if (bidsEl && bids.length > 0) {
+        let htmlBids = '';
+        const sliceBids = bids.slice(0, 6);
+        for (let i = 0; i < sliceBids.length; i++) {
+          const bid = sliceBids[i];
+          const pxStr = bid.price >= 1 ? bid.price.toFixed(bid.price < 10 ? 3 : 1) : bid.price.toFixed(4);
+          const szStr = bid.size >= 1 ? bid.size.toFixed(2) : bid.size.toFixed(4);
+          const totStr = bid.total >= 1 ? bid.total.toFixed(2) : bid.total.toFixed(3);
+          const w = bid.depthPercent || 0;
+          htmlBids += '<div class="ob-row" data-price="' + bid.price + '">' +
+            '<div class="ob-bg ob-bg-bid" style="width: ' + w + '%;"></div>' +
+            '<span class="ob-cell-price val-green">' + pxStr + '</span>' +
+            '<span class="ob-cell" style="color: #fff;">' + szStr + '</span>' +
+            '<span class="ob-cell" style="color: var(--text-secondary);">' + totStr + '</span>' +
+          '</div>';
+        }
+        bidsEl.innerHTML = htmlBids;
+      }
+
+      if (asks.length > 0 && bids.length > 0) {
+        const topAsk = asks[asks.length - 1].price;
+        const topBid = bids[0].price;
+        const spread = Math.max(0, topAsk - topBid);
+        const spreadBP = topBid > 0 ? ((spread / topBid) * 10000).toFixed(2) : '0';
+
+        const totBid = bids.reduce((acc, b) => acc + b.size, 0);
+        const totAsk = asks.reduce((acc, a) => acc + a.size, 0);
+        const totalVol = Math.max(0.0001, totBid + totAsk);
+        const bidPct = Math.round((totBid / totalVol) * 100);
+        const askPct = 100 - bidPct;
+
+        const maxDepth = Math.max(
+          bids.length > 0 ? bids[bids.length - 1].total || totBid : 0,
+          asks.length > 0 ? asks[0].total || totAsk : 0
+        );
+
+        const spValEl = document.getElementById('ob-spread-val');
+        if (spValEl) spValEl.textContent = 'SPREAD ' + (spread >= 1 ? spread.toFixed(2) : spread.toFixed(4));
+        const spBpEl = document.getElementById('ob-spread-bp');
+        if (spBpEl) spBpEl.textContent = '(' + spreadBP + 'BP)';
+        const maxD = document.getElementById('ob-max-depth');
+        if (maxD) maxD.textContent = maxDepth >= 1000 ? (maxDepth / 1000).toFixed(1) + 'K' : maxDepth.toFixed(2);
+
+        const bidPctEl = document.getElementById('ob-bid-pct');
+        if (bidPctEl) bidPctEl.textContent = bidPct + '%';
+        const askPctEl = document.getElementById('ob-ask-pct');
+        if (askPctEl) askPctEl.textContent = askPct + '%';
+        const ratioBid = document.getElementById('ob-ratio-bid');
+        if (ratioBid) ratioBid.style.width = bidPct + '%';
+      }
+
+      updateExecutionLabels();
+    }
+
+    function connectHlWebSocket() {
+      if (typeof WebSocket === 'undefined') return;
+      if (hlWs && (hlWs.readyState === WebSocket.OPEN || hlWs.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+      try {
+        hlWs = new WebSocket('wss://api.hyperliquid.xyz/ws');
+
+        hlWs.onopen = () => {
+          if (hlWsPingTimer) clearInterval(hlWsPingTimer);
+          hlWsPingTimer = setInterval(() => {
+            if (hlWs && hlWs.readyState === WebSocket.OPEN) {
+              hlWs.send(JSON.stringify({ method: 'ping' }));
+            }
+          }, 30000);
+
+          if (currentDockCoin) {
+            subscribeHlWebSocket(currentDockCoin);
+          }
+        };
+
+        hlWs.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (!msg || !msg.channel) return;
+
+            // 1. L2 Orderbook stream: channel 'l2Book'
+            if (msg.channel === 'l2Book' && msg.data && msg.data.coin === currentDockCoin) {
+              const data = msg.data;
+              if (data.levels && Array.isArray(data.levels) && data.levels.length >= 2) {
+                const rawBids = data.levels[0] || [];
+                const rawAsks = data.levels[1] || [];
+
+                const bids = rawBids.map(b => ({
+                  price: parseFloat(b.px),
+                  size: parseFloat(b.sz),
+                  orders: b.n || 1,
+                })).sort((a, b) => b.price - a.price).slice(0, 8);
+
+                const asks = rawAsks.map(a => ({
+                  price: parseFloat(a.px),
+                  size: parseFloat(a.sz),
+                  orders: a.n || 1,
+                })).sort((a, b) => b.price - a.price).slice(0, 8);
+
+                let cumBid = 0;
+                bids.forEach(b => { cumBid += b.size; b.total = cumBid; });
+                let cumAsk = 0;
+                for (let i = asks.length - 1; i >= 0; i--) {
+                  cumAsk += asks[i].size;
+                  asks[i].total = cumAsk;
+                }
+                const maxVol = Math.max(cumBid, cumAsk, 0.0001);
+                bids.forEach(b => { b.depthPercent = Math.min(100, Math.round((b.total / maxVol) * 100)); });
+                asks.forEach(a => { a.depthPercent = Math.min(100, Math.round((a.total / maxVol) * 100)); });
+
+                const bestAsk = asks.length > 0 ? asks[asks.length - 1].price : null;
+                const bestBid = bids.length > 0 ? bids[0].price : null;
+                renderOrderbookData(bids, asks, bestAsk, bestBid);
+              }
+            }
+
+            // 2. Realtime trades stream: channel 'trades'
+            if (msg.channel === 'trades' && Array.isArray(msg.data)) {
+              const trades = msg.data.filter(t => t.coin === currentDockCoin);
+              if (trades.length > 0) {
+                const latestTrade = trades[trades.length - 1];
+                if (latestTrade && latestTrade.px) {
+                  currentDockPrice = parseFloat(latestTrade.px);
+                  const mktPriceEl = document.getElementById('dock-market-price');
+                  if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
+                  updateExecutionLabels();
+                }
+              }
+            }
+          } catch (e) {}
+        };
+
+        hlWs.onclose = () => {
+          if (hlWsPingTimer) clearInterval(hlWsPingTimer);
+          clearTimeout(hlWsReconnectTimer);
+          hlWsReconnectTimer = setTimeout(connectHlWebSocket, 3000);
+        };
+
+        hlWs.onerror = () => {
+          try { hlWs.close(); } catch (e) {}
+        };
+      } catch (err) {}
+    }
+
+    function subscribeHlWebSocket(coin) {
+      if (!hlWs || hlWs.readyState !== WebSocket.OPEN) return;
+      if (hlWsActiveCoin && hlWsActiveCoin !== coin) {
+        try {
+          hlWs.send(JSON.stringify({
+            method: 'unsubscribe',
+            subscription: { type: 'l2Book', coin: hlWsActiveCoin }
+          }));
+          hlWs.send(JSON.stringify({
+            method: 'unsubscribe',
+            subscription: { type: 'trades', coin: hlWsActiveCoin }
+          }));
+        } catch (e) {}
+      }
+      hlWsActiveCoin = coin;
+      try {
+        hlWs.send(JSON.stringify({
+          method: 'subscribe',
+          subscription: { type: 'l2Book', coin }
+        }));
+        hlWs.send(JSON.stringify({
+          method: 'subscribe',
+          subscription: { type: 'trades', coin }
+        }));
+      } catch (e) {}
+    }
+
     async function updateDockData() {
       const c = currentDockCoin;
-      // 1. Fetch Orderbook
+      // 1. Fetch Orderbook (HTTP Fallback if WS connecting)
       try {
         const res = await fetch('/api/hyperliquid/book?coin=' + encodeURIComponent(c));
         const b = await res.json();
         if (b && b.bids && b.asks) {
-          const mktPriceEl = document.getElementById('dock-market-price');
-          currentDockPrice = b.bestAsk || b.bestBid || currentDockPrice;
-          if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
-
-          const asksEl = document.getElementById('ob-asks-list');
-          if (asksEl) {
-            asksEl.innerHTML = b.asks.slice(-6).map(a => \`
-              <div class="ob-row" data-price="\${a.price}">
-                <div class="ob-bg ob-bg-ask" style="width: \${a.depthPercent}%;"></div>
-                <span class="ob-cell-price val-red">\${a.price >= 1 ? a.price.toFixed(a.price < 10 ? 3 : 1) : a.price.toFixed(4)}</span>
-                <span class="ob-cell" style="color: #fff;">\${a.size >= 1 ? a.size.toFixed(2) : a.size.toFixed(4)}</span>
-                <span class="ob-cell" style="color: var(--text-secondary);">\${a.total >= 1 ? a.total.toFixed(2) : a.total.toFixed(3)}</span>
-              </div>
-            \`).join('');
-          }
-
-          const bidsEl = document.getElementById('ob-bids-list');
-          if (bidsEl) {
-            bidsEl.innerHTML = b.bids.slice(0, 6).map(bid => \`
-              <div class="ob-row" data-price="\${bid.price}">
-                <div class="ob-bg ob-bg-bid" style="width: \${bid.depthPercent}%;"></div>
-                <span class="ob-cell-price val-green">\${bid.price >= 1 ? bid.price.toFixed(bid.price < 10 ? 3 : 1) : bid.price.toFixed(4)}</span>
-                <span class="ob-cell" style="color: #fff;">\${bid.size >= 1 ? bid.size.toFixed(2) : bid.size.toFixed(4)}</span>
-                <span class="ob-cell" style="color: var(--text-secondary);">\${bid.total >= 1 ? bid.total.toFixed(2) : bid.total.toFixed(3)}</span>
-              </div>
-            \`).join('');
-          }
-
-          document.getElementById('ob-spread-val').textContent = 'SPREAD ' + b.spread;
-          document.getElementById('ob-spread-bp').textContent = '(' + b.spreadBP + 'BP)';
-          document.getElementById('ob-max-depth').textContent = b.maxDepthTotal;
-          document.getElementById('ob-bid-pct').textContent = b.imbalance.bidPercent + '%';
-          document.getElementById('ob-ask-pct').textContent = b.imbalance.askPercent + '%';
-          document.getElementById('ob-ratio-bid').style.width = b.imbalance.bidPercent + '%';
-
-          updateExecutionLabels();
+          renderOrderbookData(b.bids, b.asks, b.bestAsk, b.bestBid);
         }
       } catch (e) {}
 
@@ -3743,7 +3918,8 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById('btn-exec-sell')?.addEventListener('click', () => handleTradeExecution('SHORT'));
 
     syncDockCoin(currentSymbol);
-    setInterval(updateDockData, 2500);
+    connectHlWebSocket();
+    setInterval(updateDockData, 1200);
 
     document.getElementById('timeframes').addEventListener('click', (e) => {
       const btn = e.target.closest('button');
