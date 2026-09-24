@@ -4,6 +4,8 @@
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
+    "start": "node server.js",
+    "tunnel": "./cloudflared.exe tunnel --url http://localhost:8095",
     "test": "vitest",
     "example": "node --env-file=.env",
     "example:dev": "nodemon --env-file=.env"

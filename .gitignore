@@ -2,4 +2,6 @@ node_modules/
 .env
 public/temp_*.json
 public/test_chart.png
-
+cloudflared.exe
+cloudflared.log
+server.log
