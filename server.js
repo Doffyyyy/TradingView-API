@@ -27,7 +27,17 @@ function parseBody(req) {
   });
 }
 
+const serverHistoryCache = new Map();
+
 function getHistory(symbol, timeframe, range = 5000) {
+  const cacheKey = symbol + ":" + timeframe + ":" + (range || 5000);
+  const now = Date.now();
+  const cached = serverHistoryCache.get(cacheKey);
+
+  // Return instantly from in-memory cache if less than 20 seconds old
+  if (cached && (now - cached.timestamp < 20000)) {
+    return Promise.resolve(cached.data);
+  }
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
   if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
     return new Promise(async (resolve) => {
@@ -46,7 +56,9 @@ function getHistory(symbol, timeframe, range = 5000) {
             close: item[4],
             volume: item[5] || 0,
           }));
-          return resolve({ candles, infos: { name: 'KLEDAI / Wrapped SOL', description: 'Meteora Dynamic Pool' } });
+          const resData = { candles, infos: { name: 'KLEDAI / Wrapped SOL', description: 'Meteora Dynamic Pool' } };
+          serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+          return resolve(resData);
         }
       } catch (err) {}
       resolve({ candles: [], infos: {} });
@@ -80,7 +92,9 @@ function getHistory(symbol, timeframe, range = 5000) {
         }));
         const infos = chart.infos || {};
         try { chart.delete(); client.end(); } catch (e) {}
-        resolve({ candles, infos });
+        const resData = { candles, infos };
+        serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+        resolve(resData);
       }
     });
   });
@@ -2769,6 +2783,9 @@ const htmlContent = `<!DOCTYPE html>
     }
 
 
+    // --- Instant In-Memory Chart Cache for Zero-Latency Switching ---
+    const clientChartCache = {};
+
     async function loadChart(sym, tf) {
       if (eventSource) eventSource.close();
       clearAllIndicatorLines();
@@ -2777,6 +2794,7 @@ const htmlContent = `<!DOCTYPE html>
         syncDockCoin(sym);
       }
 
+      // 1. Instant Header & Ticker Update
       const titleEl = document.getElementById('active-symbol-title');
       const exEl = document.getElementById('active-exchange-badge');
       const logoEl = document.getElementById('active-symbol-logo');
@@ -2798,64 +2816,89 @@ const htmlContent = `<!DOCTYPE html>
         }
       }
 
-      try {
-        chart.priceScale('right').applyOptions({ autoScale: true });
-      } catch (e) {}
-      const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
-      const data = await res.json();
-      if (data.candles && data.candles.length > 0) {
-        currentCandlesCache = data.candles;
-        try {
-          chart.priceScale('right').applyOptions({ autoScale: true });
-        } catch (e) {}
-        candleSeries.setData(data.candles);
-        volumeSeries.setData(data.candles.map(c => ({
+      const activeKey = sym + '_' + tf;
+      const targetSym = sym;
+      const targetTf = tf;
+
+      // 2. ZERO-DELAY RENDER: If cached in memory, display immediately!
+      const cached = clientChartCache[activeKey];
+      if (cached && cached.candles && cached.candles.length > 0) {
+        currentCandlesCache = cached.candles;
+        try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
+        candleSeries.setData(cached.candles);
+        volumeSeries.setData(cached.candles.map(c => ({
           time: c.time,
           value: c.volume || 0,
           color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
         })));
+        const len = cached.candles.length;
         try {
           chart.priceScale('right').applyOptions({ autoScale: true });
-          const len = data.candles.length;
           chart.timeScale().setVisibleLogicalRange({
             from: Math.max(0, len - 160),
             to: len + 4,
           });
         } catch (e) {}
-        lastLoadedCandle = data.candles[data.candles.length - 1];
+        lastLoadedCandle = cached.candles[len - 1];
         setLegendOHLC(lastLoadedCandle);
-        updateActiveIndicators(currentCandlesCache);
-
-        setTimeout(() => {
-          try {
-            chart.priceScale('right').applyOptions({ autoScale: true });
-            const len = data.candles.length;
-            chart.timeScale().setVisibleLogicalRange({
-              from: Math.max(0, len - 160),
-              to: len + 4,
-            });
-          } catch (e) {}
-        }, 60);
+        updateActiveIndicators(cached.candles);
       }
-      eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
-      eventSource.onmessage = (e) => {
-        const d = JSON.parse(e.data);
-        if (d.candle) {
-          lastLoadedCandle = d.candle;
-          candleSeries.update(d.candle);
-          volumeSeries.update({
-            time: d.candle.time,
-            value: d.candle.volume || 0,
-            color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
-          });
-          setLegendOHLC(d.candle);
-          if (currentCandlesCache.length > 0) {
-            currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
+
+      // 3. Background fetch for latest candle stream & full history
+      try {
+        const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
+        const data = await res.json();
+        if (data.candles && data.candles.length > 0) {
+          clientChartCache[activeKey] = { candles: data.candles, time: Date.now() };
+
+          // Only apply if user is still on this exact symbol and timeframe
+          if (currentSymbol === targetSym && currentTimeframe === targetTf) {
+            currentCandlesCache = data.candles;
+            try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
+            candleSeries.setData(data.candles);
+            volumeSeries.setData(data.candles.map(c => ({
+              time: c.time,
+              value: c.volume || 0,
+              color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+            })));
+            const len = data.candles.length;
+            try {
+              chart.priceScale('right').applyOptions({ autoScale: true });
+              chart.timeScale().setVisibleLogicalRange({
+                from: Math.max(0, len - 160),
+                to: len + 4,
+              });
+            } catch (e) {}
+            lastLoadedCandle = data.candles[len - 1];
+            setLegendOHLC(lastLoadedCandle);
             updateActiveIndicators(currentCandlesCache);
           }
         }
-      };
+      } catch (e) {}
+
+      // 4. Real-time candle updates
+      if (currentSymbol === targetSym && currentTimeframe === targetTf) {
+        eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
+        eventSource.onmessage = (e) => {
+          const d = JSON.parse(e.data);
+          if (d.candle) {
+            lastLoadedCandle = d.candle;
+            candleSeries.update(d.candle);
+            volumeSeries.update({
+              time: d.candle.time,
+              value: d.candle.volume || 0,
+              color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+            });
+            setLegendOHLC(d.candle);
+            if (currentCandlesCache.length > 0) {
+              currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
+              updateActiveIndicators(currentCandlesCache);
+            }
+          }
+        };
+      }
     }
+
     loadChart(currentSymbol, currentTimeframe);
 
     // FiboRadar Controls
@@ -3176,6 +3219,46 @@ const htmlContent = `<!DOCTYPE html>
       renderWatchlist(document.getElementById('watchlist-search')?.value || '');
       loadChart(currentSymbol, currentTimeframe);
     });
+
+    // Smart Hover Prefetch: When user hovers on a watchlist token, prefetch its candles immediately!
+    document.getElementById('watchlist-list')?.addEventListener('mouseover', (e) => {
+      const row = e.target.closest('.wl-row');
+      if (!row) return;
+      const sym = row.dataset.symbol;
+      if (!sym) return;
+      const key = sym + '_' + currentTimeframe;
+      if (!clientChartCache[key]) {
+        fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=5000')
+          .then(r => r.json())
+          .then(data => {
+            if (data.candles && data.candles.length > 0) {
+              clientChartCache[key] = { candles: data.candles, time: Date.now() };
+            }
+          }).catch(() => {});
+      }
+    });
+
+    // Idle Background Prefetch: Cache top 8 tokens so clicking them is 100% instant
+    setTimeout(() => {
+      if (typeof customWatchlist !== 'undefined' && Array.isArray(customWatchlist)) {
+        let delay = 1500;
+        customWatchlist.slice(0, 8).forEach(item => {
+          const key = item.symbol + '_' + currentTimeframe;
+          if (!clientChartCache[key] && item.symbol !== currentSymbol) {
+            setTimeout(() => {
+              fetch('/api/history?symbol=' + encodeURIComponent(item.symbol) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=5000')
+                .then(r => r.json())
+                .then(data => {
+                  if (data.candles && data.candles.length > 0) {
+                    clientChartCache[key] = { candles: data.candles, time: Date.now() };
+                  }
+                }).catch(() => {});
+            }, delay);
+            delay += 1200;
+          }
+        });
+      }
+    }, 2000);
 
     // --- Watchlist Drag & Drop Reordering ---
     const wlListContainer = document.getElementById('watchlist-list');
