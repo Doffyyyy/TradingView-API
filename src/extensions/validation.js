@@ -1,35 +1,12 @@
 const axios = require('axios');
+const { compute26IndicatorsFromCandles, SCANNER_COLUMNS } = require('./taEngine26');
 
 /**
  * Validation Bot: 26-Indicator Consensus Layer
  * Query TradingView Technical Analysis engine across all 26 core indicators.
  * Serves as a second opinion veto before capital moves.
+ * Includes local fallback engine when TradingView Scanner rate-limits (HTTP 429).
  */
-
-const SCANNER_COLUMNS = [
-  'Recommend.Other', 'Recommend.All', 'Recommend.MA',
-  'RSI', 'RSI[1]',
-  'Stoch.K', 'Stoch.D',
-  'CCI20',
-  'ADX',
-  'AO',
-  'Mom',
-  'MACD.macd', 'MACD.signal',
-  'Rec.Stoch.RSI', 'Stoch.RSI.K',
-  'Rec.WR', 'W.R',
-  'Rec.BBPower', 'BBPower',
-  'Rec.UO', 'UO',
-  'EMA10', 'SMA10',
-  'EMA20', 'SMA20',
-  'EMA30', 'SMA30',
-  'EMA50', 'SMA50',
-  'EMA100', 'SMA100',
-  'EMA200', 'SMA200',
-  'Rec.Ichimoku', 'Ichimoku.BLine',
-  'Rec.VWMA', 'VWMA',
-  'Rec.HullMA9', 'HullMA9',
-  'close'
-];
 
 async function scanTickers(tickers, scannerType = 'crypto') {
   const url = `https://scanner.tradingview.com/${scannerType}/scan`;
@@ -40,7 +17,14 @@ async function scanTickers(tickers, scannerType = 'crypto') {
         symbols: { tickers },
         columns: SCANNER_COLUMNS,
       },
-      { timeout: 8000 }
+      {
+        timeout: 4000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Origin': 'https://www.tradingview.com',
+          'Referer': 'https://www.tradingview.com/',
+        }
+      }
     );
     return res.data;
   } catch (err) {
@@ -218,30 +202,101 @@ function parseIndicatorRow(row, ticker) {
 }
 
 /**
+ * Fetch candles via public exchange APIs directly as resilient fallback
+ */
+async function fetchCandlesFallback(symbol) {
+  // Binance Vision API
+  if (symbol.startsWith('BINANCE:')) {
+    const pair = symbol.split(':')[1];
+    try {
+      const res = await axios.get(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1h&limit=250`, { timeout: 3500 });
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map(k => ({
+          time: Math.round(k[0] / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+          volume: parseFloat(k[5]),
+        }));
+      }
+    } catch (e) {}
+  }
+
+  // Bybit Linear
+  if (symbol.startsWith('BYBIT:')) {
+    const coin = symbol.split(':')[1];
+    try {
+      const res = await axios.get(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${coin}&interval=60&limit=200`, { timeout: 3500 });
+      const list = res.data?.result?.list;
+      if (Array.isArray(list) && list.length > 0) {
+        // Bybit returns newest first, reverse for chronological order
+        return list.slice().reverse().map(k => ({
+          time: Math.round(parseInt(k[0], 10) / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+          volume: parseFloat(k[5]),
+        }));
+      }
+    } catch (e) {}
+  }
+
+  return null;
+}
+
+/**
  * Validate a symbol for the Validation Bot
  * @param {string} symbol e.g. "BINANCE:BTCUSDT"
+ * @param {Function} [getHistoryFn] Optional candle history resolver
  */
-async function validateSymbol(symbol) {
-  const isCrypto = symbol.startsWith('BINANCE:') || symbol.startsWith('BYBIT:') || symbol.startsWith('COINBASE:');
-  const res = await scanTickers([symbol], isCrypto ? 'crypto' : 'global');
-  if (!res.data || !res.data[0]) {
-    throw new Error(`Symbol ${symbol} not found in TradingView scanner`);
+async function validateSymbol(symbol, getHistoryFn = null) {
+  // 1. Try local candle calculation first for instant response without 429
+  let candles = null;
+  if (typeof getHistoryFn === 'function') {
+    try {
+      const hist = await getHistoryFn(symbol, '60', 250);
+      if (hist && Array.isArray(hist.candles) && hist.candles.length >= 35) {
+        candles = hist.candles;
+      }
+    } catch (e) {}
   }
-  return parseIndicatorRow(res.data[0], symbol);
+
+  // Fallback direct candle fetch
+  if (!candles) {
+    candles = await fetchCandlesFallback(symbol);
+  }
+
+  if (candles && candles.length >= 35) {
+    return compute26IndicatorsFromCandles(symbol, candles);
+  }
+
+  // 2. Secondary fallback: TradingView Scanner
+  try {
+    const isCrypto = symbol.startsWith('BINANCE:') || symbol.startsWith('BYBIT:') || symbol.startsWith('COINBASE:');
+    const res = await scanTickers([symbol], isCrypto ? 'crypto' : 'global');
+    if (res && res.data && res.data[0]) {
+      return parseIndicatorRow(res.data[0], symbol);
+    }
+  } catch (err) {}
+
+  throw new Error(`Unable to fetch technical indicators for ${symbol}. Please try another timeframe or symbol.`);
 }
 
 /**
  * Batch validate multiple symbols for the 300-agent layer
  * @param {string[]} symbols
+ * @param {Function} [getHistoryFn]
  */
-async function validateBatch(symbols) {
-  const res = await scanTickers(symbols, 'crypto');
+async function validateBatch(symbols, getHistoryFn = null) {
   const results = {};
-  if (res.data) {
-    res.data.forEach(row => {
-      const parsed = parseIndicatorRow(row, row.s);
-      results[row.s] = parsed;
-    });
+  for (const sym of symbols) {
+    try {
+      results[sym] = await validateSymbol(sym, getHistoryFn);
+    } catch (e) {
+      results[sym] = null;
+    }
   }
   return results;
 }

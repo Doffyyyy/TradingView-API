@@ -1391,7 +1391,7 @@ const htmlContent = `<!DOCTYPE html>
               <div id="web3-status-msg" style="display: none; margin-top: 10px; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 600;"></div>
             </div>
           </div>
-        </div>        </div>
+        </div>
       </div>
     </div>
 
@@ -1474,28 +1474,33 @@ const htmlContent = `<!DOCTYPE html>
 
         <!-- Recent Completed Trades -->
         <div class="grid-2">
-          <div class="card">
+          <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
             <div class="card-title">Completed Trades History</div>
-            <table id="table-paper-trades">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Side</th>
-                  <th>Exit Price</th>
-                  <th>Net PnL</th>
-                  <th>Reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No completed trades yet today.</td></tr>
-              </tbody>
-            </table>
+            <div style="flex: 1; overflow-y: auto; max-height: 480px;">
+              <table id="table-paper-trades">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Exit Price</th>
+                    <th>Net PnL</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No completed trades yet today.</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- Activity Logs -->
-          <div class="card">
-            <div class="card-title">Strategy Execution Log</div>
-            <div id="paper-logs-container" style="font-family: monospace; font-size: 11px; color: #a1a1aa; line-height: 1.6; max-height: 220px; overflow-y: auto;">
+          <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
+            <div class="card-title">
+              <span>Strategy Execution Log</span>
+              <span id="paper-logs-status" style="font-size: 10px; font-weight: 600; color: #38bdf8;">● Live Event Stream</span>
+            </div>
+            <div id="paper-logs-container" style="font-family: monospace; font-size: 11px; color: #cbd5e1; line-height: 1.6; flex: 1; min-height: 320px; max-height: 480px; overflow-y: auto; background: #0c0e14; border: 1px solid #1c202a; border-radius: 6px; padding: 10px 12px; scrollbar-width: thin;">
               <div>[PaperTrader] Engine initialized with $10,000.00 fund.</div>
             </div>
           </div>
@@ -4420,6 +4425,9 @@ const htmlContent = `<!DOCTYPE html>
       try {
         const res = await fetch('/api/validation?symbol=' + encodeURIComponent(sym));
         const data = await res.json();
+        if (data.error || !data.consensus) {
+          throw new Error(data.error || 'Evaluation failed or invalid symbol');
+        }
         document.getElementById('val-verdict-badge').textContent = data.verdict;
         document.getElementById('val-gate').textContent = data.tradeGate;
         document.getElementById('val-gate').className = 'stat-value ' + (data.tradeGate === 'ALLOW_LONG' ? 'val-green' : data.tradeGate === 'ALLOW_SHORT' ? 'val-red' : 'val-yellow');
@@ -5138,7 +5146,27 @@ const htmlContent = `<!DOCTYPE html>
         // Logs
         const logsContainer = document.getElementById('paper-logs-container');
         if (data.logs && data.logs.length > 0) {
-          logsContainer.innerHTML = data.logs.map(l => \`<div>\${l}</div>\`).join('');
+          logsContainer.innerHTML = data.logs.map(l => {
+            let rowColor = '#cbd5e1';
+            let bg = 'transparent';
+            if (l.includes('OPENED')) {
+              rowColor = '#38bdf8';
+              bg = 'rgba(56, 189, 248, 0.06)';
+            } else if (l.includes('CLOSED') && l.includes('Net PnL $') && !l.includes('$-')) {
+              rowColor = '#4ade80';
+              bg = 'rgba(74, 222, 128, 0.06)';
+            } else if (l.includes('CLOSED') && (l.includes('$-') || l.includes('Stop Loss'))) {
+              rowColor = '#f87171';
+              bg = 'rgba(239, 83, 80, 0.06)';
+            } else if (l.includes('STOP LOSS REACHED') || l.includes('🛑')) {
+              rowColor = '#ef5350';
+              bg = 'rgba(239, 83, 80, 0.12)';
+            } else if (l.includes('Trailing Stop locked')) {
+              rowColor = '#fbbf24';
+              bg = 'rgba(251, 191, 36, 0.06)';
+            }
+            return '<div style="padding: 5px 8px; margin-bottom: 3px; border-radius: 4px; background: ' + bg + '; color: ' + rowColor + '; border-left: 2px solid ' + (rowColor === '#cbd5e1' ? 'transparent' : rowColor) + '; word-break: break-word;">' + l + '</div>';
+          }).join('');
         }
       } catch (e) {
         console.error('Error refreshing paper status:', e);
@@ -5518,7 +5546,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/validation') {
     const symbol = parsedUrl.query.symbol || (await parseBody(req)).symbol || 'BINANCE:BTCUSDT';
     try {
-      const result = await validateSymbol(symbol);
+      const result = await validateSymbol(symbol, getHistory);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));
     } catch (err) {

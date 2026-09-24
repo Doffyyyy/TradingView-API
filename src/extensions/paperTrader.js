@@ -753,7 +753,7 @@ class PaperTradingEngine {
       dailyHistory: this.portfolio.dailyHistory || [],
       winRate: Math.round(winRate * 10) / 10,
       totalTrades,
-      logs: this.portfolio.logs.slice(0, 15),
+      logs: this.portfolio.logs.slice(0, 30),
     };
   }
 }
