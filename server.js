@@ -107,7 +107,9 @@ const htmlContent = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingView Pro Suite</title>
+  <title id="page-title">Proview</title>
+  <link id="page-favicon" rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <link rel="alternate icon" href="/public/favicon.svg">
   <script src="/public/lightweight-charts.js"></script>
   <style>
     :root {
@@ -787,7 +789,10 @@ const htmlContent = `<!DOCTYPE html>
   <header>
     <div class="brand-section">
       <div class="badge"><span class="badge-dot"></span><span>LIVE ENGINE</span></div>
-      <strong style="font-size: 14px;">TradingView Pro Suite</strong>
+      <strong style="font-size: 14px; display: flex; align-items: center; gap: 6px;">
+        <img src="/public/favicon.svg" alt="Proview" style="width: 18px; height: 18px; border-radius: 4px; vertical-align: middle;">
+        <span>Proview</span>
+      </strong>
     </div>
     <div class="nav-tabs" id="main-nav">
       <button class="tab-btn active" data-target="view-chart">📈 Live Chart</button>
@@ -2071,6 +2076,54 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+    // --- Proview Dynamic Title Bar Engine (TradingView & Proliquid Style) ---
+    function updateProviewTitle(customSym, customPrice, customChg) {
+      try {
+        let sym = customSym || currentDockCoin || (currentSymbol ? (currentSymbol.split(':')[1] || currentSymbol) : 'BTC');
+        let cleanSym = sym.replace(/-USDC$/i, '').replace(/USDT$/i, '').replace(/USD$/i, '');
+        if (!cleanSym) cleanSym = sym;
+
+        let price = customPrice;
+        if (price === undefined || price === null) {
+          if (typeof currentDockPrice !== 'undefined' && currentDockPrice) {
+            price = currentDockPrice;
+          } else if (typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol] && pricesCache[currentSymbol].close) {
+            price = pricesCache[currentSymbol].close;
+          } else if (typeof lastLoadedCandle !== 'undefined' && lastLoadedCandle && lastLoadedCandle.close) {
+            price = lastLoadedCandle.close;
+          }
+        }
+        if (typeof price === 'string') {
+          price = parseFloat(price.replace(/[^0-9.-]+/g, ''));
+        }
+
+        let chg = customChg;
+        if (chg === undefined || chg === null) {
+          if (typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol] && pricesCache[currentSymbol].change !== undefined) {
+            chg = pricesCache[currentSymbol].change;
+          }
+        }
+        if (typeof chg === 'string') {
+          chg = parseFloat(chg.replace(/[^0-9.-]+/g, ''));
+        }
+
+        if (price !== undefined && price !== null && !isNaN(price)) {
+          const formattedP = (typeof formatTokenPrice === 'function') ? formatTokenPrice(price) : price.toLocaleString('en-US');
+          let chgText = '';
+          if (chg !== undefined && chg !== null && !isNaN(chg)) {
+            const arrow = chg >= 0 ? '▲' : '▼';
+            const sign = chg >= 0 ? '+' : '';
+            chgText = ' ' + arrow + ' ' + sign + chg.toFixed(2) + '%';
+          }
+          document.title = cleanSym + ' ' + formattedP + chgText + ' | Proview';
+        } else {
+          document.title = cleanSym + ' | Proview';
+        }
+      } catch (e) {
+        document.title = 'Proview';
+      }
+    }
+
     let currentSymbol = 'BINANCE:BTCUSDT';
     let currentTimeframe = 'D';
     let eventSource = null;
@@ -2097,6 +2150,7 @@ const htmlContent = `<!DOCTYPE html>
       if (coinBadge) coinBadge.textContent = c;
       if (scrBadge) scrBadge.textContent = c;
       if (denomBadge) denomBadge.textContent = c;
+      updateProviewTitle(c);
       if (typeof subscribeHlWebSocket === 'function') subscribeHlWebSocket(c);
       if (typeof updateDockData === 'function') updateDockData();
       if (typeof updateTickerBar === 'function') updateTickerBar(c);
@@ -2920,6 +2974,7 @@ const htmlContent = `<!DOCTYPE html>
         lastLoadedCandle = cached.candles[len - 1];
         setLegendOHLC(lastLoadedCandle);
         updateActiveIndicators(cached.candles);
+        updateProviewTitle(sym, lastLoadedCandle.close);
       }
 
       // 3. Background fetch for latest candle stream & full history
@@ -2953,6 +3008,7 @@ const htmlContent = `<!DOCTYPE html>
             lastLoadedCandle = data.candles[len - 1];
             setLegendOHLC(lastLoadedCandle);
             updateActiveIndicators(currentCandlesCache);
+            updateProviewTitle(sym, lastLoadedCandle.close);
           }
         }
       } catch (e) {}
@@ -2974,6 +3030,7 @@ const htmlContent = `<!DOCTYPE html>
             if (currentCandlesCache.length > 0) {
               currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
               updateActiveIndicators(currentCandlesCache);
+              updateProviewTitle(currentSymbol, d.candle.close);
             }
           }
         };
@@ -3356,6 +3413,7 @@ const htmlContent = `<!DOCTYPE html>
           Object.assign(pricesCache, data.prices);
           const filter = document.getElementById('watchlist-search')?.value || '';
           renderWatchlist(filter);
+          if (typeof updateProviewTitle === 'function') updateProviewTitle();
         }
       } catch (e) {}
     }
@@ -3826,6 +3884,7 @@ const htmlContent = `<!DOCTYPE html>
                   const mktPriceEl = document.getElementById('dock-market-price');
                   if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
                   updateExecutionLabels();
+                  if (typeof updateProviewTitle === 'function') updateProviewTitle(currentDockCoin, currentDockPrice);
                 }
               }
             }
@@ -4362,6 +4421,10 @@ const htmlContent = `<!DOCTYPE html>
 
           const exEl = document.getElementById('active-exchange-badge');
           if (exEl) exEl.textContent = t.exchange;
+
+          if (typeof updateProviewTitle === 'function') {
+            updateProviewTitle(t.symbol || coin, t.rawLast || t.last, t.rawChange);
+          }
         }
       } catch (e) {}
     }
@@ -5236,12 +5299,20 @@ const server = http.createServer(async (req, res) => {
     return res.end(htmlContent);
   }
 
+  if (pathname === '/favicon.ico' || pathname === '/favicon.svg') {
+    const favPath = path.join(PUBLIC_DIR, 'favicon.svg');
+    if (fs.existsSync(favPath)) {
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+      return fs.createReadStream(favPath).pipe(res);
+    }
+  }
+
   if (pathname.startsWith('/public/')) {
     const filename = path.basename(pathname);
     const filePath = path.join(PUBLIC_DIR, filename);
     if (fs.existsSync(filePath)) {
       const ext = path.extname(filePath);
-      const mime = ext === '.js' ? 'application/javascript' : ext === '.png' ? 'image/png' : 'text/plain';
+      const mime = ext === '.js' ? 'application/javascript' : ext === '.png' ? 'image/png' : ext === '.svg' ? 'image/svg+xml' : 'text/plain';
       res.writeHead(200, { 'Content-Type': mime });
       return fs.createReadStream(filePath).pipe(res);
     }

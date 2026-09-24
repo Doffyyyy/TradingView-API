@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#1e2433"/>
+      <stop offset="100%" stop-color="#0a0d14"/>
+    </radialGradient>
+
+    <!-- Rocket Fuselage Gradient (Cyber Cyan / Violet) -->
+    <linearGradient id="rocketBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+
+    <!-- Rocket Flame Gradient -->
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+
+    <!-- Moon Glow Gradient -->
+    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Icon Frame -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)" stroke="#2b3347" stroke-width="2"/>
+
+  <!-- Crescent Moon in Background -->
+  <path d="M 47 11 A 19 19 0 1 1 20 45 A 21 21 0 0 0 47 11 Z" fill="url(#moonGrad)" opacity="0.92" filter="drop-shadow(0 0 4px rgba(250, 204, 21, 0.4))"/>
+
+  <!-- Rocket Component Group (Angled 45 degrees toward top-right) -->
+  <g transform="translate(13, 11) rotate(45, 17, 17)">
+    <!-- Exhaust Flame -->
+    <path d="M 12 30 Q 17 44 17 38 Q 17 44 22 30 Z" fill="url(#flameGrad)" opacity="0.95"/>
+    <path d="M 14 30 Q 17 38 17 34 Q 17 38 20 30 Z" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Rocket Left Fin -->
+    <path d="M 8 25 L 17 21 L 17 28 Z" fill="#4338ca"/>
+    <!-- Rocket Right Fin -->
+    <path d="M 26 25 L 17 21 L 17 28 Z" fill="#4338ca"/>
+
+    <!-- Rocket Nose & Body -->
+    <path d="M 17 3 Q 9 14 11 27 L 23 27 Q 25 14 17 3 Z" fill="url(#rocketBody)"/>
+
+    <!-- Porthole Window -->
+    <circle cx="17" cy="15" r="3.6" fill="#ffffff"/>
+    <circle cx="17" cy="15" r="2.3" fill="#0284c7"/>
+    <circle cx="16" cy="14" r="0.8" fill="#ffffff" opacity="0.9"/>
+  </g>
+
+  <!-- Subtle Sparkles / Stars -->
+  <circle cx="12" cy="15" r="1.5" fill="#38bdf8" opacity="0.9"/>
+  <circle cx="51" cy="51" r="1.4" fill="#fde047" opacity="0.9"/>
+  <circle cx="14" cy="48" r="1" fill="#cbd5e1" opacity="0.7"/>
+</svg>
