@@ -518,7 +518,7 @@ class PaperTradingEngine {
       try {
         const [taValidation, indics] = await Promise.all([
           validateSymbol(sym).catch(() => null),
-          computeAllIndicators(sym, '15', ['RSI', 'MACD', 'Supertrend', 'Galton', 'Footprint']).catch(() => null),
+          computeAllIndicators(sym, '15', ['RSI', 'MACD', 'Supertrend', 'Galton', 'Footprint', 'RLM']).catch(() => null),
         ]);
 
         if (!taValidation || !indics) continue;

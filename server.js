@@ -31,6 +31,17 @@ const serverHistoryCache = new Map();
 const serverWatchlistPriceCache = {};
 let lastWatchlistPriceUpdate = 0;
 
+function formatTokenPriceServer(p) {
+  if (typeof p !== 'number' || isNaN(p)) return '--';
+  const abs = Math.abs(p);
+  if (abs >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (abs >= 1) return p.toFixed(abs < 10 ? 3 : 2);
+  if (abs >= 0.1) return p.toFixed(4);
+  if (abs >= 0.001) return p.toFixed(6);
+  if (abs >= 0.00001) return p.toFixed(7);
+  return p.toFixed(8);
+}
+
 function getHistory(symbol, timeframe, range = 5000) {
   const cacheKey = symbol + ":" + timeframe + ":" + (range || 5000);
   const now = Date.now();
@@ -40,6 +51,12 @@ function getHistory(symbol, timeframe, range = 5000) {
   if (cached && (now - cached.timestamp < 20000)) {
     return Promise.resolve(cached.data);
   }
+
+  let querySymbol = symbol;
+  if (querySymbol === 'HYPERLIQUID:HYPE' || querySymbol === 'HYPE') {
+    querySymbol = 'BYBIT:HYPEUSDT';
+  }
+
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
   if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
     return new Promise(async (resolve) => {
@@ -75,7 +92,7 @@ function getHistory(symbol, timeframe, range = 5000) {
       reject(new Error('Timeout fetching history'));
     }, 8000);
 
-    chart.setMarket(symbol, { timeframe, range: range || 5000 });
+    chart.setMarket(querySymbol, { timeframe, range: range || 5000 });
     chart.onError((...err) => {
       clearTimeout(timer);
       try { chart.delete(); client.end(); } catch (e) {}
@@ -1010,6 +1027,38 @@ const htmlContent = `<!DOCTYPE html>
                       </select>
                     </div>
                   </div>
+                  <!-- 4. Reaction Level Matrix -->
+                  <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #f59e0b;">🎯 Reaction Level Matrix</span>
+                      <button class="btn" id="btn-toggle-rlm" style="padding: 2px 8px; font-size: 9.5px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;">OFF</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">WillyAlgoTrader • Reaction Scoring & Rejections</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Swing Length:</span>
+                      <select id="select-rlm-swing" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="6" selected>6 bars (Balanced)</option>
+                        <option value="4">4 bars (Sensitive)</option>
+                        <option value="10">10 bars (Major)</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Min Level Score:</span>
+                      <select id="select-rlm-score" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="50" selected>Score ≥ 50</option>
+                        <option value="60">Score ≥ 60</option>
+                        <option value="40">Score ≥ 40</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Risk Preset:</span>
+                      <select id="select-rlm-preset" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="BALANCED" selected>Balanced (1R/2R/3R)</option>
+                        <option value="CONSERVATIVE">Conservative (1R/2R/4R)</option>
+                        <option value="AGGRESSIVE">Aggressive (1.5R/2.5R/4R)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1121,6 +1170,53 @@ const htmlContent = `<!DOCTYPE html>
                   <span id="footprint-overlap" style="font-weight: 700; color: #fbbf24;">--</span>
                 </div>
               </div>
+
+              <!-- 4. Reaction Level Matrix HUD -->
+              <div id="rlm-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.94); backdrop-filter: blur(8px); border: 1px solid #f59e0b; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 275px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 800; color: #fbbf24;">🎯 Reaction Level Matrix</span>
+                  <span id="rlm-trend-badge" style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">BULLISH</span>
+                </div>
+                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 6px;">WillyAlgoTrader • 0–100 Scored Reaction Levels</div>
+                
+                <!-- Nearest Key Levels -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                  <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; padding: 4px;">
+                    <div style="font-size: 8.5px; color: #f87171; font-weight: 700;">🔴 NEAREST RES</div>
+                    <div id="rlm-res-price" style="font-size: 11px; font-weight: 800; color: #fca5a5;">--</div>
+                    <div id="rlm-res-sub" style="font-size: 8.5px; color: #94a3b8;">--</div>
+                  </div>
+                  <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 4px; padding: 4px;">
+                    <div style="font-size: 8.5px; color: #4ade80; font-weight: 700;">🟢 NEAREST SUP</div>
+                    <div id="rlm-sup-price" style="font-size: 11px; font-weight: 800; color: #86efac;">--</div>
+                    <div id="rlm-sup-sub" style="font-size: 8.5px; color: #94a3b8;">--</div>
+                  </div>
+                </div>
+
+                <!-- Signal Status -->
+                <div id="rlm-signal-box" style="padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,0.03); margin-bottom: 6px; font-size: 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #94a3b8;">Rejection Setup:</span>
+                  <span id="rlm-signal-status" style="font-weight: 700; color: #cbd5e1;">Waiting for Rejection</span>
+                </div>
+
+                <!-- Trade Plan (Visible when active) -->
+                <div id="rlm-plan-box" style="display: none; padding: 4px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 6px; font-size: 9.5px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span style="color: #38bdf8; font-weight: 700;">ENTRY: <span id="rlm-plan-entry">--</span></span>
+                    <span style="color: #f87171; font-weight: 700;">SL: <span id="rlm-plan-sl">--</span></span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; color: #cbd5e1;">
+                    <span>TP1: <strong id="rlm-plan-tp1" style="color: #4ade80;">--</strong></span>
+                    <span>TP2: <strong id="rlm-plan-tp2" style="color: #4ade80;">--</strong></span>
+                    <span>TP3: <strong id="rlm-plan-tp3" style="color: #4ade80;">--</strong></span>
+                  </div>
+                </div>
+
+                <!-- Active Level Matrix Mini-list -->
+                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 700;">ACTIVE MATRIX LEVELS (SCORE · TOUCHES):</div>
+                <div id="rlm-levels-list" style="display: flex; flex-direction: column; gap: 2px; max-height: 85px; overflow-y: auto;"></div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -1744,6 +1840,38 @@ const htmlContent = `<!DOCTYPE html>
                   <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
                     <div style="width: 34%; height: 100%; background: #10b981;"></div>
                   </div>
+                  <!-- 4. Reaction Level Matrix -->
+                  <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #f59e0b;">🎯 Reaction Level Matrix</span>
+                      <button class="btn" id="btn-toggle-rlm" style="padding: 2px 8px; font-size: 9.5px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;">OFF</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">WillyAlgoTrader • Reaction Scoring & Rejections</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Swing Length:</span>
+                      <select id="select-rlm-swing" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="6" selected>6 bars (Balanced)</option>
+                        <option value="4">4 bars (Sensitive)</option>
+                        <option value="10">10 bars (Major)</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Min Level Score:</span>
+                      <select id="select-rlm-score" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="50" selected>Score ≥ 50</option>
+                        <option value="60">Score ≥ 60</option>
+                        <option value="40">Score ≥ 40</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Risk Preset:</span>
+                      <select id="select-rlm-preset" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="BALANCED" selected>Balanced (1R/2R/3R)</option>
+                        <option value="CONSERVATIVE">Conservative (1R/2R/4R)</option>
+                        <option value="AGGRESSIVE">Aggressive (1.5R/2.5R/4R)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2079,18 +2207,26 @@ const htmlContent = `<!DOCTYPE html>
     // --- Proview Dynamic Title Bar Engine (TradingView & Proliquid Style) ---
     function updateProviewTitle(customSym, customPrice, customChg) {
       try {
-        let sym = customSym || currentDockCoin || (currentSymbol ? (currentSymbol.split(':')[1] || currentSymbol) : 'BTC');
-        let cleanSym = sym.replace(/-USDC$/i, '').replace(/USDT$/i, '').replace(/USD$/i, '');
-        if (!cleanSym) cleanSym = sym;
+        let sym = customSym || (currentSymbol ? (currentSymbol.split(':')[1] || currentSymbol) : currentDockCoin) || 'BTC';
+        let cleanSym = sym.toUpperCase();
+        if (cleanSym.endsWith('.P')) cleanSym = cleanSym.slice(0, -2);
+        if (cleanSym.endsWith('-USDC')) cleanSym = cleanSym.slice(0, -5);
+        else if (cleanSym.endsWith('USDC')) cleanSym = cleanSym.slice(0, -4);
+        else if (cleanSym.endsWith('USDT')) cleanSym = cleanSym.slice(0, -4);
+        else if (cleanSym.endsWith('USD')) cleanSym = cleanSym.slice(0, -3);
+        cleanSym = cleanSym.replace(/^_|_$/g, '').trim() || sym;
 
         let price = customPrice;
-        if (price === undefined || price === null) {
-          if (typeof currentDockPrice !== 'undefined' && currentDockPrice) {
-            price = currentDockPrice;
+        // Priority 1: If price not provided or 0, get from lastLoadedCandle (the active chart candle!)
+        // Priority 2: pricesCache[currentSymbol].close (from multi-exchange watchlist API)
+        // Priority 3: currentDockPrice (only if > 0)
+        if (price === undefined || price === null || price === 0) {
+          if (typeof lastLoadedCandle !== 'undefined' && lastLoadedCandle && lastLoadedCandle.close) {
+            price = lastLoadedCandle.close;
           } else if (typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol] && pricesCache[currentSymbol].close) {
             price = pricesCache[currentSymbol].close;
-          } else if (typeof lastLoadedCandle !== 'undefined' && lastLoadedCandle && lastLoadedCandle.close) {
-            price = lastLoadedCandle.close;
+          } else if (typeof currentDockPrice !== 'undefined' && currentDockPrice > 0) {
+            price = currentDockPrice;
           }
         }
         if (typeof price === 'string') {
@@ -2107,7 +2243,7 @@ const htmlContent = `<!DOCTYPE html>
           chg = parseFloat(chg.replace(/[^0-9.-]+/g, ''));
         }
 
-        if (price !== undefined && price !== null && !isNaN(price)) {
+        if (price !== undefined && price !== null && !isNaN(price) && price > 0) {
           const formattedP = (typeof formatTokenPrice === 'function') ? formatTokenPrice(price) : price.toLocaleString('en-US');
           let chgText = '';
           if (chg !== undefined && chg !== null && !isNaN(chg)) {
@@ -2142,19 +2278,34 @@ const htmlContent = `<!DOCTYPE html>
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
       if (c.includes(':')) c = c.split(':')[1];
-      c = c.replace(/USDT|USDC|USD|\.P|_/gi, '').trim() || 'BTC';
+      if (c.endsWith('.P')) c = c.slice(0, -2);
+      if (c.endsWith('-USDC')) c = c.slice(0, -5);
+      else if (c.endsWith('USDC')) c = c.slice(0, -4);
+      else if (c.endsWith('USDT')) c = c.slice(0, -4);
+      else if (c.endsWith('USD')) c = c.slice(0, -3);
+      c = c.replace(/^_|_$/g, '').trim() || 'BTC';
       currentDockCoin = c;
+
+      // Immediately reset currentDockPrice to the active token price
+      const activeClose = (typeof pricesCache !== 'undefined' && pricesCache[sym] && pricesCache[sym].close) || (lastLoadedCandle && lastLoadedCandle.close) || 0;
+      if (activeClose > 0) {
+        currentDockPrice = activeClose;
+      }
       const coinBadge = document.getElementById('ob-coin-badge');
       const scrBadge = document.getElementById('scr-coin-badge');
       const denomBadge = document.getElementById('exec-coin-denom');
       if (coinBadge) coinBadge.textContent = c;
       if (scrBadge) scrBadge.textContent = c;
       if (denomBadge) denomBadge.textContent = c;
-      updateProviewTitle(c);
+      const mktPriceEl = document.getElementById('dock-market-price');
+      if (mktPriceEl && currentDockPrice > 0) {
+        mktPriceEl.textContent = '$' + formatTokenPrice(currentDockPrice);
+      }
+      updateExecutionLabels();
+      updateProviewTitle(c, currentDockPrice > 0 ? currentDockPrice : null, pricesCache[sym]?.change);
       if (typeof subscribeHlWebSocket === 'function') subscribeHlWebSocket(c);
       if (typeof updateDockData === 'function') updateDockData();
       if (typeof updateTickerBar === 'function') updateTickerBar(c);
-      if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
     }
 
     // --- Technical Indicator Calculations & Math Library ---
@@ -2605,16 +2756,403 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+        // 4. Reaction Level Matrix [WillyAlgoTrader]
+    let rlmEnabled = false;
+    let rlmSwingLen = 6;
+    let rlmTolerance = 0.6;
+    let rlmMinScore = 50;
+    let rlmRiskPreset = 'BALANCED'; // BALANCED (1/2/3R), CONSERVATIVE (1/2/4R), AGGRESSIVE (1.5/2.5/4R)
+    let rlmPriceLines = [];
+
+    function clearRlmLines() {
+      rlmPriceLines.forEach(l => {
+        try { candleSeries.removePriceLine(l); } catch (e) {}
+      });
+      rlmPriceLines = [];
+    }
+
+    function updateReactionLevelMatrix(candles) {
+      clearRlmLines();
+      const hud = document.getElementById('rlm-hud');
+      if (!rlmEnabled || !candles || candles.length < 35) {
+        if (hud) hud.style.display = 'none';
+        return;
+      }
+      if (hud) hud.style.display = 'block';
+
+      const n = candles.length;
+      const tr = [candles[0].high - candles[0].low];
+      for (let i = 1; i < n; i++) {
+        const c = candles[i], prev = candles[i - 1];
+        tr.push(Math.max(c.high - c.low, Math.abs(c.high - prev.close), Math.abs(c.low - prev.close)));
+      }
+
+      function calcRMA(src, len) {
+        const rma = [src.slice(0, len).reduce((a, b) => a + b, 0) / len];
+        const alpha = 1 / len;
+        for (let i = len; i < src.length; i++) {
+          rma.push(alpha * src[i] + (1 - alpha) * rma[rma.length - 1]);
+        }
+        const pad = new Array(len - 1).fill(rma[0]);
+        return pad.concat(rma);
+      }
+
+      const atr34 = calcRMA(tr, 34);
+      const atr14 = calcRMA(tr, 14);
+
+      let storedLevels = [];
+      const halfLife = 500;
+      const decayFactor = Math.pow(0.5, 1 / halfLife);
+
+      for (let t = 0; t < n; t++) {
+        const curAtr = atr34[t] || 1;
+        const curClose = candles[t].close;
+        const prevClose = t > 0 ? candles[t - 1].close : curClose;
+
+        for (let l of storedLevels) {
+          l.strength *= decayFactor;
+          const top = l.center + l.halfWidth;
+          const btm = l.center - l.halfWidth;
+          if (l.role === 'SUPPORT' && prevClose >= btm && curClose < btm) {
+            l.role = 'RESISTANCE';
+            l.breaks++;
+            l.strength *= 0.7;
+          } else if (l.role === 'RESISTANCE' && prevClose <= top && curClose > top) {
+            l.role = 'SUPPORT';
+            l.breaks++;
+            l.strength *= 0.7;
+          }
+        }
+        storedLevels = storedLevels.filter(l => l.strength >= 0.25);
+
+        const swingIdx = t - rlmSwingLen;
+        if (swingIdx >= rlmSwingLen) {
+          const shCandle = candles[swingIdx];
+          let isHigh = true, isLow = true;
+
+          for (let k = 1; k <= rlmSwingLen; k++) {
+            if (candles[swingIdx - k].high >= shCandle.high || candles[swingIdx + k].high > shCandle.high) isHigh = false;
+            if (candles[swingIdx - k].low <= shCandle.low || candles[swingIdx + k].low < shCandle.low) isLow = false;
+          }
+
+          if (isHigh) {
+            let lowestLow = Infinity;
+            for (let k = 1; k <= rlmSwingLen; k++) lowestLow = Math.min(lowestLow, candles[swingIdx + k].low);
+            const reaction = (shCandle.high - lowestLow) / (atr34[swingIdx] || 1);
+            const w = 1 + Math.min(Math.max(0, reaction), 2.5);
+            addSwing(shCandle.high, w, true, curAtr, t);
+          }
+
+          if (isLow) {
+            let highestHigh = -Infinity;
+            for (let k = 1; k <= rlmSwingLen; k++) highestHigh = Math.max(highestHigh, candles[swingIdx + k].high);
+            const reaction = (highestHigh - shCandle.low) / (atr34[swingIdx] || 1);
+            const w = 1 + Math.min(Math.max(0, reaction), 2.5);
+            addSwing(shCandle.low, w, false, curAtr, t);
+          }
+        }
+      }
+
+      function addSwing(price, w, isHigh, curAtr, currentBar) {
+        const tol = rlmTolerance * curAtr;
+        let nearest = null, minDist = Infinity;
+        for (let l of storedLevels) {
+          const dist = Math.abs(l.center - price);
+          if (dist <= tol && dist < minDist) {
+            minDist = dist;
+            nearest = l;
+          }
+        }
+
+        if (nearest) {
+          nearest.sumW += w;
+          nearest.sumWP += w * price;
+          nearest.sumWP2 += w * price * price;
+          nearest.strength += w;
+          if (isHigh) nearest.highTouches++; else nearest.lowTouches++;
+          nearest.totalTouches++;
+          nearest.lastTouchBar = currentBar;
+
+          const m = nearest.sumWP / nearest.sumW;
+          const vr = (nearest.sumWP2 / nearest.sumW) - (m * m);
+          const hw = Math.min(tol, Math.max(0.15 * curAtr, Math.sqrt(Math.max(0, vr))));
+          nearest.center = m;
+          nearest.halfWidth = hw;
+
+          // 5-pass merge for overlapping levels (matching Pine Script MERGE_PASSES = 5)
+          let again = true;
+          let passes = 0;
+          while (again && passes < 5) {
+            again = false;
+            passes++;
+            const tHi = nearest.center + nearest.halfWidth;
+            const tLo = nearest.center - nearest.halfWidth;
+            for (let k = storedLevels.length - 1; k >= 0; k--) {
+              const o = storedLevels[k];
+              if (o !== nearest) {
+                const oHi = o.center + o.halfWidth;
+                const oLo = o.center - o.halfWidth;
+                if (oLo <= tHi && tLo <= oHi) {
+                  nearest.sumW += o.sumW;
+                  nearest.sumWP += o.sumWP;
+                  nearest.sumWP2 += o.sumWP2;
+                  nearest.strength += o.strength;
+                  nearest.totalTouches += o.totalTouches;
+                  nearest.highTouches += o.highTouches;
+                  nearest.lowTouches += o.lowTouches;
+                  nearest.breaks = Math.max(nearest.breaks, o.breaks);
+                  const mMerged = nearest.sumWP / nearest.sumW;
+                  const vrMerged = (nearest.sumWP2 / nearest.sumW) - (mMerged * mMerged);
+                  nearest.center = mMerged;
+                  nearest.halfWidth = Math.min(tol, Math.max(0.15 * curAtr, Math.sqrt(Math.max(0, vrMerged))));
+                  storedLevels.splice(k, 1);
+                  again = true;
+                }
+              }
+            }
+          }
+        } else {
+          storedLevels.push({
+            sumW: w,
+            sumWP: w * price,
+            sumWP2: w * price * price,
+            center: price,
+            halfWidth: Math.min(tol, Math.max(0.15 * curAtr, 0.25 * curAtr)),
+            strength: w,
+            highTouches: isHigh ? 1 : 0,
+            lowTouches: isHigh ? 0 : 1,
+            totalTouches: 1,
+            breaks: 0,
+            role: candles[currentBar].close >= price ? 'SUPPORT' : 'RESISTANCE',
+            lastTouchBar: currentBar,
+            lastSignalBar: -999,
+          });
+          if (storedLevels.length > 60) {
+            storedLevels.sort((a, b) => b.strength - a.strength);
+            storedLevels.pop();
+          }
+        }
+      }
+
+      const lastClose = candles[n - 1].close;
+      const currentAtr14 = atr14[n - 1] || 1;
+
+      storedLevels.forEach(l => {
+        const polarityBonus = (l.highTouches > 0 && l.lowTouches > 0) ? 1.25 : 1.0;
+        l.polarity = (l.highTouches > 0 && l.lowTouches > 0);
+        l.score = Math.round(Math.min(100, Math.max(0, 100 * (1 - Math.exp(-l.strength * polarityBonus / 6)))));
+      });
+
+      const activeLevels = storedLevels.filter(l => l.totalTouches >= 2);
+      const resistances = activeLevels
+        .filter(l => l.center > lastClose)
+        .sort((a, b) => (a.center - lastClose) - (b.center - lastClose))
+        .slice(0, 3);
+
+      const supports = activeLevels
+        .filter(l => l.center < lastClose)
+        .sort((a, b) => (lastClose - a.center) - (lastClose - b.center))
+        .slice(0, 3);
+
+      // Check Signals on the latest candle
+      const lastCandle = candles[n - 1];
+      const barRange = lastCandle.high - lastCandle.low;
+      let signal = null;
+
+      let rMults = [1.0, 2.0, 3.0];
+      if (rlmRiskPreset === 'CONSERVATIVE') rMults = [1.0, 2.0, 4.0];
+      else if (rlmRiskPreset === 'AGGRESSIVE') rMults = [1.5, 2.5, 4.0];
+
+      // Long Rejection at nearest support
+      for (let sup of supports) {
+        if (sup.score >= rlmMinScore) {
+          const top = sup.center + sup.halfWidth;
+          if (lastCandle.low <= top && lastCandle.close > top && barRange > 0 && ((lastCandle.close - lastCandle.low) / barRange >= 0.6)) {
+            const sl = Math.min(lastCandle.low - 0.25 * currentAtr14, lastCandle.close - 0.5 * currentAtr14);
+            const risk = Math.max(0.0001, lastCandle.close - sl);
+            signal = {
+              type: 'LONG',
+              levelPrice: sup.center,
+              levelScore: sup.score,
+              polarity: sup.polarity,
+              touches: sup.totalTouches,
+              entry: lastCandle.close,
+              sl: sl,
+              tp1: lastCandle.close + rMults[0] * risk,
+              tp2: lastCandle.close + rMults[1] * risk,
+              tp3: lastCandle.close + rMults[2] * risk,
+              risk: risk,
+            };
+            break;
+          }
+        }
+      }
+
+      // Short Rejection at nearest resistance
+      if (!signal) {
+        for (let res of resistances) {
+          if (res.score >= rlmMinScore) {
+            const btm = res.center - res.halfWidth;
+            if (lastCandle.high >= btm && lastCandle.close < btm && barRange > 0 && ((lastCandle.high - lastCandle.close) / barRange >= 0.6)) {
+              const sl = Math.max(lastCandle.high + 0.25 * currentAtr14, lastCandle.close + 0.5 * currentAtr14);
+              const risk = Math.max(0.0001, sl - lastCandle.close);
+              signal = {
+                type: 'SHORT',
+                levelPrice: res.center,
+                levelScore: res.score,
+                polarity: res.polarity,
+                touches: res.totalTouches,
+                entry: lastCandle.close,
+                sl: sl,
+                tp1: lastCandle.close - rMults[0] * risk,
+                tp2: lastCandle.close - rMults[1] * risk,
+                tp3: lastCandle.close - rMults[2] * risk,
+                risk: risk,
+              };
+              break;
+            }
+          }
+        }
+      }
+
+      // Draw RLM Price Lines on LightweightCharts (Exact Pine Script colors & formatting)
+      supports.forEach(sup => {
+        const line = candleSeries.createPriceLine({
+          price: sup.center,
+          color: '#089981',
+          lineWidth: sup.polarity ? 2 : 1,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: 'RLM Sup ' + sup.score + ' · ' + sup.totalTouches + 'T' + (sup.polarity ? ' ⇅' : ''),
+        });
+        rlmPriceLines.push(line);
+      });
+
+      resistances.forEach(res => {
+        const line = candleSeries.createPriceLine({
+          price: res.center,
+          color: '#F23645',
+          lineWidth: res.polarity ? 2 : 1,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: 'RLM Res ' + res.score + ' · ' + res.totalTouches + 'T' + (res.polarity ? ' ⇅' : ''),
+        });
+        rlmPriceLines.push(line);
+      });
+
+      // Draw Trade Plan Lines if signal active
+      if (signal) {
+        const entryLine = candleSeries.createPriceLine({
+          price: signal.entry,
+          color: '#5C8AAE',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'RLM ' + signal.type + ' ENTRY',
+        });
+        const slLine = candleSeries.createPriceLine({
+          price: signal.sl,
+          color: '#E57373',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          axisLabelVisible: true,
+          title: 'RLM SL (' + formatTokenPrice(signal.sl) + ')',
+        });
+        const tp1Line = candleSeries.createPriceLine({
+          price: signal.tp1,
+          color: '#66BB6A',
+          lineWidth: 1,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: 'RLM TP1 (' + formatTokenPrice(signal.tp1) + ')',
+        });
+        rlmPriceLines.push(entryLine, slLine, tp1Line);
+      }
+
+      // Update RLM HUD DOM
+      const trendBadge = document.getElementById('rlm-trend-badge');
+      const isBull = supports.length >= resistances.length;
+      if (trendBadge) {
+        trendBadge.textContent = isBull ? 'BULLISH' : 'BEARISH';
+        trendBadge.style.color = isBull ? '#4ade80' : '#f87171';
+        trendBadge.style.background = isBull ? 'rgba(74, 222, 128, 0.15)' : 'rgba(239, 83, 80, 0.15)';
+      }
+
+      const resPrEl = document.getElementById('rlm-res-price');
+      const resSubEl = document.getElementById('rlm-res-sub');
+      if (resistances.length > 0) {
+        const nr = resistances[0];
+        if (resPrEl) resPrEl.textContent = formatTokenPrice(nr.center);
+        if (resSubEl) resSubEl.textContent = 'Score: ' + nr.score + ' · ' + nr.totalTouches + 'T' + (nr.polarity ? ' ⇅' : '');
+      } else {
+        if (resPrEl) resPrEl.textContent = 'None nearby';
+        if (resSubEl) resSubEl.textContent = '--';
+      }
+
+      const supPrEl = document.getElementById('rlm-sup-price');
+      const supSubEl = document.getElementById('rlm-sup-sub');
+      if (supports.length > 0) {
+        const ns = supports[0];
+        if (supPrEl) supPrEl.textContent = formatTokenPrice(ns.center);
+        if (supSubEl) supSubEl.textContent = 'Score: ' + ns.score + ' · ' + ns.totalTouches + 'T' + (ns.polarity ? ' ⇅' : '');
+      } else {
+        if (supPrEl) supPrEl.textContent = 'None nearby';
+        if (supSubEl) supSubEl.textContent = '--';
+      }
+
+      const sigBox = document.getElementById('rlm-signal-box');
+      const sigStatus = document.getElementById('rlm-signal-status');
+      const planBox = document.getElementById('rlm-plan-box');
+
+      if (signal) {
+        if (sigStatus) {
+          sigStatus.textContent = (signal.type === 'LONG' ? '🟢 Long' : '🔴 Short') + ' Rejection Active (Score: ' + signal.levelScore + ')';
+          sigStatus.style.color = signal.type === 'LONG' ? '#4ade80' : '#f87171';
+        }
+        if (planBox) {
+          planBox.style.display = 'block';
+          document.getElementById('rlm-plan-entry').textContent = formatTokenPrice(signal.entry);
+          document.getElementById('rlm-plan-sl').textContent = formatTokenPrice(signal.sl);
+          document.getElementById('rlm-plan-tp1').textContent = formatTokenPrice(signal.tp1);
+          document.getElementById('rlm-plan-tp2').textContent = formatTokenPrice(signal.tp2);
+          document.getElementById('rlm-plan-tp3').textContent = formatTokenPrice(signal.tp3);
+        }
+      } else {
+        if (sigStatus) {
+          sigStatus.textContent = 'Waiting for Level Rejection';
+          sigStatus.style.color = '#94a3b8';
+        }
+        if (planBox) planBox.style.display = 'none';
+      }
+
+      const listEl = document.getElementById('rlm-levels-list');
+      if (listEl) {
+        const allSorted = [...resistances, ...supports].sort((a, b) => b.center - a.center);
+        listEl.innerHTML = allSorted.map(l => {
+          const isSup = l.center < lastClose;
+          const roleColor = isSup ? '#4ade80' : '#f87171';
+          const polIcon = l.polarity ? ' ⇅' : '';
+          return '<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 2px 5px; border-radius: 3px; font-size: 9.5px;">' +
+            '<span style="color: ' + roleColor + '; font-weight: 700;">' + (isSup ? 'SUP' : 'RES') + ' ' + formatTokenPrice(l.center) + '</span>' +
+            '<span style="color: #cbd5e1;">Score: <strong>' + l.score + '</strong></span>' +
+            '<span style="font-size: 8.5px; color: #94a3b8;">' + l.totalTouches + 'T' + polIcon + '</span>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
     function clearAllIndicatorLines() {
       clearFiboLines();
       clearGaltonLines();
       clearFootprintLines();
+      clearRlmLines();
     }
 
     function updateActiveIndicators(candles) {
       updateFiboRadar(candles);
       updateGaltonProfile(candles);
       updateVolumeFootprint(candles);
+      updateReactionLevelMatrix(candles);
     }
 
     function updateFiboRadar(candles) {
@@ -2797,10 +3335,12 @@ const htmlContent = `<!DOCTYPE html>
       'BINANCE:ARBUSDT': 'crypto/XTVCARBI',
       'ARBUSDT': 'crypto/XTVCARBI',
       'ARB': 'crypto/XTVCARBI',
+      'HYPERLIQUID:HYPE': 'crypto/XTVCHYPEH',
       'BYBIT:HYPEUSDT': 'crypto/XTVCHYPEH',
       'COINBASE:HYPEUSD': 'crypto/XTVCHYPEH',
       'HYPEUSD': 'crypto/XTVCHYPEH',
       'HYPEUSDT': 'crypto/XTVCHYPEH',
+      'HYPE': 'crypto/XTVCHYPEH',
       'BINANCE:SOLUSDT': 'crypto/XTVCSOL',
       'SOLUSDT': 'crypto/XTVCSOL',
       'BINANCE:SUIUSDT': 'crypto/XTVCSUI',
@@ -2816,6 +3356,7 @@ const htmlContent = `<!DOCTYPE html>
       'VVVUSDT': 'crypto/XTVCVVV',
       'BINANCE:PUMPUSDT': 'crypto/XTVCPUMPF',
       'PUMPUSDT': 'crypto/XTVCPUMPF',
+      'PUMP': 'crypto/XTVCPUMPF',
       'COINBASE:MONUSD': 'crypto/XTVCMONAD',
       'MONUSD': 'crypto/XTVCMONAD',
       'BYBIT:MNTUSDT': 'crypto/XTVCMNT',
@@ -2843,7 +3384,7 @@ const htmlContent = `<!DOCTYPE html>
     const DEFAULT_WATCHLIST = [
       { symbol: 'BINANCE:BTCUSDT', name: 'BTCUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCBTC' },
       { symbol: 'BINANCE:ETHUSDT', name: 'ETHUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCETH' },
-      { symbol: 'BYBIT:HYPEUSDT', name: 'HYPEUSD', exchange: 'BYBIT', logoId: 'crypto/XTVCHYPEH' },
+      { symbol: 'HYPERLIQUID:HYPE', name: 'HYPE', exchange: 'HYPERLIQUID', logoId: 'crypto/XTVCHYPEH' },
       { symbol: 'METEORA:KLEDSOL_4SBYWY.USD', name: 'KLEDSOL_4!', exchange: 'METEORA' },
       { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSOL' },
       { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSUI' },
@@ -2851,7 +3392,7 @@ const htmlContent = `<!DOCTYPE html>
       { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZEC' },
       { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCTAOB' },
       { symbol: 'BYBIT:VVVUSDT', name: 'VVVUSDT.P', exchange: 'BYBIT', logoId: 'crypto/XTVCVVV' },
-      { symbol: 'BINANCE:PUMPUSDT', name: 'PUMPUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCPUMPF' },
+      { symbol: 'BINANCE:PUMPUSDT', name: 'PUMP', exchange: 'BINANCE', logoId: 'crypto/XTVCPUMPF' },
       { symbol: 'COINBASE:MONUSD', name: 'MONUSD', exchange: 'COINBASE', logoId: 'crypto/XTVCMONAD' },
       { symbol: 'BYBIT:MNTUSDT', name: 'MNTUSDT', exchange: 'BYBIT', logoId: 'crypto/XTVCMNT' },
       { symbol: 'CRYPTO:NOCKUSD', name: 'NOCKUSD', exchange: 'CRYPTO', logoId: 'crypto/XTVCNOCK' },
@@ -2874,7 +3415,7 @@ const htmlContent = `<!DOCTYPE html>
       customWatchlist = DEFAULT_WATCHLIST;
     }
 
-    // Auto-fix any incomplete or invalid symbols from previous adds (e.g. BINANCE:ARB -> BINANCE:ARBUSDT)
+    // Auto-fix any incomplete or invalid symbols from previous adds (e.g. BINANCE:ARB -> BINANCE:ARBUSDT, HYPE -> Hyperliquid native)
     customWatchlist = customWatchlist.map(item => {
       if (item.symbol === 'BINANCE:ARB' || item.name === 'ARB' || item.symbol === 'ARB') {
         return {
@@ -2882,6 +3423,22 @@ const htmlContent = `<!DOCTYPE html>
           name: 'ARBUSDT',
           exchange: 'BINANCE',
           logoId: 'crypto/XTVCARBI',
+        };
+      }
+      if (item.symbol && item.symbol.includes('HYPE')) {
+        return {
+          symbol: 'HYPERLIQUID:HYPE',
+          name: 'HYPE',
+          exchange: 'HYPERLIQUID',
+          logoId: 'crypto/XTVCHYPEH',
+        };
+      }
+      if (item.symbol && item.symbol.includes('PUMP')) {
+        return {
+          symbol: 'BINANCE:PUMPUSDT',
+          name: 'PUMP',
+          exchange: 'BINANCE',
+          logoId: 'crypto/XTVCPUMPF',
         };
       }
       if (!item.logoId && LOGO_MAP[item.symbol]) {
@@ -3083,6 +3640,12 @@ const htmlContent = `<!DOCTYPE html>
             window: footprintWindow || 5,
             imbalance: footprintImbalance || 3.0,
           },
+          rlm: {
+            enabled: !!rlmEnabled,
+            swing: rlmSwingLen || 6,
+            score: rlmMinScore || 50,
+            preset: rlmRiskPreset || 'BALANCED',
+          },
 
           // 4. Panel Layouts
           layout: {
@@ -3187,6 +3750,28 @@ const htmlContent = `<!DOCTYPE html>
           const selFpImb = document.getElementById('select-footprint-imbalance');
           if (selFpImb) selFpImb.value = String(footprintImbalance);
         }
+
+        if (s.rlm) {
+          rlmEnabled = s.rlm.enabled;
+          rlmSwingLen = s.rlm.swing || 6;
+          rlmMinScore = s.rlm.score || 50;
+          rlmRiskPreset = s.rlm.preset || 'BALANCED';
+          const btnRlm = document.getElementById('btn-toggle-rlm');
+          if (btnRlm) {
+            btnRlm.textContent = rlmEnabled ? 'ON' : 'OFF';
+            btnRlm.className = 'btn' + (rlmEnabled ? ' active' : '');
+            btnRlm.style.background = rlmEnabled ? 'rgba(245, 158, 11, 0.2)' : 'var(--bg-tertiary)';
+            btnRlm.style.color = rlmEnabled ? '#fbbf24' : 'var(--text-secondary)';
+            btnRlm.style.borderColor = rlmEnabled ? '#f59e0b' : 'transparent';
+          }
+          const selRlmSw = document.getElementById('select-rlm-swing');
+          if (selRlmSw) selRlmSw.value = String(rlmSwingLen);
+          const selRlmSc = document.getElementById('select-rlm-score');
+          if (selRlmSc) selRlmSc.value = String(rlmMinScore);
+          const selRlmPr = document.getElementById('select-rlm-preset');
+          if (selRlmPr) selRlmPr.value = rlmRiskPreset;
+        }
+
 
         // 3. Restore Layout (Watchlist, Dock, Dock Tab)
         if (s.layout) {
@@ -3328,6 +3913,48 @@ const htmlContent = `<!DOCTYPE html>
       });
     }
 
+    // Reaction Level Matrix [WillyAlgoTrader] Controls
+    const btnToggleRlm = document.getElementById('btn-toggle-rlm');
+    if (btnToggleRlm) {
+      btnToggleRlm.addEventListener('click', () => {
+        rlmEnabled = !rlmEnabled;
+        btnToggleRlm.textContent = rlmEnabled ? 'ON' : 'OFF';
+        btnToggleRlm.style.background = rlmEnabled ? 'rgba(245, 158, 11, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleRlm.style.color = rlmEnabled ? '#fbbf24' : 'var(--text-secondary)';
+        btnToggleRlm.style.borderColor = rlmEnabled ? '#f59e0b' : 'transparent';
+        updateReactionLevelMatrix(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectRlmSwing = document.getElementById('select-rlm-swing');
+    if (selectRlmSwing) {
+      selectRlmSwing.addEventListener('change', () => {
+        rlmSwingLen = parseInt(selectRlmSwing.value, 10) || 6;
+        updateReactionLevelMatrix(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectRlmScore = document.getElementById('select-rlm-score');
+    if (selectRlmScore) {
+      selectRlmScore.addEventListener('change', () => {
+        rlmMinScore = parseInt(selectRlmScore.value, 10) || 50;
+        updateReactionLevelMatrix(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectRlmPreset = document.getElementById('select-rlm-preset');
+    if (selectRlmPreset) {
+      selectRlmPreset.addEventListener('change', () => {
+        rlmRiskPreset = selectRlmPreset.value || 'BALANCED';
+        updateReactionLevelMatrix(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+
     const selectFootprintWindow = document.getElementById('select-footprint-window');
     if (selectFootprintWindow) {
       selectFootprintWindow.addEventListener('change', () => {
@@ -3369,7 +3996,7 @@ const htmlContent = `<!DOCTYPE html>
         const chgAbsStr = chgAbs !== null ? formatChgAbs(chgAbs) : '--';
 
         const logoId = item.logoId || LOGO_MAP[item.symbol] || LOGO_MAP[item.name];
-        const initial = item.name.replace(/USDT|\.P|USD|_/gi, '').slice(0, 1).toUpperCase() || 'T';
+        const initial = (item.name || item.symbol || 'T').slice(0, 1).toUpperCase();
 
         const logoContent = logoId ? \`
           <img src="https://s3-symbol-logo.tradingview.com/\${logoId}.svg" alt="\${item.name}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
@@ -4382,27 +5009,44 @@ const htmlContent = `<!DOCTYPE html>
 
     // --- Hyperliquid Ticker Bar & Header Logic ---
     async function updateTickerBar(coin) {
+      if (!coin || coin !== currentDockCoin) return;
       try {
         const res = await fetch('/api/hyperliquid/ticker?coin=' + encodeURIComponent(coin));
         const t = await res.json();
+        if (coin !== currentDockCoin) return;
         if (t && t.last) {
+          let lastStr = t.last;
+          let chgStr = t.change;
+          let rawChg = t.rawChange;
+          let rawL = t.rawLast;
+
+          if ((!rawL || rawL === 0) && typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol]?.close) {
+            rawL = pricesCache[currentSymbol].close;
+            lastStr = formatTokenPrice(rawL);
+            rawChg = pricesCache[currentSymbol].change || 0;
+            chgStr = (rawChg >= 0 ? '+' : '') + rawChg.toFixed(2) + '%';
+          } else if ((!rawL || rawL === 0) && lastLoadedCandle?.close) {
+            rawL = lastLoadedCandle.close;
+            lastStr = formatTokenPrice(rawL);
+          }
+
           const lastEl = document.getElementById('hl-stat-last');
-          if (lastEl) lastEl.textContent = t.last;
+          if (lastEl) lastEl.textContent = '$' + lastStr.replace(/^\$/, '');
 
           const idxEl = document.getElementById('hl-stat-index');
-          if (idxEl) idxEl.textContent = t.index;
+          if (idxEl) idxEl.textContent = t.index && t.index !== '--' ? t.index : '$' + lastStr.replace(/^\$/, '');
 
           const chgEl = document.getElementById('hl-stat-change');
           if (chgEl) {
-            chgEl.textContent = t.change;
-            chgEl.className = 'hl-stat-val ' + (t.rawChange >= 0 ? 'val-green' : 'val-red');
+            chgEl.textContent = chgStr;
+            chgEl.className = 'hl-stat-val ' + (rawChg >= 0 ? 'val-green' : 'val-red');
           }
 
           const volEl = document.getElementById('hl-stat-volume');
-          if (volEl) volEl.textContent = t.volume;
+          if (volEl && t.volume && t.volume !== '--') volEl.textContent = t.volume;
 
           const oiEl = document.getElementById('hl-stat-oi');
-          if (oiEl) oiEl.textContent = t.openInterest;
+          if (oiEl && t.openInterest && t.openInterest !== '--') oiEl.textContent = t.openInterest;
 
           const fundEl = document.getElementById('hl-stat-funding');
           if (fundEl) {
@@ -4411,10 +5055,10 @@ const htmlContent = `<!DOCTYPE html>
           }
 
           const mcapEl = document.getElementById('hl-stat-mcap');
-          if (mcapEl) mcapEl.textContent = t.marketcap;
+          if (mcapEl && t.marketcap && t.marketcap !== '--') mcapEl.textContent = t.marketcap;
 
           const fdvEl = document.getElementById('hl-stat-fdv');
-          if (fdvEl) fdvEl.textContent = t.fdv;
+          if (fdvEl && t.fdv && t.fdv !== '--') fdvEl.textContent = t.fdv;
 
           const titleEl = document.getElementById('active-symbol-title');
           if (titleEl) titleEl.textContent = t.symbol;
@@ -4423,7 +5067,7 @@ const htmlContent = `<!DOCTYPE html>
           if (exEl) exEl.textContent = t.exchange;
 
           if (typeof updateProviewTitle === 'function') {
-            updateProviewTitle(t.symbol || coin, t.rawLast || t.last, t.rawChange);
+            updateProviewTitle(t.symbol || coin, rawL > 0 ? rawL : null, rawChg);
           }
         }
       } catch (e) {}
@@ -5453,7 +6097,38 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       })();
 
-      // 3. Bybit Linear Tickers (HYPE, VVV, MNT)
+      // 2.5 Direct Hyperliquid Native Ticker for HYPE
+      const pHype = (async () => {
+        if (!symbols.some(s => s.includes('HYPE'))) return;
+        try {
+          const res = await axios.post(
+            'https://api.hyperliquid.xyz/info',
+            { type: 'metaAndAssetCtxs' },
+            { headers: { 'Content-Type': 'application/json' }, timeout: 3500 }
+          );
+          const universe = res.data[0]?.universe || [];
+          const ctxs = res.data[1] || [];
+          const idx = universe.findIndex(u => u.name === 'HYPE');
+          if (idx !== -1 && ctxs[idx]) {
+            const ctx = ctxs[idx];
+            const markPx = parseFloat(ctx.markPx) || 0;
+            const prevDayPx = parseFloat(ctx.prevDayPx) || markPx;
+            const chgPct = prevDayPx > 0 ? ((markPx - prevDayPx) / prevDayPx) * 100 : 0;
+            const obj = {
+              close: markPx,
+              change: chgPct,
+              change_abs: markPx - prevDayPx,
+              volume: parseFloat(ctx.dayNtlVlm) || 0,
+            };
+            prices['HYPERLIQUID:HYPE'] = obj;
+            prices['BYBIT:HYPEUSDT'] = obj;
+            prices['HYPE'] = obj;
+            prices['HYPEUSD'] = obj;
+          }
+        } catch (e) {}
+      })();
+
+      // 3. Bybit Linear Tickers (VVV, MNT)
       const bybitSymbols = symbols.filter(s => s.startsWith('BYBIT:'));
       const bybitPromises = bybitSymbols.map(async (s) => {
         const coin = s.split(':')[1];
@@ -5562,7 +6237,7 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       });
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon]);
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype]);
 
       if (typeof serverWatchlistPriceCache !== 'undefined') {
         Object.assign(serverWatchlistPriceCache, prices);
@@ -5619,7 +6294,7 @@ const server = http.createServer(async (req, res) => {
     const body = await parseBody(req);
     const symbol = body.symbol || parsedUrl.query.symbol || 'BINANCE:BTCUSDT';
     const timeframe = body.timeframe || parsedUrl.query.timeframe || '60';
-    const indicators = body.indicators || ['RSI', 'MACD', 'Supertrend', 'Ichimoku'];
+    const indicators = body.indicators || (parsedUrl.query.indicators ? parsedUrl.query.indicators.split(',') : ['RSI', 'MACD', 'Supertrend', 'Ichimoku', 'RLM']);
     try {
       const result = await computeAllIndicators(symbol, timeframe, indicators);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -5785,6 +6460,23 @@ const server = http.createServer(async (req, res) => {
     const coin = parsedUrl.query.coin || 'BTC';
     try {
       const ticker = await hyperliquidInstance.getTickerDetails(coin);
+      if ((!ticker.rawLast || ticker.rawLast === 0) && typeof serverWatchlistPriceCache !== 'undefined') {
+        const cUp = coin.toUpperCase();
+        for (const [sym, data] of Object.entries(serverWatchlistPriceCache)) {
+          const symClean = sym.split(':')[1] || sym;
+          if (symClean.startsWith(cUp) || symClean.includes(cUp)) {
+            if (data && data.close) {
+              ticker.rawLast = data.close;
+              ticker.last = formatTokenPriceServer(data.close);
+              ticker.index = ticker.last;
+              ticker.rawChange = data.change || 0;
+              ticker.change = (data.change >= 0 ? '+' : '') + (data.change || 0).toFixed(2) + '%';
+              if (data.volume) ticker.volume = '$' + (data.volume >= 1e6 ? (data.volume / 1e6).toFixed(2) + 'm' : (data.volume / 1e3).toFixed(1) + 'k');
+              break;
+            }
+          }
+        }
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(ticker));
     } catch (e) {

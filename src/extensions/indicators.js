@@ -267,6 +267,13 @@ async function computeAllIndicators(symbol, timeframe = '60', requestedIndicator
     }
   }
 
+  if (reqSet.has('RLM') || reqSet.has('REACTION_LEVEL_MATRIX')) {
+    const rlm = calcReactionLevelMatrix(candles);
+    if (rlm) {
+      results.indicators.ReactionLevelMatrix = rlm;
+    }
+  }
+
   return results;
 }
 
@@ -480,6 +487,265 @@ function calcVolumeFootprint(candles, windowBars = 5, imbalanceRatio = 3.0) {
 }
 
 /**
+ * Reaction Level Matrix [WillyAlgoTrader]
+ * Online level clustering + reaction measurement + aging + polarity bonus + trade engine
+ */
+function calcReactionLevelMatrix(candles, options = {}) {
+  const swingLen = options.swingLength || 6;
+  const tolRatio = options.levelTolerance || 0.6;
+  const halfLife = options.halfLife || 500;
+  const minScore = options.minScore || 50;
+  const levelsPerSide = options.levelsPerSide || 3;
+
+  const n = candles ? candles.length : 0;
+  if (n < 35) return null;
+
+  // 1. True Range and ATR
+  const tr = [candles[0].high - candles[0].low];
+  for (let i = 1; i < n; i++) {
+    const c = candles[i], prev = candles[i - 1];
+    tr.push(Math.max(c.high - c.low, Math.abs(c.high - prev.close), Math.abs(c.low - prev.close)));
+  }
+
+  function calcRMA(src, len) {
+    const rma = [src.slice(0, len).reduce((a, b) => a + b, 0) / len];
+    const alpha = 1 / len;
+    for (let i = len; i < src.length; i++) {
+      rma.push(alpha * src[i] + (1 - alpha) * rma[rma.length - 1]);
+    }
+    const pad = new Array(len - 1).fill(rma[0]);
+    return pad.concat(rma);
+  }
+
+  const atr34 = calcRMA(tr, 34);
+  const atr14 = calcRMA(tr, 14);
+
+  // 2. Online Level Engine
+  let storedLevels = [];
+
+  for (let t = 0; t < n; t++) {
+    const curAtr = atr34[t] || 1;
+    const curClose = candles[t].close;
+    const prevClose = t > 0 ? candles[t - 1].close : curClose;
+
+    // Decay each level
+    const decayFactor = Math.pow(0.5, 1 / halfLife);
+    for (let l of storedLevels) {
+      l.strength *= decayFactor;
+      const top = l.center + l.halfWidth;
+      const btm = l.center - l.halfWidth;
+
+      // Role and cross penalty
+      if (l.role === 'SUPPORT' && prevClose >= btm && curClose < btm) {
+        l.role = 'RESISTANCE';
+        l.breaks++;
+        l.strength *= 0.7;
+      } else if (l.role === 'RESISTANCE' && prevClose <= top && curClose > top) {
+        l.role = 'SUPPORT';
+        l.breaks++;
+        l.strength *= 0.7;
+      }
+    }
+    storedLevels = storedLevels.filter(l => l.strength >= 0.25);
+
+    // Check confirmed swing at t - swingLen
+    const swingIdx = t - swingLen;
+    if (swingIdx >= swingLen) {
+      const shCandle = candles[swingIdx];
+      let isHigh = true, isLow = true;
+
+      for (let k = 1; k <= swingLen; k++) {
+        if (candles[swingIdx - k].high >= shCandle.high || candles[swingIdx + k].high > shCandle.high) isHigh = false;
+        if (candles[swingIdx - k].low <= shCandle.low || candles[swingIdx + k].low < shCandle.low) isLow = false;
+      }
+
+      if (isHigh) {
+        let lowestLow = Infinity;
+        for (let k = 1; k <= swingLen; k++) lowestLow = Math.min(lowestLow, candles[swingIdx + k].low);
+        const reaction = (shCandle.high - lowestLow) / (atr34[swingIdx] || 1);
+        const w = 1 + Math.min(Math.max(0, reaction), 2.5);
+        addSwing(shCandle.high, w, true, curAtr, t);
+      }
+
+      if (isLow) {
+        let highestHigh = -Infinity;
+        for (let k = 1; k <= swingLen; k++) highestHigh = Math.max(highestHigh, candles[swingIdx + k].high);
+        const reaction = (highestHigh - shCandle.low) / (atr34[swingIdx] || 1);
+        const w = 1 + Math.min(Math.max(0, reaction), 2.5);
+        addSwing(shCandle.low, w, false, curAtr, t);
+      }
+    }
+  }
+
+  function addSwing(price, w, isHigh, curAtr, currentBar) {
+    const tol = tolRatio * curAtr;
+    let nearest = null, minDist = Infinity;
+    for (let l of storedLevels) {
+      const dist = Math.abs(l.center - price);
+      if (dist <= tol && dist < minDist) {
+        minDist = dist;
+        nearest = l;
+      }
+    }
+
+    if (nearest) {
+      nearest.sumW += w;
+      nearest.sumWP += w * price;
+      nearest.sumWP2 += w * price * price;
+      nearest.strength += w;
+      if (isHigh) nearest.highTouches++; else nearest.lowTouches++;
+      nearest.totalTouches++;
+      nearest.lastTouchBar = currentBar;
+
+      const m = nearest.sumWP / nearest.sumW;
+      const vr = (nearest.sumWP2 / nearest.sumW) - (m * m);
+      const hw = Math.min(tol, Math.max(0.15 * curAtr, Math.sqrt(Math.max(0, vr))));
+      nearest.center = m;
+      nearest.halfWidth = hw;
+
+      // 5-pass merge for overlapping levels
+      let again = true;
+      let passes = 0;
+      while (again && passes < 5) {
+        again = false;
+        passes++;
+        const tHi = nearest.center + nearest.halfWidth;
+        const tLo = nearest.center - nearest.halfWidth;
+        for (let k = storedLevels.length - 1; k >= 0; k--) {
+          const o = storedLevels[k];
+          if (o !== nearest) {
+            const oHi = o.center + o.halfWidth;
+            const oLo = o.center - o.halfWidth;
+            if (oLo <= tHi && tLo <= oHi) {
+              nearest.sumW += o.sumW;
+              nearest.sumWP += o.sumWP;
+              nearest.sumWP2 += o.sumWP2;
+              nearest.strength += o.strength;
+              nearest.totalTouches += o.totalTouches;
+              nearest.highTouches += o.highTouches;
+              nearest.lowTouches += o.lowTouches;
+              nearest.breaks = Math.max(nearest.breaks, o.breaks);
+              const mMerged = nearest.sumWP / nearest.sumW;
+              const vrMerged = (nearest.sumWP2 / nearest.sumW) - (mMerged * mMerged);
+              nearest.center = mMerged;
+              nearest.halfWidth = Math.min(tol, Math.max(0.15 * curAtr, Math.sqrt(Math.max(0, vrMerged))));
+              storedLevels.splice(k, 1);
+              again = true;
+            }
+          }
+        }
+      }
+    } else {
+      storedLevels.push({
+        sumW: w,
+        sumWP: w * price,
+        sumWP2: w * price * price,
+        center: price,
+        halfWidth: Math.min(tol, Math.max(0.15 * curAtr, 0.25 * curAtr)),
+        strength: w,
+        highTouches: isHigh ? 1 : 0,
+        lowTouches: isHigh ? 0 : 1,
+        totalTouches: 1,
+        breaks: 0,
+        role: candles[currentBar].close >= price ? 'SUPPORT' : 'RESISTANCE',
+        lastTouchBar: currentBar,
+        lastSignalBar: -999,
+      });
+      if (storedLevels.length > 60) {
+        storedLevels.sort((a, b) => b.strength - a.strength);
+        storedLevels.pop();
+      }
+    }
+  }
+
+  // Calculate scores
+  const lastClose = candles[n - 1].close;
+  const currentAtr14 = atr14[n - 1] || 1;
+
+  storedLevels.forEach(l => {
+    const polarityBonus = (l.highTouches > 0 && l.lowTouches > 0) ? 1.25 : 1.0;
+    l.polarity = (l.highTouches > 0 && l.lowTouches > 0);
+    l.score = Math.round(Math.min(100, Math.max(0, 100 * (1 - Math.exp(-l.strength * polarityBonus / 6)))));
+  });
+
+  const activeLevels = storedLevels.filter(l => l.totalTouches >= 2);
+  const resistances = activeLevels
+    .filter(l => l.center > lastClose)
+    .sort((a, b) => (a.center - lastClose) - (b.center - lastClose))
+    .slice(0, levelsPerSide);
+
+  const supports = activeLevels
+    .filter(l => l.center < lastClose)
+    .sort((a, b) => (lastClose - a.center) - (lastClose - b.center))
+    .slice(0, levelsPerSide);
+
+  const lastCandle = candles[n - 1];
+  const barRange = lastCandle.high - lastCandle.low;
+  let signal = null;
+
+  // Check Long Rejection at nearest Support
+  for (let sup of supports) {
+    if (sup.score >= minScore) {
+      const top = sup.center + sup.halfWidth;
+      if (lastCandle.low <= top && lastCandle.close > top && barRange > 0 && ((lastCandle.close - lastCandle.low) / barRange >= 0.6)) {
+        const sl = Math.min(lastCandle.low - 0.25 * currentAtr14, lastCandle.close - 0.5 * currentAtr14);
+        const risk = Math.max(0.0001, lastCandle.close - sl);
+        signal = {
+          type: 'LONG',
+          levelPrice: sup.center,
+          levelScore: sup.score,
+          polarity: sup.polarity,
+          touches: sup.totalTouches,
+          entry: lastCandle.close,
+          sl,
+          tp1: lastCandle.close + 1.0 * risk,
+          tp2: lastCandle.close + 2.0 * risk,
+          tp3: lastCandle.close + 3.0 * risk,
+          risk,
+        };
+        break;
+      }
+    }
+  }
+
+  // Check Short Rejection at nearest Resistance
+  if (!signal) {
+    for (let res of resistances) {
+      if (res.score >= minScore) {
+        const btm = res.center - res.halfWidth;
+        if (lastCandle.high >= btm && lastCandle.close < btm && barRange > 0 && ((lastCandle.high - lastCandle.close) / barRange >= 0.6)) {
+          const sl = Math.max(lastCandle.high + 0.25 * currentAtr14, lastCandle.close + 0.5 * currentAtr14);
+          const risk = Math.max(0.0001, sl - lastCandle.close);
+          signal = {
+            type: 'SHORT',
+            levelPrice: res.center,
+            levelScore: res.score,
+            polarity: res.polarity,
+            touches: res.totalTouches,
+            entry: lastCandle.close,
+            sl,
+            tp1: lastCandle.close - 1.0 * risk,
+            tp2: lastCandle.close - 2.0 * risk,
+            tp3: lastCandle.close - 3.0 * risk,
+            risk,
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    lastClose,
+    atr14: currentAtr14,
+    supports: supports.map(s => ({ center: s.center, halfWidth: s.halfWidth, score: s.score, touches: s.totalTouches, polarity: s.polarity, breaks: s.breaks })),
+    resistances: resistances.map(r => ({ center: r.center, halfWidth: r.halfWidth, score: r.score, touches: r.totalTouches, polarity: r.polarity, breaks: r.breaks })),
+    signal,
+    trend: supports.length > resistances.length ? 'BULLISH' : (resistances.length > supports.length ? 'BEARISH' : 'NEUTRAL'),
+  };
+}
+
+/**
  * Custom Pine Script indicator runner using TradingView
  */
 async function getPineIndicatorMetadata(queryOrId) {
@@ -501,5 +767,6 @@ module.exports = {
   calcIchimoku,
   calcGaltonVolumeProfile,
   calcVolumeFootprint,
+  calcReactionLevelMatrix,
   getPineIndicatorMetadata,
 };
