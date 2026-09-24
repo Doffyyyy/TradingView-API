@@ -124,7 +124,7 @@ const htmlContent = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="page-title">Proview</title>
+  <title id="page-title">Hyperview</title>
   <link id="page-favicon" rel="icon" type="image/svg+xml" href="/public/favicon.svg">
   <link rel="alternate icon" href="/public/favicon.svg">
   <script src="/public/lightweight-charts.js"></script>
@@ -807,8 +807,8 @@ const htmlContent = `<!DOCTYPE html>
     <div class="brand-section">
       <div class="badge"><span class="badge-dot"></span><span>LIVE ENGINE</span></div>
       <strong style="font-size: 14px; display: flex; align-items: center; gap: 6px;">
-        <img src="/public/favicon.svg" alt="Proview" style="width: 18px; height: 18px; border-radius: 4px; vertical-align: middle;">
-        <span>Proview</span>
+        <img src="/public/favicon.svg" alt="Hyperview" style="width: 18px; height: 18px; border-radius: 4px; vertical-align: middle;">
+        <span>Hyperview</span>
       </strong>
     </div>
     <div class="nav-tabs" id="main-nav">
@@ -2204,8 +2204,8 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
-    // --- Proview Dynamic Title Bar Engine (TradingView & Proliquid Style) ---
-    function updateProviewTitle(customSym, customPrice, customChg) {
+    // --- Hyperview Dynamic Title Bar Engine (TradingView & Proliquid Style) ---
+    function updateHyperviewTitle(customSym, customPrice, customChg) {
       try {
         let sym = customSym || (currentSymbol ? (currentSymbol.split(':')[1] || currentSymbol) : currentDockCoin) || 'BTC';
         let cleanSym = sym.toUpperCase();
@@ -2251,14 +2251,15 @@ const htmlContent = `<!DOCTYPE html>
             const sign = chg >= 0 ? '+' : '';
             chgText = ' ' + arrow + ' ' + sign + chg.toFixed(2) + '%';
           }
-          document.title = cleanSym + ' ' + formattedP + chgText + ' | Proview';
+          document.title = cleanSym + ' ' + formattedP + chgText + ' | Hyperview';
         } else {
-          document.title = cleanSym + ' | Proview';
+          document.title = cleanSym + ' | Hyperview';
         }
       } catch (e) {
-        document.title = 'Proview';
+        document.title = 'Hyperview';
       }
     }
+    const updateProviewTitle = updateHyperviewTitle;
 
     let currentSymbol = 'BINANCE:BTCUSDT';
     let currentTimeframe = 'D';
