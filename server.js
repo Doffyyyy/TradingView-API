@@ -28,6 +28,8 @@ function parseBody(req) {
 }
 
 const serverHistoryCache = new Map();
+const serverWatchlistPriceCache = {};
+let lastWatchlistPriceUpdate = 0;
 
 function getHistory(symbol, timeframe, range = 5000) {
   const cacheKey = symbol + ":" + timeframe + ":" + (range || 5000);
@@ -4989,107 +4991,133 @@ const server = http.createServer(async (req, res) => {
     const body = await parseBody(req);
     const symbols = body.symbols || [];
     const prices = {};
+
     if (symbols.length > 0) {
       const axios = require('axios');
 
-      // Separate into groups: US stock (SPCX etc.), Dex pairs, and Crypto
-      const stockSymbols = symbols.filter(s => s.startsWith('NASDAQ:') || s.startsWith('NYSE:') || s.startsWith('AMEX:'));
-      const cryptoSymbols = symbols.filter(s => !stockSymbols.includes(s) && !s.includes('METEORA:') && !s.includes('4SBYWY'));
+      // 1. Copy last known prices so watchlist never flickers to empty '--'
+      if (typeof serverWatchlistPriceCache !== 'undefined') {
+        Object.assign(prices, serverWatchlistPriceCache);
+      }
 
-      // 1. Query Crypto Scanner
-      if (cryptoSymbols.length > 0) {
+      // Check if cache was updated very recently (< 4000ms), return immediately
+      if (typeof lastWatchlistPriceUpdate !== 'undefined' && (Date.now() - lastWatchlistPriceUpdate < 4000) && Object.keys(prices).length >= symbols.length) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ prices }));
+      }
+
+      // 2. Binance Public Data API (Lightning fast, non-blocked, no 429)
+      const binanceMap = {};
+      symbols.forEach(s => {
+        if (s.startsWith('BINANCE:')) {
+          const pair = s.split(':')[1];
+          binanceMap[pair] = s;
+        }
+      });
+
+      const pBinance = (async () => {
+        const pairs = Object.keys(binanceMap);
+        if (pairs.length === 0) return;
         try {
-          const resScanner = await axios.post(
-            'https://scanner.tradingview.com/crypto/scan',
-            {
-              symbols: { tickers: cryptoSymbols },
-              columns: ['close', 'change', 'change_abs', 'volume'],
-            },
-            { timeout: 4000 }
-          );
-          if (resScanner.data && resScanner.data.data) {
-            resScanner.data.data.forEach(item => {
-              prices[item.s] = {
-                close: item.d[0],
-                change: item.d[1],
-                change_abs: item.d[2],
-                volume: item.d[3],
-              };
+          const q = encodeURIComponent(JSON.stringify(pairs));
+          const res = await axios.get('https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + q, { timeout: 3500 });
+          if (Array.isArray(res.data)) {
+            res.data.forEach(item => {
+              const sym = binanceMap[item.symbol];
+              if (sym) {
+                prices[sym] = {
+                  close: parseFloat(item.lastPrice),
+                  change: parseFloat(item.priceChangePercent),
+                  change_abs: parseFloat(item.priceChange),
+                  volume: parseFloat(item.quoteVolume),
+                };
+              }
             });
           }
         } catch (e) {}
-      }
+      })();
 
-      // 2. Query America / Stock Scanner (for NASDAQ:SPCX, etc.)
-      if (stockSymbols.length > 0) {
+      // 3. Bybit Linear Tickers (HYPE, VVV, MNT)
+      const bybitSymbols = symbols.filter(s => s.startsWith('BYBIT:'));
+      const bybitPromises = bybitSymbols.map(async (s) => {
+        const coin = s.split(':')[1];
         try {
-          const resStock = await axios.post(
-            'https://scanner.tradingview.com/america/scan',
-            {
-              symbols: { tickers: stockSymbols },
-              columns: ['close', 'change', 'change_abs', 'volume'],
-            },
-            { timeout: 4000 }
-          );
-          if (resStock.data && resStock.data.data) {
-            resStock.data.data.forEach(item => {
-              prices[item.s] = {
-                close: item.d[0],
-                change: item.d[1],
-                change_abs: item.d[2],
-                volume: item.d[3],
-              };
-            });
-          }
-        } catch (e) {}
-      }
-
-      // 3. DEX Fallback via DexScreener public API for KLEDSOL & any missing tokens
-      const hasKled = symbols.some(s => s.includes('KLED'));
-      if (hasKled) {
-        try {
-          const resDex = await axios.get(
-            'https://api.dexscreener.com/latest/dex/pairs/solana/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP',
-            { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 }
-          );
-          const p = resDex.data?.pair;
-          if (p && p.priceUsd) {
-            const price = parseFloat(p.priceUsd);
-            const chg24 = parseFloat(p.priceChange?.h24 || 0);
-            const chgAbs = price * (chg24 / 100);
-            const vol = parseFloat(p.volume?.h24 || 0);
-            const kledKey = symbols.find(s => s.includes('KLED')) || 'METEORA:KLEDSOL_4SBYWY.USD';
-            prices[kledKey] = {
-              close: price,
-              change: chg24,
-              change_abs: chgAbs,
-              volume: vol,
+          const res = await axios.get('https://api.bybit.com/v5/market/tickers?category=linear&symbol=' + coin, { timeout: 3000 });
+          const row = res.data?.result?.list?.[0];
+          if (row && row.lastPrice) {
+            const close = parseFloat(row.lastPrice);
+            const chg = parseFloat(row.price24hPcnt || 0) * 100;
+            prices[s] = {
+              close,
+              change: chg,
+              change_abs: close * (chg / 100),
+              volume: parseFloat(row.volume24h || 0),
             };
           }
         } catch (e) {}
-      }
+      });
 
-      // 4. Fallback for any remaining unquoted tokens (like CRYPTO:LITLUSD, CRYPTO:NOCKUSD) using TV History candles
-      for (const s of symbols) {
-        if (!prices[s] && (s.startsWith('CRYPTO:') || s.includes('NOCK') || s.includes('LITL'))) {
-          try {
-            const hist = await getHistory(s, 'D');
-            if (hist && hist.candles && hist.candles.length > 0) {
-              const latest = hist.candles[hist.candles.length - 1];
-              const openP = latest.open || latest.close;
-              const closeP = latest.close;
-              const chg = openP > 0 ? ((closeP - openP) / openP) * 100 : 0;
-              prices[s] = {
-                close: closeP,
-                change: chg,
-                change_abs: closeP - openP,
-                volume: latest.volume || 0,
-              };
-            }
-          } catch (err) {}
-        }
+      // 4. OKX Tickers (OKBUSDT)
+      const okxSymbols = symbols.filter(s => s.startsWith('OKX:'));
+      const okxPromises = okxSymbols.map(async (s) => {
+        const coin = s.split(':')[1].replace('USDT', '-USDT');
+        try {
+          const res = await axios.get('https://www.okx.com/api/v5/market/ticker?instId=' + coin, { timeout: 3000 });
+          const row = res.data?.data?.[0];
+          if (row && row.last) {
+            const close = parseFloat(row.last);
+            const open24 = parseFloat(row.open24h) || close;
+            const chg = open24 > 0 ? ((close - open24) / open24) * 100 : 0;
+            prices[s] = { close, change: chg, change_abs: close - open24, volume: parseFloat(row.volCcy24h || 0) };
+          }
+        } catch (e) {}
+      });
+
+      // 5. Stock Symbols (Yahoo Finance for NASDAQ:SPCX, etc.)
+      const stockSymbols = symbols.filter(s => s.startsWith('NASDAQ:') || s.startsWith('NYSE:') || s.startsWith('AMEX:'));
+      const stockPromises = stockSymbols.map(async (s) => {
+        const ticker = s.split(':')[1];
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3000 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prevClose = meta.chartPreviousClose || close;
+            const chg = prevClose > 0 ? ((close - prevClose) / prevClose) * 100 : 0;
+            prices[s] = { close, change: chg, change_abs: close - prevClose, volume: meta.regularMarketVolume || 0 };
+          }
+        } catch (e) {}
+      });
+
+      // 6. DexScreener for on-chain pairs (KLEDSOL, ANSEM, NOCK, LITL, MON)
+      const dexPairs = [
+        { s: 'METEORA:KLEDSOL_4SBYWY.USD', q: '4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP' },
+        { s: 'ORCA:ANSEMSOL_CNTPTP.USD', q: 'ANSEM' },
+        { s: 'CRYPTO:NOCKUSD', q: 'NOCK' },
+        { s: 'CRYPTO:LITLUSD', q: 'LITL' },
+        { s: 'COINBASE:MONUSD', q: 'MON' }
+      ];
+      const dexPromises = dexPairs.map(async (item) => {
+        if (!symbols.some(s => s === item.s || s.includes(item.q))) return;
+        try {
+          const res = await axios.get('https://api.dexscreener.com/latest/dex/search?q=' + item.q, { timeout: 3000 });
+          const p = res.data?.pairs?.[0];
+          if (p && p.priceUsd) {
+            const close = parseFloat(p.priceUsd);
+            const chg = parseFloat(p.priceChange?.h24 || 0);
+            prices[item.s] = { close, change: chg, change_abs: close * (chg / 100), volume: parseFloat(p.volume?.h24 || 0) };
+          }
+        } catch (e) {}
+      });
+
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises]);
+
+      if (typeof serverWatchlistPriceCache !== 'undefined') {
+        Object.assign(serverWatchlistPriceCache, prices);
+        lastWatchlistPriceUpdate = Date.now();
       }
     }
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ prices }));
   }
