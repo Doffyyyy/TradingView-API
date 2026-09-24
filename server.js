@@ -1986,8 +1986,13 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </div>
 
-  <footer>
-    <div>Engine: <strong>@mathieuc/tradingview</strong> (D:\\TradingView-API)</div>
+    <footer>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span>Engine: <strong>@mathieuc/tradingview</strong> (D:\\TradingView-API)</span>
+      <span id="session-auto-save-badge" style="font-size: 10px; color: #38bdf8; display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2);">
+        <span>💾</span> <span id="session-auto-save-text">Session Auto-Save: Active</span>
+      </span>
+    </div>
     <div id="engine-status" style="color: var(--accent-green);">● All Services Operational</div>
   </footer>
 
@@ -1999,6 +2004,7 @@ const htmlContent = `<!DOCTYPE html>
         btn.classList.add('active');
         const target = document.getElementById(btn.dataset.target);
         if (target) target.classList.add('active');
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
         if (btn.dataset.target === 'view-journal' && typeof renderJournalDashboard === 'function') {
           renderJournalDashboard();
         }
@@ -2821,6 +2827,7 @@ const htmlContent = `<!DOCTYPE html>
       const activeKey = sym + '_' + tf;
       const targetSym = sym;
       const targetTf = tf;
+      if (typeof triggerAutoSave === 'function') triggerAutoSave();
 
       // 2. ZERO-DELAY RENDER: If cached in memory, display immediately!
       const cached = clientChartCache[activeKey];
@@ -2901,6 +2908,232 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+    // ========================================================
+    // --- PERSISTENT WORKSPACE AUTO-SAVE & RESTORE ENGINE ---
+    // ========================================================
+    const SESSION_STORAGE_KEY = 'tv_pro_suite_session_v2';
+    let sessionSaveDebounceTimer = null;
+
+    function triggerAutoSave() {
+      clearTimeout(sessionSaveDebounceTimer);
+      sessionSaveDebounceTimer = setTimeout(saveCurrentSession, 300);
+    }
+
+    function saveCurrentSession() {
+      try {
+        const activeTabBtn = document.querySelector('.tab-btn.active');
+        const activeTab = activeTabBtn ? activeTabBtn.dataset.target : 'view-chart';
+
+        const wlSidebar = document.getElementById('watchlist-sidebar');
+        const dockPanel = document.getElementById('trading-dock');
+        const activeDockTab = document.querySelector('.dock-seg-btn.active');
+
+        const session = {
+          version: 2,
+          lastSavedAt: new Date().toLocaleTimeString('vi-VN'),
+
+          // 1. Navigation & Views
+          activeTab: activeTab,
+
+          // 2. Chart Market & Timeframe
+          symbol: currentSymbol || 'BINANCE:BTCUSDT',
+          timeframe: currentTimeframe || 'D',
+
+          // 3. Technical Indicators
+          fibo: {
+            enabled: !!fiboEnabled,
+            period: fiboPeriod || 200,
+          },
+          galton: {
+            enabled: !!galtonEnabled,
+            period: galtonPeriod || 100,
+            engine: galtonEngine || 'BVC',
+          },
+          footprint: {
+            enabled: !!footprintEnabled,
+            window: footprintWindow || 5,
+            imbalance: footprintImbalance || 3.0,
+          },
+
+          // 4. Panel Layouts
+          layout: {
+            watchlistVisible: wlSidebar ? wlSidebar.style.display !== 'none' : true,
+            dockVisible: dockPanel ? dockPanel.style.display !== 'none' : true,
+            dockTab: activeDockTab ? activeDockTab.dataset.dockTab : 'all',
+          },
+
+          // 5. Execution form
+          execution: {
+            orderType: currentDockOrderType || 'MARKET',
+            qty: document.getElementById('input-exec-qty')?.value || '',
+            notional: document.getElementById('input-exec-notional')?.value || '',
+            sliderPct: document.getElementById('exec-pct-slider')?.value || '0',
+            isReduceOnly: !!isReduceOnly,
+            isTpSlActive: !!isTpSlActive,
+            tp: document.getElementById('input-exec-tp')?.value || '',
+            sl: document.getElementById('input-exec-sl')?.value || '',
+          },
+
+          // 6. Journal Mode
+          journal: {
+            mode: typeof currentJournalMode !== 'undefined' ? currentJournalMode : 'march2026',
+          }
+        };
+
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+        const badgeText = document.getElementById('session-auto-save-text');
+        if (badgeText) {
+          badgeText.textContent = 'Auto-Saved (' + session.lastSavedAt + ')';
+        }
+      } catch (e) {}
+    }
+
+    function restoreLastSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s) return false;
+
+        // 1. Restore Symbol & Timeframe
+        if (s.symbol) {
+          currentSymbol = s.symbol;
+        }
+        if (s.timeframe) {
+          currentTimeframe = s.timeframe;
+          document.querySelectorAll('#timeframes button').forEach(b => {
+            b.classList.toggle('active', b.dataset.tf === currentTimeframe);
+          });
+        }
+
+        // 2. Restore Indicators
+        if (s.fibo) {
+          fiboEnabled = s.fibo.enabled;
+          fiboPeriod = s.fibo.period || 200;
+          const btnFibo = document.getElementById('btn-toggle-fibo');
+          if (btnFibo) {
+            btnFibo.textContent = fiboEnabled ? 'ON' : 'OFF';
+            btnFibo.className = 'btn' + (fiboEnabled ? ' active' : '');
+            btnFibo.style.background = fiboEnabled ? 'rgba(168, 85, 247, 0.2)' : 'var(--bg-tertiary)';
+            btnFibo.style.color = fiboEnabled ? '#c084fc' : 'var(--text-secondary)';
+            btnFibo.style.borderColor = fiboEnabled ? '#a855f7' : 'transparent';
+          }
+          const selFibo = document.getElementById('select-fibo-period');
+          if (selFibo) selFibo.value = String(fiboPeriod);
+        }
+
+        if (s.galton) {
+          galtonEnabled = s.galton.enabled;
+          galtonPeriod = s.galton.period || 100;
+          galtonEngine = s.galton.engine || 'BVC';
+          const btnGalton = document.getElementById('btn-toggle-galton');
+          if (btnGalton) {
+            btnGalton.textContent = galtonEnabled ? 'ON' : 'OFF';
+            btnGalton.className = 'btn' + (galtonEnabled ? ' active' : '');
+            btnGalton.style.background = galtonEnabled ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-tertiary)';
+            btnGalton.style.color = galtonEnabled ? '#38bdf8' : 'var(--text-secondary)';
+            btnGalton.style.borderColor = galtonEnabled ? '#0284c7' : 'transparent';
+          }
+          const selGEng = document.getElementById('select-galton-engine');
+          if (selGEng) selGEng.value = galtonEngine;
+          const selGPer = document.getElementById('select-galton-period');
+          if (selGPer) selGPer.value = String(galtonPeriod);
+        }
+
+        if (s.footprint) {
+          footprintEnabled = s.footprint.enabled;
+          footprintWindow = s.footprint.window || 5;
+          footprintImbalance = s.footprint.imbalance || 3.0;
+          const btnFp = document.getElementById('btn-toggle-footprint');
+          if (btnFp) {
+            btnFp.textContent = footprintEnabled ? 'ON' : 'OFF';
+            btnFp.className = 'btn' + (footprintEnabled ? ' active' : '');
+            btnFp.style.background = footprintEnabled ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-tertiary)';
+            btnFp.style.color = footprintEnabled ? '#818cf8' : 'var(--text-secondary)';
+            btnFp.style.borderColor = footprintEnabled ? '#6366f1' : 'transparent';
+          }
+          const selFpWin = document.getElementById('select-footprint-window');
+          if (selFpWin) selFpWin.value = String(footprintWindow);
+          const selFpImb = document.getElementById('select-footprint-imbalance');
+          if (selFpImb) selFpImb.value = String(footprintImbalance);
+        }
+
+        // 3. Restore Layout (Watchlist, Dock, Dock Tab)
+        if (s.layout) {
+          if (s.layout.watchlistVisible === false) {
+            const wl = document.getElementById('watchlist-sidebar');
+            if (wl) wl.style.display = 'none';
+            const bWl = document.getElementById('btn-toggle-watchlist');
+            if (bWl) bWl.classList.remove('active');
+          }
+          if (s.layout.dockVisible === false) {
+            const dock = document.getElementById('trading-dock');
+            if (dock) dock.style.display = 'none';
+            const bDock = document.getElementById('btn-toggle-dock');
+            if (bDock) bDock.classList.remove('active');
+          }
+          if (s.layout.dockTab) {
+            const segBtn = document.querySelector('.dock-seg-btn[data-dock-tab="' + s.layout.dockTab + '"]');
+            if (segBtn) segBtn.click();
+          }
+        }
+
+        // 4. Restore Execution inputs
+        if (s.execution) {
+          if (s.execution.orderType === 'LIMIT') {
+            document.getElementById('btn-ord-limit')?.click();
+          }
+          if (s.execution.qty) {
+            const qEl = document.getElementById('input-exec-qty');
+            if (qEl) qEl.value = s.execution.qty;
+          }
+          if (s.execution.notional) {
+            const nEl = document.getElementById('input-exec-notional');
+            if (nEl) nEl.value = s.execution.notional;
+          }
+          if (s.execution.sliderPct) {
+            const slEl = document.getElementById('exec-pct-slider');
+            if (slEl) {
+              slEl.value = s.execution.sliderPct;
+              const disp = document.getElementById('exec-pct-display');
+              if (disp) disp.textContent = s.execution.sliderPct + ' %';
+            }
+          }
+          if (s.execution.isReduceOnly) {
+            document.getElementById('btn-toggle-reduce')?.click();
+          }
+          if (s.execution.isTpSlActive) {
+            document.getElementById('btn-toggle-tpsl')?.click();
+            if (s.execution.tp) {
+              const tpEl = document.getElementById('input-exec-tp');
+              if (tpEl) tpEl.value = s.execution.tp;
+            }
+            if (s.execution.sl) {
+              const slEl = document.getElementById('input-exec-sl');
+              if (slEl) slEl.value = s.execution.sl;
+            }
+          }
+        }
+
+        // 5. Restore Active Navigation Tab
+        if (s.activeTab && s.activeTab !== 'view-chart') {
+          const tabBtn = document.querySelector('.tab-btn[data-target="' + s.activeTab + '"]');
+          if (tabBtn) tabBtn.click();
+        }
+
+        const badgeText = document.getElementById('session-auto-save-text');
+        if (badgeText && s.lastSavedAt) {
+          badgeText.textContent = 'Restored Session (' + s.lastSavedAt + ')';
+        }
+
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    restoreLastSession();
     loadChart(currentSymbol, currentTimeframe);
 
     // FiboRadar Controls
@@ -4012,6 +4245,7 @@ const htmlContent = `<!DOCTYPE html>
       document.querySelectorAll('#timeframes button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentTimeframe = btn.dataset.tf;
+      if (typeof triggerAutoSave === 'function') triggerAutoSave();
       loadChart(currentSymbol, currentTimeframe);
     });
 
@@ -4072,6 +4306,22 @@ const htmlContent = `<!DOCTYPE html>
       if (cdEl) cdEl.textContent = \`\${h}:\${m}:\${s}\`;
     }
     setInterval(updateCountdown, 1000);
+
+    // Save session on page close / unload and every 15 seconds
+    window.addEventListener('beforeunload', saveCurrentSession);
+    setInterval(saveCurrentSession, 15000);
+
+    // Attach triggerAutoSave to inputs & layout buttons
+    ['input-exec-qty', 'input-exec-notional', 'exec-pct-slider', 'input-exec-tp', 'input-exec-sl'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', triggerAutoSave);
+    });
+    document.getElementById('btn-toggle-watchlist')?.addEventListener('click', triggerAutoSave);
+    document.getElementById('btn-toggle-dock')?.addEventListener('click', triggerAutoSave);
+    document.querySelectorAll('.dock-seg-btn').forEach(b => b.addEventListener('click', triggerAutoSave));
+    ['btn-toggle-fibo', 'btn-toggle-galton', 'btn-toggle-footprint', 'select-fibo-period', 'select-galton-engine', 'select-galton-period', 'select-footprint-window', 'select-footprint-imbalance'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', triggerAutoSave);
+      document.getElementById(id)?.addEventListener('click', triggerAutoSave);
+    });
     updateCountdown();
 
     // Indicators dropdown toggle
