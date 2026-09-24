@@ -329,14 +329,14 @@ const htmlContent = `<!DOCTYPE html>
       color: #4a505e; font-size: 14px; cursor: grab; padding: 0 2px;
     }
     .hl-market-badge {
-      display: flex; align-items: center; gap: 7px; padding: 3px 8px;
-      background: #14171e; border: 1px solid #232834; border-radius: 4px;
+      display: flex; align-items: center; gap: 8px; padding: 4px 10px;
+      background: #14171e; border: 1px solid #232834; border-radius: 5px;
     }
     .hl-badge-sub {
-      font-size: 8px; font-weight: 700; color: #787b86; text-transform: uppercase; line-height: 1;
+      font-size: 8px; font-weight: 700; color: #848e9c; text-transform: uppercase; line-height: 1; letter-spacing: 0.6px; margin-bottom: 3.5px; display: block;
     }
     .hl-badge-title {
-      font-size: 12.5px; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: 0.3px;
+      font-size: 13px; font-weight: 800; color: #fff; line-height: 1.1; letter-spacing: 0.4px;
     }
     .hl-stat-group {
       display: flex; align-items: center; justify-content: center; gap: 20px;
@@ -856,7 +856,7 @@ const htmlContent = `<!DOCTYPE html>
               <span class="hl-drag-handle">⋮</span>
               <div class="hl-market-badge">
                 <img id="active-symbol-logo" src="https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg" style="width: 20px; height: 20px; border-radius: 50%; object-fit: contain; background: #181b24;" onerror="this.style.display='none';">
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column; justify-content: center;">
                   <span id="active-exchange-badge" class="hl-badge-sub">HYPERLIQUID</span>
                   <strong id="active-symbol-title" class="hl-badge-title">BTC-USDC</strong>
                 </div>
