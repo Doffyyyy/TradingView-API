@@ -2680,8 +2680,20 @@ const htmlContent = `<!DOCTYPE html>
       crosshair: {
         mode: LightweightCharts.CrosshairMode.Normal,
       },
-      timeScale: { borderColor: '#2b3040', timeVisible: true },
-      rightPriceScale: { borderColor: '#2b3040', autoScale: true },
+      timeScale: {
+        borderColor: '#2b3040',
+        timeVisible: true,
+        rightOffset: 52,
+        barSpacing: 8,
+      },
+      rightPriceScale: {
+        borderColor: '#2b3040',
+        autoScale: true,
+        scaleMargins: {
+          top: 0.12,
+          bottom: 0.14,
+        },
+      },
       handleScale: {
         axisDoubleClickReset: { time: true, price: true },
         axisPressedMouseMove: { time: true, price: true },
@@ -2898,9 +2910,11 @@ const htmlContent = `<!DOCTYPE html>
         const len = cached.candles.length;
         try {
           chart.priceScale('right').applyOptions({ autoScale: true });
+          const totalBars = 125;
+          const rightOffset = 52;
           chart.timeScale().setVisibleLogicalRange({
-            from: Math.max(0, len - 160),
-            to: len + 4,
+            from: Math.max(0, len - (totalBars - rightOffset)),
+            to: len + rightOffset,
           });
         } catch (e) {}
         lastLoadedCandle = cached.candles[len - 1];
@@ -2929,9 +2943,11 @@ const htmlContent = `<!DOCTYPE html>
             const len = data.candles.length;
             try {
               chart.priceScale('right').applyOptions({ autoScale: true });
+              const totalBars = 125;
+              const rightOffset = 52;
               chart.timeScale().setVisibleLogicalRange({
-                from: Math.max(0, len - 160),
-                to: len + 4,
+                from: Math.max(0, len - (totalBars - rightOffset)),
+                to: len + rightOffset,
               });
             } catch (e) {}
             lastLoadedCandle = data.candles[len - 1];
