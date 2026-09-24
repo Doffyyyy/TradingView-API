@@ -2011,6 +2011,61 @@ const htmlContent = `<!DOCTYPE html>
       });
     });
 
+    // --- Universal Token Price Formatter & Chart Precision Engine ---
+    function formatTokenPrice(p) {
+      if (typeof p !== 'number' || isNaN(p)) return '--';
+      const abs = Math.abs(p);
+      if (abs >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (abs >= 1) return p.toFixed(abs < 10 ? 3 : 2);
+      if (abs >= 0.1) return p.toFixed(4);
+      if (abs >= 0.001) return p.toFixed(6);
+      if (abs >= 0.00001) return p.toFixed(7);
+      return p.toFixed(8);
+    }
+    const fmtP = formatTokenPrice;
+    const formatPrice = formatTokenPrice;
+
+    function autoAdjustChartPrecision(candles) {
+      if (!candles || candles.length === 0) return;
+      const lastCandle = candles[candles.length - 1];
+      const p = Math.abs(lastCandle.close || lastCandle.open || 1);
+      let precision = 2;
+      let minMove = 0.01;
+
+      if (p < 0.00001) {
+        precision = 8;
+        minMove = 0.00000001;
+      } else if (p < 0.0001) {
+        precision = 7;
+        minMove = 0.0000001;
+      } else if (p < 0.001) {
+        precision = 6;
+        minMove = 0.000001;
+      } else if (p < 0.01) {
+        precision = 5;
+        minMove = 0.00001;
+      } else if (p < 0.1) {
+        precision = 4;
+        minMove = 0.0001;
+      } else if (p < 10) {
+        precision = 3;
+        minMove = 0.001;
+      } else {
+        precision = 2;
+        minMove = 0.01;
+      }
+
+      if (typeof candleSeries !== 'undefined' && candleSeries.applyOptions) {
+        candleSeries.applyOptions({
+          priceFormat: {
+            type: 'price',
+            precision: precision,
+            minMove: minMove,
+          },
+        });
+      }
+    }
+
     let currentSymbol = 'BINANCE:BTCUSDT';
     let currentTimeframe = 'D';
     let eventSource = null;
@@ -2583,7 +2638,7 @@ const htmlContent = `<!DOCTYPE html>
           return \`
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; border-radius: 3px; \${isNear ? 'background: rgba(168, 85, 247, 0.2); font-weight: 700;' : ''}">
               <span style="color: \${l.color};">\${l.label} \${l.isGolden ? '★' : ''}</span>
-              <span style="font-family: monospace;">\${l.price.toFixed(2)}</span>
+              <span style="font-family: monospace;">\${formatTokenPrice(l.price)}</span>
               <span style="font-size: 9px; color: var(--text-secondary);">\${diffPct > 0 ? '+' : ''}\${diffPct}%</span>
             </div>
           \`;
@@ -2598,11 +2653,11 @@ const htmlContent = `<!DOCTYPE html>
       const lEl = document.getElementById('leg-low');
       const cEl = document.getElementById('leg-close');
       const vEl = document.getElementById('leg-vol');
-      if (oEl && typeof c.open === 'number') oEl.textContent = c.open.toFixed(2);
-      if (hEl && typeof c.high === 'number') hEl.textContent = c.high.toFixed(2);
-      if (lEl && typeof c.low === 'number') lEl.textContent = c.low.toFixed(2);
+      if (oEl && typeof c.open === 'number') oEl.textContent = formatTokenPrice(c.open);
+      if (hEl && typeof c.high === 'number') hEl.textContent = formatTokenPrice(c.high);
+      if (lEl && typeof c.low === 'number') lEl.textContent = formatTokenPrice(c.low);
       if (cEl && typeof c.close === 'number') {
-        cEl.textContent = c.close.toFixed(2);
+        cEl.textContent = formatTokenPrice(c.close);
         cEl.className = c.close >= c.open ? 'val-green' : 'val-red';
       }
       if (vEl && typeof c.volume === 'number') {
@@ -2773,13 +2828,7 @@ const htmlContent = `<!DOCTYPE html>
       } catch (e) {}
     }
 
-    function formatPrice(p) {
-      if (typeof p !== 'number' || isNaN(p)) return '--';
-      if (p >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (p >= 1) return p.toFixed(p < 10 ? 3 : 2);
-      if (p >= 0.01) return p.toFixed(4);
-      return p.toPrecision(4);
-    }
+
 
     function formatChgAbs(a) {
       if (typeof a !== 'number' || isNaN(a)) return '--';
@@ -2833,6 +2882,7 @@ const htmlContent = `<!DOCTYPE html>
       const cached = clientChartCache[activeKey];
       if (cached && cached.candles && cached.candles.length > 0) {
         currentCandlesCache = cached.candles;
+        autoAdjustChartPrecision(cached.candles);
         try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
         candleSeries.setData(cached.candles);
         volumeSeries.setData(cached.candles.map(c => ({
@@ -2863,6 +2913,7 @@ const htmlContent = `<!DOCTYPE html>
           // Only apply if user is still on this exact symbol and timeframe
           if (currentSymbol === targetSym && currentTimeframe === targetTf) {
             currentCandlesCache = data.candles;
+            autoAdjustChartPrecision(data.candles);
             try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
             candleSeries.setData(data.candles);
             volumeSeries.setData(data.candles.map(c => ({
@@ -3613,7 +3664,7 @@ const htmlContent = `<!DOCTYPE html>
         const sliceAsks = asks.slice(-6);
         for (let i = 0; i < sliceAsks.length; i++) {
           const a = sliceAsks[i];
-          const pxStr = a.price >= 1 ? a.price.toFixed(a.price < 10 ? 3 : 1) : a.price.toFixed(4);
+          const pxStr = formatTokenPrice(a.price);
           const szStr = a.size >= 1 ? a.size.toFixed(2) : a.size.toFixed(4);
           const totStr = a.total >= 1 ? a.total.toFixed(2) : a.total.toFixed(3);
           const w = a.depthPercent || 0;
@@ -3633,7 +3684,7 @@ const htmlContent = `<!DOCTYPE html>
         const sliceBids = bids.slice(0, 6);
         for (let i = 0; i < sliceBids.length; i++) {
           const bid = sliceBids[i];
-          const pxStr = bid.price >= 1 ? bid.price.toFixed(bid.price < 10 ? 3 : 1) : bid.price.toFixed(4);
+          const pxStr = formatTokenPrice(bid.price);
           const szStr = bid.size >= 1 ? bid.size.toFixed(2) : bid.size.toFixed(4);
           const totStr = bid.total >= 1 ? bid.total.toFixed(2) : bid.total.toFixed(3);
           const w = bid.depthPercent || 0;
@@ -3870,12 +3921,12 @@ const htmlContent = `<!DOCTYPE html>
       const qtyInput = document.getElementById('input-exec-qty');
       const qty = parseFloat(qtyInput?.value) || 0;
       const price = currentDockPrice || 0;
-      const priceFmt = price >= 1 ? price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : price.toFixed(4);
+      const priceFmt = formatTokenPrice(price);
 
       const buySub = document.getElementById('exec-buy-sub');
       const sellSub = document.getElementById('exec-sell-sub');
-      if (buySub) buySub.textContent = \`\${qty} \${currentDockCoin} @ $\${priceFmt}\`;
-      if (sellSub) sellSub.textContent = \`\${qty} \${currentDockCoin} @ $\${priceFmt}\`;
+      if (buySub) buySub.textContent = qty + ' ' + currentDockCoin + ' @ $' + priceFmt;
+      if (sellSub) sellSub.textContent = qty + ' ' + currentDockCoin + ' @ $' + priceFmt;
     }
 
     // Execution Inputs Bindings
