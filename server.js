@@ -3525,6 +3525,8 @@ const htmlContent = `<!DOCTYPE html>
     }
     saveWatchlist();
 
+    const clientPriceInFlight = new Map();
+    let watchlistPriceGeneration = 0;
     const pricesCache = {};
 
     function saveWatchlist() {
@@ -4105,21 +4107,36 @@ const htmlContent = `<!DOCTYPE html>
 
     async function updateWatchlistPrices() {
       if (customWatchlist.length === 0) return;
-      try {
-        const symbols = customWatchlist.map(w => w.symbol);
-        const res = await fetch('/api/watchlist/prices', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbols })
-        });
-        const data = await res.json();
-        if (data.prices) {
-          Object.assign(pricesCache, data.prices);
-          const filter = document.getElementById('watchlist-search')?.value || '';
-          renderWatchlist(filter);
-          if (typeof updateProviewTitle === 'function') updateProviewTitle();
+      const symbols = customWatchlist.map(w => w.symbol);
+      const generation = ++watchlistPriceGeneration;
+      const requestKey = symbols.join('|');
+
+      // Do not stack identical in-flight requests when an interval tick overlaps a slow response.
+      if (clientPriceInFlight.has(requestKey)) return clientPriceInFlight.get(requestKey);
+
+      const request = (async () => {
+        try {
+          const res = await fetch('/api/watchlist/prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbols })
+          });
+          const data = await res.json();
+          // Ignore stale responses if the user has already triggered a newer refresh.
+          if (generation !== watchlistPriceGeneration) return;
+          if (data.prices) {
+            Object.assign(pricesCache, data.prices);
+            const filter = document.getElementById('watchlist-search')?.value || '';
+            renderWatchlist(filter);
+            if (typeof updateProviewTitle === 'function') updateProviewTitle();
+          }
+        } catch (e) {}
+        finally {
+          clientPriceInFlight.delete(requestKey);
         }
-      } catch (e) {}
+      })();
+      clientPriceInFlight.set(requestKey, request);
+      return request;
     }
 
     const btnToggleWl = document.getElementById('btn-toggle-watchlist');
