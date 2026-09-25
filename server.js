@@ -55,6 +55,10 @@ function getHistory(symbol, timeframe, range = 5000) {
   let querySymbol = symbol;
   if (querySymbol === 'HYPERLIQUID:HYPE' || querySymbol === 'HYPE') {
     querySymbol = 'BYBIT:HYPEUSDT';
+  } else if (querySymbol === 'SP500' || querySymbol === 'SPX' || querySymbol.includes('SP500') || querySymbol.includes('SPXUSD')) {
+    querySymbol = 'INDEX:SPX';
+  } else if (querySymbol === 'GOLD' || querySymbol === 'XAUUSD' || querySymbol.includes('GOLD') || querySymbol.includes('XAU')) {
+    querySymbol = 'TVC:GOLD';
   }
 
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
@@ -3414,6 +3418,20 @@ const htmlContent = `<!DOCTYPE html>
       'ONDOUSDT': 'crypto/XTVCONDO',
       'OKX:OKBUSDT': 'crypto/XTVCOKB',
       'OKBUSDT': 'crypto/XTVCOKB',
+      'INDEX:SPX': 'indices/s-and-p-500',
+      'SP:SPX': 'indices/s-and-p-500',
+      'TVC:SPX': 'indices/s-and-p-500',
+      'SP500': 'indices/s-and-p-500',
+      'SPX': 'indices/s-and-p-500',
+      'HIP3XYZ:SP500USDC.P': 'indices/s-and-p-500',
+      'TVC:GOLD': 'metal/gold',
+      'OANDA:XAUUSD': 'metal/gold',
+      'FOREXCOM:XAUUSD': 'metal/gold',
+      'GOLD': 'metal/gold',
+      'XAUUSD': 'metal/gold',
+      'BINANCE:XAUUSDT.P': 'metal/gold',
+      'BYBIT:XAUUSDT.P': 'metal/gold',
+      'BINANCE:PAXGUSDT': 'metal/gold',
     };
 
     const DEFAULT_WATCHLIST = [
@@ -3423,6 +3441,8 @@ const htmlContent = `<!DOCTYPE html>
       { symbol: 'METEORA:KLEDSOL_4SBYWY.USD', name: 'KLEDSOL_4!', exchange: 'METEORA' },
       { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSOL' },
       { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSUI' },
+      { symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', logoId: 'indices/s-and-p-500' },
+      { symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', logoId: 'metal/gold' },
       { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ', logoId: 'spacex' },
       { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZEC' },
       { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCTAOB' },
@@ -3476,11 +3496,33 @@ const htmlContent = `<!DOCTYPE html>
           logoId: 'crypto/XTVCPUMPF',
         };
       }
+      if (item.symbol && (item.symbol.includes('SP500') || item.symbol.includes('SPX') || item.name === 'SP500' || item.name === 'SPX')) {
+        return {
+          symbol: 'INDEX:SPX',
+          name: 'SP500',
+          exchange: 'INDEX',
+          logoId: 'indices/s-and-p-500',
+        };
+      }
+      if (item.symbol && (item.symbol.includes('GOLD') || item.symbol.includes('XAU') || item.name === 'GOLD' || item.name === 'XAUUSD')) {
+        return {
+          symbol: 'TVC:GOLD',
+          name: 'GOLD',
+          exchange: 'TVC',
+          logoId: 'metal/gold',
+        };
+      }
       if (!item.logoId && LOGO_MAP[item.symbol]) {
         item.logoId = LOGO_MAP[item.symbol];
       }
       return item;
     });
+        if (!customWatchlist.some(w => w.name === 'SP500' || (w.symbol && (w.symbol.includes('SPX') || w.symbol.includes('SP500'))))) {
+      customWatchlist.push({ symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', logoId: 'indices/s-and-p-500' });
+    }
+    if (!customWatchlist.some(w => w.name === 'GOLD' || (w.symbol && (w.symbol.includes('GOLD') || w.symbol.includes('XAU'))))) {
+      customWatchlist.push({ symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', logoId: 'metal/gold' });
+    }
     saveWatchlist();
 
     const pricesCache = {};
@@ -4178,6 +4220,18 @@ const htmlContent = `<!DOCTYPE html>
 
       const btnConfirm = document.getElementById('btn-confirm-add-token');
       if (btnConfirm) btnConfirm.textContent = '...';
+
+      const rawUp = raw.toUpperCase();
+      if (rawUp === 'SP500' || rawUp === 'SPX' || rawUp === 'S&P500' || rawUp.includes('SP500')) {
+        addResolvedToken('INDEX:SPX', 'SP500', 'INDEX', 'indices/s-and-p-500');
+        if (btnConfirm) btnConfirm.textContent = 'Add';
+        return;
+      }
+      if (rawUp === 'GOLD' || rawUp === 'XAU' || rawUp === 'XAUUSD') {
+        addResolvedToken('TVC:GOLD', 'GOLD', 'TVC', 'metal/gold');
+        if (btnConfirm) btnConfirm.textContent = 'Add';
+        return;
+      }
 
       try {
         const res = await fetch('/api/search?q=' + encodeURIComponent(raw));
@@ -6349,7 +6403,64 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       });
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype]);
+            // 9. Dedicated S&P 500 Handler (Yahoo Finance ^GSPC with SPY fallback)
+      const pSP500 = (async () => {
+        if (!symbols.some(s => s.includes('SP500') || s.includes('SPX') || s === 'INDEX:SPX' || s === 'SP:SPX' || s === 'TVC:SPX')) return;
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC', { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose || close;
+            const chg = prev > 0 ? ((close - prev) / prev) * 100 : 0;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: meta.regularMarketVolume || 0,
+            };
+            prices['INDEX:SPX'] = obj;
+            prices['SP:SPX'] = obj;
+            prices['TVC:SPX'] = obj;
+            prices['SP500'] = obj;
+            prices['SPX'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('SP500') || s.includes('SPX')) prices[s] = obj;
+            });
+          }
+        } catch (e) {}
+      })();
+
+      // 10. Dedicated Gold Handler (Yahoo Finance GC=F / Bybit XAUUSDT)
+      const pGold = (async () => {
+        if (!symbols.some(s => s.includes('GOLD') || s.includes('XAU') || s === 'TVC:GOLD' || s === 'OANDA:XAUUSD' || s === 'FOREXCOM:XAUUSD')) return;
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/GC=F', { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose || close;
+            const chg = prev > 0 ? ((close - prev) / prev) * 100 : 0;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: meta.regularMarketVolume || 0,
+            };
+            prices['TVC:GOLD'] = obj;
+            prices['GOLD'] = obj;
+            prices['XAUUSD'] = obj;
+            prices['OANDA:XAUUSD'] = obj;
+            prices['FOREXCOM:XAUUSD'] = obj;
+            prices['COMEX:GC1!'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('GOLD') || s.includes('XAU')) prices[s] = obj;
+            });
+          }
+        } catch (e) {}
+      })();
+
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold]);
 
       if (typeof serverWatchlistPriceCache !== 'undefined') {
         Object.assign(serverWatchlistPriceCache, prices);
