@@ -368,7 +368,10 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 8px; color: #787b86; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 1px;
     }
     .hl-stat-val {
-      font-size: 11px; font-weight: 800; color: #fff; font-family: monospace; line-height: 1.1;
+      font-size: 11px; font-weight: 800; color: #fff; line-height: 1.1;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-feature-settings: 'tnum';
+      font-variant-numeric: tabular-nums;
     }
     .hl-vdiv {
       width: 1px; height: 16px; background: #232834; flex-shrink: 0;
@@ -456,10 +459,17 @@ const htmlContent = `<!DOCTYPE html>
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px;
     }
     .acc-stat-box {
-      background: #161a25; border: 1px solid #23293a; border-radius: 6px; padding: 6px 8px;
+      background: #161a25; border: 1px solid #23293a; border-radius: 6px; padding: 6px 10px;
+      min-height: 48px; display: flex; flex-direction: column; justify-content: center;
     }
-    .acc-stat-lbl { font-size: 8.5px; color: #787f94; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
-    .acc-stat-val { font-size: 12px; font-weight: 800; color: #fff; font-family: monospace; }
+    .acc-stat-lbl { font-size: 8.5px; color: #787f94; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.3px; }
+    .acc-stat-val { 
+      font-size: 11.5px; font-weight: 700; color: #f0f3f6; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-feature-settings: 'tnum';
+      font-variant-numeric: tabular-nums;
+      line-height: 1.25;
+    }
     
     /* Screener Table */
     .scr-table { width: 100%; display: flex; flex-direction: column; }
@@ -4636,13 +4646,25 @@ const htmlContent = `<!DOCTYPE html>
           const posEl = document.getElementById('dock-active-pos');
           if (posEl) {
             if (matchingPos) {
-              const sz = matchingPos.size || matchingPos.szi || 0;
+              let sz = matchingPos.size || matchingPos.szi || 0;
+              if (typeof sz === 'string') sz = parseFloat(sz) || 0;
+              let szStr = Math.abs(sz) >= 100 ? sz.toFixed(2) : (Math.abs(sz) >= 1 ? sz.toFixed(3) : sz.toFixed(4));
+              szStr = parseFloat(szStr).toString();
               const pnl = matchingPos.unrealizedPnl || 0;
-              posEl.textContent = \`\${matchingPos.side} \${sz} ($\${pnl >= 0 ? '+' : ''}\${pnl.toFixed(2)})\`;
-              posEl.className = pnl >= 0 ? 'val-green' : 'val-red';
+              const pnlSign = pnl >= 0 ? '+' : '';
+              const pnlStr = (pnl < 0 ? '-' : '') + '$' + Math.abs(pnl).toFixed(2);
+              const isLong = matchingPos.side === 'LONG' || matchingPos.side === 'BUY';
+              posEl.innerHTML = '<div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%;">' +
+                '<span class="action-badge ' + (isLong ? 'action-buy' : 'action-sell') + '" style="font-size: 9px; padding: 1.5px 5px; font-weight: 800; border-radius: 3px;">' + matchingPos.side + ' ' + szStr + '</span>' +
+                '<span class="' + (pnl >= 0 ? 'val-green' : 'val-red') + '" style="font-size: 11px; font-weight: 700; white-space: nowrap;">(' + pnlSign + pnlStr + ')</span>' +
+              '</div>';
             } else {
-              posEl.textContent = '--';
-              posEl.className = '';
+              if (acc.positions && acc.positions.length > 0) {
+                const coins = acc.positions.map(p => (p.coin || (p.symbol ? p.symbol.split(':')[1] || p.symbol : '')).replace(/USDT|USDC|USD|\.P/g, '')).filter(Boolean);
+                posEl.innerHTML = '<span style="font-size: 10px; color: #8c93a3; font-weight: 600;">' + acc.positions.length + ' active (' + coins.join(', ') + ')</span>';
+              } else {
+                posEl.textContent = '--';
+              }
             }
           }
         }

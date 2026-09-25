@@ -16,7 +16,11 @@ function normalizeCoin(symbolOrCoin) {
   if (s.includes(':')) {
     s = s.split(':')[1];
   }
-  s = s.replace(/USDT|USDC|USD|\.P|_/gi, '').trim();
+  if (s.endsWith('.P')) s = s.slice(0, -2);
+  if (s.endsWith('USDT')) s = s.slice(0, -4);
+  else if (s.endsWith('USDC')) s = s.slice(0, -4);
+  else if (s.endsWith('USD')) s = s.slice(0, -3);
+  s = s.replace(/^_|_$/g, '').trim();
   // Special cases if any
   if (s === 'XTVCBTC' || s === 'BITCOIN') return 'BTC';
   if (s === 'XTVCETH' || s === 'ETHEREUM') return 'ETH';
@@ -195,8 +199,8 @@ class HyperliquidConnector {
       if (this.screenerCache[coinName]) return this.screenerCache[coinName];
       return {
         coin: coinName,
-        m5: { trades: '24.28K', changePercent: '+0.05%', volume: '$71.2m', volumeDelta: '+$21.4m' },
-        m15: { trades: '57.63K', changePercent: '+0.06%', volume: '$187.8m', volumeDelta: '+$42.6m' },
+        m5: { trades: '--', changePercent: '0.00%', rawChangePercent: 0, volume: '--', volumeDelta: '--', rawVolumeDelta: 0 },
+        m15: { trades: '--', changePercent: '0.00%', rawChangePercent: 0, volume: '--', volumeDelta: '--', rawVolumeDelta: 0 },
         timestamp: Date.now(),
       };
     }
@@ -271,14 +275,16 @@ class HyperliquidConnector {
         coin: coinName,
         symbol: `${coinName}-USDC`,
         exchange: 'HYPERLIQUID',
-        last: '$80,452',
-        index: '$80,440',
-        change: '-1.02%',
-        volume: '$1.44b',
-        openInterest: '$3.31b',
-        funding: '0.0013%',
-        marketcap: '$1.62t',
-        fdv: '$1.62t',
+        last: '--',
+        rawLast: 0,
+        index: '--',
+        change: '0.00%',
+        rawChange: 0,
+        volume: '--',
+        openInterest: '--',
+        funding: '0.0000%',
+        marketcap: '--',
+        fdv: '--',
       };
     }
   }
@@ -290,16 +296,16 @@ class HyperliquidConnector {
     const targetAddress = walletAddress || this.activeWalletAddress;
     if (!targetAddress) {
       // Return Paper Trader state as default available capital
-      const paper = paperTraderInstance.portfolio || {};
+      const status = paperTraderInstance.getStatus();
       return {
         connected: false,
         mode: 'PAPER',
         walletAddress: null,
-        available: paper.cash || 10000.0,
-        equity: paper.equity || 10000.0,
-        positionsCount: paper.positions?.length || 0,
-        positions: paper.positions || [],
-        dailyPnl: paper.dailyRealizedPnl || 0.0,
+        available: status.balance || 10000.0,
+        equity: status.equity || 10000.0,
+        positionsCount: status.openPositions?.length || 0,
+        positions: status.openPositions || [],
+        dailyPnl: status.dailyPnl || 0.0,
       };
     }
 
