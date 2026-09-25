@@ -2097,13 +2097,37 @@ const htmlContent = `<!DOCTYPE html>
 
     <!-- VIEW 6: TELEGRAM ALERT & KELLY -->
     <div class="view-panel" id="view-alert">
-      <div class="controls-bar">
+      <div class="controls-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;">
         <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="alert-sym-input" class="search-input" value="BINANCE:BTCUSDT">
-          <button class="btn active" id="btn-send-tg-alert">Dispatch Telegram Alert + Chart Snapshot</button>
+          <input type="text" id="alert-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 180px;">
+          <button class="btn active" id="btn-send-tg-alert" style="background: #2563eb; color: #fff; font-weight: 700;">✈️ Dispatch Alert to Connected Telegram</button>
+          <button class="btn" id="btn-configure-user-tg" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; font-weight: 700;">⚙️ Connect Your Telegram</button>
         </div>
-        <span id="alert-status" style="font-size: 12px; color: var(--text-secondary);">Target: chat_id 1561044995</span>
+        <span id="alert-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Status: Telegram Channel Not Connected</span>
       </div>
+
+      <!-- User Telegram Connect Modal / Box -->
+      <div id="user-tg-connect-box" style="display: none; margin: 12px 16px; padding: 14px 18px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <strong style="color: #38bdf8; font-size: 13px;">📲 Connect Your Personal Telegram Channel / Chat</strong>
+          <span id="close-user-tg-box" style="cursor: pointer; color: #94a3b8; font-size: 14px; font-weight: bold;">✕</span>
+        </div>
+        <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">
+          For privacy and security, alerts are dispatched directly to your own Telegram. Enter your Telegram Bot Token and Chat ID below (stored only locally in your browser):
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: flex-end;">
+          <div>
+            <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM BOT TOKEN (From @BotFather)</label>
+            <input type="password" id="user-tg-token-input" placeholder="e.g. 7123456789:AAH..." style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM CHAT ID / CHANNEL ID</label>
+            <input type="text" id="user-tg-chat-input" placeholder="e.g. 1561044995 or @your_channel" style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
+          </div>
+          <button class="btn active" id="btn-save-user-tg" style="padding: 7px 16px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">Save & Link</button>
+        </div>
+      </div>
+
       <div class="panel-scroll">
         <div class="card">
           <div class="card-title">Kelly Criterion Position Sizing Engine</div>
@@ -5229,9 +5253,72 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
+    // Telegram User Custom Config Logic
+    const tgBox = document.getElementById('user-tg-connect-box');
+    const btnCfgTg = document.getElementById('btn-configure-user-tg');
+    const btnCloseTg = document.getElementById('close-user-tg-box');
+    const btnSaveTg = document.getElementById('btn-save-user-tg');
+    const inpTgToken = document.getElementById('user-tg-token-input');
+    const inpTgChat = document.getElementById('user-tg-chat-input');
+    const tgStatus = document.getElementById('alert-status');
+
+    function updateTgStatusDisplay() {
+      const savedChat = localStorage.getItem('hyperview_user_tg_chat');
+      const savedToken = localStorage.getItem('hyperview_user_tg_token');
+      if (savedChat && savedToken) {
+        if (tgStatus) {
+          tgStatus.textContent = '● Connected: Chat ID ' + savedChat;
+          tgStatus.style.color = 'var(--accent-green)';
+        }
+        if (inpTgChat) inpTgChat.value = savedChat;
+        if (inpTgToken) inpTgToken.value = savedToken;
+      } else {
+        if (tgStatus) {
+          tgStatus.textContent = '⚠️ Not Connected (Click Connect Your Telegram)';
+          tgStatus.style.color = '#fbbf24';
+        }
+      }
+    }
+    updateTgStatusDisplay();
+
+    if (btnCfgTg && tgBox) {
+      btnCfgTg.addEventListener('click', () => {
+        tgBox.style.display = tgBox.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+    if (btnCloseTg && tgBox) {
+      btnCloseTg.addEventListener('click', () => {
+        tgBox.style.display = 'none';
+      });
+    }
+    if (btnSaveTg) {
+      btnSaveTg.addEventListener('click', () => {
+        const token = (inpTgToken?.value || '').trim();
+        const chat = (inpTgChat?.value || '').trim();
+        if (!token || !chat) {
+          alert('Please enter both your Bot Token and Telegram Chat ID');
+          return;
+        }
+        localStorage.setItem('hyperview_user_tg_token', token);
+        localStorage.setItem('hyperview_user_tg_chat', chat);
+        updateTgStatusDisplay();
+        tgBox.style.display = 'none';
+        alert('Telegram credentials saved locally in your browser!');
+      });
+    }
+
     document.getElementById('btn-send-tg-alert').addEventListener('click', async () => {
       const sym = document.getElementById('alert-sym-input').value.trim();
-      document.getElementById('alert-status').textContent = 'Rendering snapshot & sending to Telegram...';
+      const userToken = localStorage.getItem('hyperview_user_tg_token');
+      const userChat = localStorage.getItem('hyperview_user_tg_chat');
+
+      if (!userToken || !userChat) {
+        if (tgBox) tgBox.style.display = 'block';
+        alert('Please connect your own Telegram Bot Token & Chat ID before dispatching alerts.');
+        return;
+      }
+
+      document.getElementById('alert-status').textContent = 'Rendering snapshot & sending to your Telegram...';
       try {
         const res = await fetch('/api/alert/telegram', {
           method: 'POST',
@@ -5244,7 +5331,9 @@ const htmlContent = `<!DOCTYPE html>
             drawdown: '-3.8%',
             winRate: 0.62,
             winLossRatio: 1.8,
-            accountEquity: 10000
+            accountEquity: 10000,
+            userToken: userToken,
+            userChatId: userChat
           })
         });
         const data = await res.json();

@@ -70,10 +70,14 @@ async function sendTelegramAlert(alertData) {
   } = alertData;
 
   const kelly = calculateKellyPosition(winRate, winLossRatio, accountEquity, 'half');
-  const { token, chatId } = getTelegramConfig();
+  
+  // Use user-provided telegram token & chat if supplied, otherwise fallback to server config
+  const serverCfg = getTelegramConfig();
+  const token = alertData.userToken || serverCfg.token;
+  const chatId = alertData.userChatId || serverCfg.chatId;
 
-  if (!token) {
-    throw new Error('Telegram Bot Token not configured');
+  if (!token || !chatId) {
+    throw new Error('Telegram Bot Token or Chat ID not configured. Please click Connect Your Telegram.');
   }
 
   // 1. Fetch candles
