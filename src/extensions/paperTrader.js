@@ -171,11 +171,11 @@ class PaperTradingEngine {
       if (!curr) continue;
 
       // Trailing stop / Break-even lock:
-      // When price moves +0.7% (with 3x that's +2.1% ROE, 2x is +1.4% ROE), lock SL at +0.2%
+      // When price moves >= +1.0% in profit, lock SL at entry + 0.35% (guarantees profit that easily covers round-trip fees)
       if (pos.side === 'LONG') {
         const gainPct = (curr - pos.entryPrice) / pos.entryPrice;
-        if (gainPct >= 0.007) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.002);
+        if (gainPct >= 0.010) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0035);
           if (pos.stopLoss < lockPrice) {
             pos.stopLoss = lockPrice;
             this.log(`Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
@@ -183,8 +183,8 @@ class PaperTradingEngine {
         }
       } else {
         const gainPct = (pos.entryPrice - curr) / pos.entryPrice;
-        if (gainPct >= 0.007) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.998);
+        if (gainPct >= 0.010) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9965);
           if (pos.stopLoss > lockPrice) {
             pos.stopLoss = lockPrice;
             this.log(`Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
@@ -225,8 +225,14 @@ class PaperTradingEngine {
 
     const pos = this.portfolio.positions[idx];
     const margin = pos.margin !== undefined ? pos.margin : pos.notional;
-    const feeRate = 0.0005; // 0.05% taker fee on notional
-    const fee = (pos.entryPrice * pos.size * feeRate) + (exitPrice * pos.size * feeRate);
+
+    // Hyperliquid Real Fee Schedule:
+    // Maker: 0.010% (0.00010) on Limit Take Profit exits
+    // Taker: 0.035% (0.00035) on Market entry, Stop Loss, Trailing Stop, Manual exits
+    const entryFeeRate = 0.00035; // 0.035% HL Taker
+    const isLimitExit = Boolean(reason && reason.includes('Take Profit'));
+    const exitFeeRate = isLimitExit ? 0.00010 : 0.00035; // 0.010% HL Maker if TP, else 0.035% Taker
+    const fee = (pos.entryPrice * pos.size * entryFeeRate) + (exitPrice * pos.size * exitFeeRate);
 
     let grossPnl = 0;
     if (pos.side === 'LONG') {
@@ -292,7 +298,7 @@ class PaperTradingEngine {
     } catch (e) {}
   }
 
-  async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null) {
+  async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null) {
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
       return null;
     }
@@ -322,42 +328,72 @@ class PaperTradingEngine {
     const size = notional / currPrice;
     this.portfolio.cash -= margin;
 
-    // Scalp / Short swing targets tailored to leverage:
-    // 1x: TP 1.8%, SL 0.9% (RR 2:1)
-    // 2x: TP 1.5%, SL 0.8% (RR 1.9:1)
-    // 3x: TP 1.4%, SL 0.7% (RR 2:1)
+    // Adaptive targets tailored to leverage:
+    // 1x: Base TP 1.8%, SL 0.9% (RR 2:1)
+    // 2x: Base TP 1.6%, SL 0.8% (RR 2:1)
+    // 3x: Base TP 1.5%, SL 0.75% (RR 2:1)
     let slPercent = 0.009;
     let tpPercent = 0.018;
     if (lev === 2) {
       slPercent = 0.008;
-      tpPercent = 0.015;
+      tpPercent = 0.016;
     } else if (lev === 3) {
-      slPercent = 0.007;
-      tpPercent = 0.014;
+      slPercent = 0.0075;
+      tpPercent = 0.015;
     }
+
+    // Hard Minimum Take Profit Distance (at least 1.4% to safely out-earn fees by 15x-20x)
+    const minTpDistancePct = 0.014;
 
     let stopLoss = 0;
     let takeProfit = 0;
 
     if (side === 'LONG') {
-      stopLoss = roundPriceForCoin(currPrice * (1 - slPercent));
-      takeProfit = roundPriceForCoin(currPrice * (1 + tpPercent));
-      // Anchor with Galton Value Area if structural support/resistance exists
-      if (orderFlow?.valPrice && orderFlow.valPrice < currPrice && orderFlow.valPrice >= currPrice * 0.985) {
-        stopLoss = Math.max(stopLoss, roundPriceForCoin(orderFlow.valPrice * 0.998));
+      let initialSl = currPrice * (1 - slPercent);
+      // RLM Wick-Anchored SL: use if within sensible risk bounds (0.5% - 1.3%)
+      if (rlmData?.signal?.type === 'LONG' && rlmData.signal.sl > 0 && rlmData.signal.sl < currPrice) {
+        const rlmRiskPct = (currPrice - rlmData.signal.sl) / currPrice;
+        if (rlmRiskPct >= 0.005 && rlmRiskPct <= 0.013) {
+          initialSl = rlmData.signal.sl;
+        }
+      } else if (orderFlow?.valPrice && orderFlow.valPrice < currPrice && orderFlow.valPrice >= currPrice * 0.985) {
+        initialSl = Math.max(initialSl, orderFlow.valPrice * 0.998);
       }
-      if (orderFlow?.vahPrice && orderFlow.vahPrice > currPrice && orderFlow.vahPrice <= currPrice * 1.025) {
-        takeProfit = Math.min(takeProfit, roundPriceForCoin(orderFlow.vahPrice));
+      stopLoss = roundPriceForCoin(initialSl);
+
+      // Enforce Minimum Risk:Reward Ratio >= 1:1.6 (Never squeeze TP below safe threshold)
+      const riskDistance = Math.max(currPrice * 0.006, currPrice - stopLoss);
+      const minRewardDistance = Math.max(riskDistance * 1.6, currPrice * minTpDistancePct);
+      let targetTp = currPrice + minRewardDistance;
+
+      if (rlmData?.signal?.tp2 && rlmData.signal.tp2 > targetTp) {
+        targetTp = rlmData.signal.tp2;
+      } else if (orderFlow?.vahPrice && orderFlow.vahPrice > targetTp && orderFlow.vahPrice <= currPrice * 1.05) {
+        targetTp = orderFlow.vahPrice;
       }
+      takeProfit = roundPriceForCoin(targetTp);
     } else {
-      stopLoss = roundPriceForCoin(currPrice * (1 + slPercent));
-      takeProfit = roundPriceForCoin(currPrice * (1 - tpPercent));
-      if (orderFlow?.vahPrice && orderFlow.vahPrice > currPrice && orderFlow.vahPrice <= currPrice * 1.015) {
-        stopLoss = Math.min(stopLoss, roundPriceForCoin(orderFlow.vahPrice * 1.002));
+      let initialSl = currPrice * (1 + slPercent);
+      if (rlmData?.signal?.type === 'SHORT' && rlmData.signal.sl > currPrice) {
+        const rlmRiskPct = (rlmData.signal.sl - currPrice) / currPrice;
+        if (rlmRiskPct >= 0.005 && rlmRiskPct <= 0.013) {
+          initialSl = rlmData.signal.sl;
+        }
+      } else if (orderFlow?.vahPrice && orderFlow.vahPrice > currPrice && orderFlow.vahPrice <= currPrice * 1.015) {
+        initialSl = Math.min(initialSl, orderFlow.vahPrice * 1.002);
       }
-      if (orderFlow?.valPrice && orderFlow.valPrice < currPrice && orderFlow.valPrice >= currPrice * 0.975) {
-        takeProfit = Math.max(takeProfit, roundPriceForCoin(orderFlow.valPrice));
+      stopLoss = roundPriceForCoin(initialSl);
+
+      const riskDistance = Math.max(currPrice * 0.006, stopLoss - currPrice);
+      const minRewardDistance = Math.max(riskDistance * 1.6, currPrice * minTpDistancePct);
+      let targetTp = currPrice - minRewardDistance;
+
+      if (rlmData?.signal?.tp2 && rlmData.signal.tp2 < targetTp) {
+        targetTp = rlmData.signal.tp2;
+      } else if (orderFlow?.valPrice && orderFlow.valPrice < targetTp && orderFlow.valPrice >= currPrice * 0.95) {
+        targetTp = orderFlow.valPrice;
       }
+      takeProfit = roundPriceForCoin(targetTp);
     }
 
     // Critical sanity check: prevent 0 or negative SL/TP
@@ -532,6 +568,7 @@ class PaperTradingEngine {
 
         const galton = indics.indicators?.Galton || null;
         const footprint = indics.indicators?.Footprint || null;
+        const rlm = indics.indicators?.ReactionLevelMatrix || null;
 
         const buyFlow = galton ? galton.buyRatio : 0.5;
         const sellFlow = galton ? galton.sellRatio : 0.5;
@@ -540,15 +577,52 @@ class PaperTradingEngine {
         const hasBullishAbsorptionBottom = footprint ? footprint.hasBullishAbsorptionBottom : false;
         const isChoppy = footprint?.marketStructure === 'CHOPPY_ROTATION';
 
+        const rlmSignal = rlm?.signal || null;
+        const htfBias = rlm?.htfBias || 'NEUTRAL';
+        const nearestRes = rlm?.nearestResistance || null;
+        const nearestSup = rlm?.nearestSupport || null;
+
+        // --- STRATEGY 1: RLM Key Level Rejection Sniper (A+ Pivot Setup) ---
+        if (rlmSignal && rlmSignal.levelScore >= 50) {
+          if (rlmSignal.type === 'LONG' && rsi <= 65 && !hasBearishAbsorptionTop && buyFlow >= 0.48) {
+            const lev = isDefensive ? 1 : 2;
+            const strategyName = 'RLM Key Level Rejection Sniper Long';
+            const reason = `${strategyName} [${lev}x]: Rejection at Support $${formatTokenPrice(rlmSignal.levelPrice)} (Score: ${rlmSignal.levelScore}, Touches: ${rlmSignal.touches}). Wick SL: $${formatTokenPrice(rlmSignal.sl)}.`;
+            this.log(`🎯 A+ RLM Signal: ${sym} LONG (${lev}x Lev) | ${reason}`);
+            await this.openPosition(sym, 'LONG', strategyName, reason, lev, galton, rlm);
+            if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
+            continue;
+          } else if (rlmSignal.type === 'SHORT' && rsi >= 35 && !hasBullishAbsorptionBottom && sellFlow >= 0.48) {
+            const lev = isDefensive ? 1 : 2;
+            const strategyName = 'RLM Key Level Rejection Sniper Short';
+            const reason = `${strategyName} [${lev}x]: Rejection at Resistance $${formatTokenPrice(rlmSignal.levelPrice)} (Score: ${rlmSignal.levelScore}, Touches: ${rlmSignal.touches}). Wick SL: $${formatTokenPrice(rlmSignal.sl)}.`;
+            this.log(`🎯 A+ RLM Signal: ${sym} SHORT (${lev}x Lev) | ${reason}`);
+            await this.openPosition(sym, 'SHORT', strategyName, reason, lev, galton, rlm);
+            if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
+            continue;
+          }
+        }
+
+        // --- STRATEGY 2: High Confluence Trend Momentum ---
         // Long Setup
         if (supertrend === 'BUY' && macdTrend === 'BULLISH') {
-          // 1. Galton Flow Filter: Avoid buying when BVC flow is heavily bearish (divergence)
-          if (buyFlow < 0.46) {
+          // 1. HTF Trend Filter: Do not take long when macro bias is Bearish
+          if (htfBias === 'BEARISH') {
             continue;
           }
 
-          // 2. Footprint Absorption Filter: Avoid buying if upper levels have heavy sell imbalance (3x rejection)
-          if (hasBearishAbsorptionTop) {
+          // 2. Ceiling Filter: Avoid buying into heavy RLM resistance ceiling right above (<1.2%)
+          if (nearestRes && nearestRes.score >= 50 && nearestRes.distancePct < 1.2) {
+            continue;
+          }
+
+          // 3. Choppy Filter: Do not chase momentum in choppy range rotation
+          if (isChoppy) {
+            continue;
+          }
+
+          // 4. Flow Filter
+          if (buyFlow < 0.48 || hasBearishAbsorptionTop) {
             continue;
           }
 
@@ -556,16 +630,14 @@ class PaperTradingEngine {
           let strategyName = 'Supertrend + MACD Momentum';
 
           if (isDefensive) {
-            // Defensive: 1x leverage only, high confluence threshold + positive flow
-            if (buyVotes >= 14 && sellVotes <= 6 && rsi >= 48 && rsi <= 65 && buyFlow >= 0.50) {
+            if (buyVotes >= 15 && sellVotes <= 5 && rsi >= 48 && rsi <= 65 && buyFlow >= 0.52) {
               lev = 1;
               strategyName = 'Defensive Orderflow Long';
             } else {
               continue;
             }
           } else if (isTargetHit) {
-            // Sniper A+ mode: Target 1% achieved, lock profit, allow max 2x on ultra clean setup
-            if (buyVotes >= 16 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.55 && !isChoppy) {
+            if (buyVotes >= 16 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.55) {
               lev = 2;
               strategyName = 'Sniper A+ Galton-Confluence Long';
             } else {
@@ -574,19 +646,19 @@ class PaperTradingEngine {
           } else {
             // Normal Trading:
             // Tier 3: 3x Leverage (Ultra A+ setup: buyVotes >= 17, sellVotes <= 4, pristine RSI 48-62, strong Buy flow >= 58%, directional OVL <= 55%)
-            if (buyVotes >= 17 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.58 && ovlScore <= 0.55 && !isChoppy) {
+            if (buyVotes >= 17 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.58 && ovlScore <= 0.55) {
               lev = 3;
               strategyName = 'Ultra A+ Galton/Footprint Sniper Long';
             }
-            // Tier 2: 2x Leverage (Strong setup: buyVotes >= 14, sellVotes <= 6, RSI 45-68, buyFlow >= 50%)
-            else if (buyVotes >= 14 && sellVotes <= 6 && rsi >= 45 && rsi <= 68 && buyFlow >= 0.50 && !isChoppy) {
+            // Tier 2: 2x Leverage (Strong setup: buyVotes >= 15, sellVotes <= 5, RSI 46-66, buyFlow >= 0.52)
+            else if (buyVotes >= 15 && sellVotes <= 5 && rsi >= 46 && rsi <= 66 && buyFlow >= 0.52) {
               lev = 2;
               strategyName = 'High Confluence Orderflow Long';
             }
-            // Tier 1: 1x Leverage (Standard setup: buyVotes >= 11, sellVotes <= 8, RSI 45-72, buyFlow >= 46%)
-            else if (buyVotes >= 11 && sellVotes <= 8 && rsi >= 45 && rsi <= 72) {
+            // Tier 1: 1x Leverage (Standard setup: buyVotes >= 13, sellVotes <= 6, RSI 45-70, buyFlow >= 0.50)
+            else if (buyVotes >= 13 && sellVotes <= 6 && rsi >= 45 && rsi <= 70 && buyFlow >= 0.50) {
               lev = 1;
-              strategyName = isChoppy ? 'Range Rotation Long' : 'Standard Momentum Long';
+              strategyName = 'Standard Momentum Long';
             } else {
               continue;
             }
@@ -594,21 +666,31 @@ class PaperTradingEngine {
 
           const flowStr = galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${galton.pocPrice}]` : '';
           const fpStr = footprint ? ` [FP: ${footprint.marketStructure}, OVL: ${(ovlScore * 100).toFixed(0)}%]` : '';
-          const reason = `${strategyName} [${lev}x]: Supertrend Bullish, MACD Bullish, RSI ${rsi}, 26-TA Buy (${buyVotes}/26, sell: ${sellVotes})${flowStr}${fpStr}.`;
+          const reason = `${strategyName} [${lev}x]: Supertrend Bullish, MACD Bullish, HTF ${htfBias}, RSI ${rsi}, 26-TA Buy (${buyVotes}/26, sell: ${sellVotes})${flowStr}${fpStr}.`;
           this.log(`🚀 Entry Signal: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
-          await this.openPosition(sym, 'LONG', strategyName, reason, lev, galton);
+          await this.openPosition(sym, 'LONG', strategyName, reason, lev, galton, rlm);
           if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
         }
 
         // Short Setup
         else if (supertrend === 'SELL' && macdTrend === 'BEARISH') {
-          // 1. Galton Flow Filter: Avoid shorting when BVC flow is heavily bullish
-          if (sellFlow < 0.46) {
+          // 1. HTF Trend Filter: Do not short when macro bias is Bullish
+          if (htfBias === 'BULLISH') {
             continue;
           }
 
-          // 2. Footprint Absorption Filter: Avoid shorting into strong buy absorption at the bottom
-          if (hasBullishAbsorptionBottom) {
+          // 2. Floor Filter: Avoid shorting right into heavy RLM support floor right below (<1.2%)
+          if (nearestSup && nearestSup.score >= 50 && nearestSup.distancePct < 1.2) {
+            continue;
+          }
+
+          // 3. Choppy Filter: Do not chase momentum in choppy range rotation
+          if (isChoppy) {
+            continue;
+          }
+
+          // 4. Flow Filter
+          if (sellFlow < 0.48 || hasBullishAbsorptionBottom) {
             continue;
           }
 
@@ -616,14 +698,14 @@ class PaperTradingEngine {
           let strategyName = 'Supertrend + MACD Breakdown';
 
           if (isDefensive) {
-            if (sellVotes >= 14 && buyVotes <= 6 && rsi >= 35 && rsi <= 52 && sellFlow >= 0.50) {
+            if (sellVotes >= 15 && buyVotes <= 5 && rsi >= 35 && rsi <= 52 && sellFlow >= 0.52) {
               lev = 1;
               strategyName = 'Defensive Orderflow Short';
             } else {
               continue;
             }
           } else if (isTargetHit) {
-            if (sellVotes >= 16 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.55 && !isChoppy) {
+            if (sellVotes >= 16 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.55) {
               lev = 2;
               strategyName = 'Sniper A+ Galton-Confluence Short';
             } else {
@@ -631,19 +713,19 @@ class PaperTradingEngine {
             }
           } else {
             // Tier 3: 3x Leverage (Ultra A+ setup: sellVotes >= 17, buyVotes <= 4, pristine RSI 38-52, sellFlow >= 58%, directional OVL <= 55%)
-            if (sellVotes >= 17 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.58 && ovlScore <= 0.55 && !isChoppy) {
+            if (sellVotes >= 17 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.58 && ovlScore <= 0.55) {
               lev = 3;
               strategyName = 'Ultra A+ Galton/Footprint Sniper Short';
             }
-            // Tier 2: 2x Leverage (Strong setup: sellVotes >= 14, buyVotes <= 6, RSI 32-55, sellFlow >= 50%)
-            else if (sellVotes >= 14 && buyVotes <= 6 && rsi >= 32 && rsi <= 55 && sellFlow >= 0.50 && !isChoppy) {
+            // Tier 2: 2x Leverage (Strong setup: sellVotes >= 15, buyVotes <= 5, RSI 34-54, sellFlow >= 0.52)
+            else if (sellVotes >= 15 && buyVotes <= 5 && rsi >= 34 && rsi <= 54 && sellFlow >= 0.52) {
               lev = 2;
               strategyName = 'High Confluence Orderflow Short';
             }
-            // Tier 1: 1x Leverage (Standard setup: sellVotes >= 11, buyVotes <= 8, RSI 25-55, sellFlow >= 46%)
-            else if (sellVotes >= 11 && buyVotes <= 8 && rsi >= 25 && rsi <= 55) {
+            // Tier 1: 1x Leverage (Standard setup: sellVotes >= 13, buyVotes <= 6, RSI 30-55, sellFlow >= 0.50)
+            else if (sellVotes >= 13 && buyVotes <= 6 && rsi >= 30 && rsi <= 55 && sellFlow >= 0.50) {
               lev = 1;
-              strategyName = isChoppy ? 'Range Rotation Short' : 'Standard Momentum Short';
+              strategyName = 'Standard Momentum Short';
             } else {
               continue;
             }
@@ -651,9 +733,9 @@ class PaperTradingEngine {
 
           const flowStr = galton ? ` [Flow: ${Math.round(sellFlow * 100)}% Sell, POC: $${galton.pocPrice}]` : '';
           const fpStr = footprint ? ` [FP: ${footprint.marketStructure}, OVL: ${(ovlScore * 100).toFixed(0)}%]` : '';
-          const reason = `${strategyName} [${lev}x]: Supertrend Bearish, MACD Bearish, RSI ${rsi}, 26-TA Sell (${sellVotes}/26, buy: ${buyVotes})${flowStr}${fpStr}.`;
+          const reason = `${strategyName} [${lev}x]: Supertrend Bearish, MACD Bearish, HTF ${htfBias}, RSI ${rsi}, 26-TA Sell (${sellVotes}/26, buy: ${buyVotes})${flowStr}${fpStr}.`;
           this.log(`🚀 Entry Signal: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
-          await this.openPosition(sym, 'SHORT', strategyName, reason, lev, galton);
+          await this.openPosition(sym, 'SHORT', strategyName, reason, lev, galton, rlm);
           if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
         }
       } catch (err) {

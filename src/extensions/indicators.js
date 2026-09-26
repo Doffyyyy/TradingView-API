@@ -735,9 +735,33 @@ function calcReactionLevelMatrix(candles, options = {}) {
     }
   }
 
+  const sortedSup = [...supports].sort((a, b) => b.center - a.center);
+  const sortedRes = [...resistances].sort((a, b) => a.center - b.center);
+  const nearestSupport = sortedSup.length > 0 ? {
+    center: sortedSup[0].center,
+    halfWidth: sortedSup[0].halfWidth,
+    score: sortedSup[0].score,
+    distancePct: ((lastClose - sortedSup[0].center) / lastClose) * 100,
+  } : null;
+  const nearestResistance = sortedRes.length > 0 ? {
+    center: sortedRes[0].center,
+    halfWidth: sortedRes[0].halfWidth,
+    score: sortedRes[0].score,
+    distancePct: ((sortedRes[0].center - lastClose) / lastClose) * 100,
+  } : null;
+
+  const closesForEma = candles.map(c => c.close);
+  const ema50Arr = calcEMA(closesForEma, 50);
+  const htfEma50 = ema50Arr.length ? ema50Arr[ema50Arr.length - 1] : lastClose;
+  const htfBias = lastClose >= htfEma50 ? 'BULLISH' : 'BEARISH';
+
   return {
     lastClose,
     atr14: currentAtr14,
+    htfEma50,
+    htfBias,
+    nearestSupport,
+    nearestResistance,
     supports: supports.map(s => ({ center: s.center, halfWidth: s.halfWidth, score: s.score, touches: s.totalTouches, polarity: s.polarity, breaks: s.breaks })),
     resistances: resistances.map(r => ({ center: r.center, halfWidth: r.halfWidth, score: r.score, touches: r.totalTouches, polarity: r.polarity, breaks: r.breaks })),
     signal,
