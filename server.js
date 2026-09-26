@@ -6243,8 +6243,9 @@ const server = http.createServer(async (req, res) => {
         Object.assign(prices, serverWatchlistPriceCache);
       }
 
-      // Check if cache was updated very recently (< 4000ms), return immediately
-      if (typeof lastWatchlistPriceUpdate !== 'undefined' && (Date.now() - lastWatchlistPriceUpdate < 4000) && Object.keys(prices).length >= symbols.length) {
+      // Check if cache was updated very recently (< 2500ms) AND all requested symbols already have valid prices:
+      const allCached = symbols.every(s => prices[s] && typeof prices[s].close === 'number' && !isNaN(prices[s].close));
+      if (typeof lastWatchlistPriceUpdate !== 'undefined' && (Date.now() - lastWatchlistPriceUpdate < 2500) && allCached) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ prices }));
       }
@@ -6252,9 +6253,10 @@ const server = http.createServer(async (req, res) => {
       // 2. Binance Public Data API (Lightning fast, non-blocked, no 429)
       const binanceMap = {};
       symbols.forEach(s => {
-        if (s.startsWith('BINANCE:')) {
-          const pair = s.split(':')[1];
-          binanceMap[pair] = s;
+        let clean = s.startsWith('BINANCE:') ? s.split(':')[1] : s;
+        clean = clean.replace(/\.P$/i, '').toUpperCase();
+        if (s.startsWith('BINANCE:') || clean.endsWith('USDT') || clean.endsWith('USDC')) {
+          binanceMap[clean] = s;
         }
       });
 
@@ -6276,8 +6278,29 @@ const server = http.createServer(async (req, res) => {
                 };
               }
             });
+            return;
           }
-        } catch (e) {}
+        } catch (e) {
+          // Fallback: if batch query has any unknown symbol, fetch all-ticker list
+          try {
+            const fullRes = await axios.get('https://data-api.binance.vision/api/v3/ticker/24hr', { timeout: 4000 });
+            if (Array.isArray(fullRes.data)) {
+              const map = new Map(fullRes.data.map(d => [d.symbol, d]));
+              pairs.forEach(p => {
+                const item = map.get(p);
+                const sym = binanceMap[p];
+                if (item && sym) {
+                  prices[sym] = {
+                    close: parseFloat(item.lastPrice),
+                    change: parseFloat(item.priceChangePercent),
+                    change_abs: parseFloat(item.priceChange),
+                    volume: parseFloat(item.quoteVolume),
+                  };
+                }
+              });
+            }
+          } catch (err) {}
+        }
       })();
 
       // 2.5 Direct Hyperliquid Native Ticker for HYPE
@@ -6478,6 +6501,29 @@ const server = http.createServer(async (req, res) => {
       })();
 
       await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold]);
+
+      // 11. Generic fallback for any remaining unresolved symbols (DexScreener search)
+      const missingSymbols = symbols.filter(s => !prices[s] || typeof prices[s].close !== 'number');
+      if (missingSymbols.length > 0) {
+        await Promise.all(missingSymbols.map(async (s) => {
+          let tokenName = s.split(':')[1] || s;
+          tokenName = tokenName.replace(/\.P$/i, '').replace(/USDT$/i, '').replace(/USD$/i, '');
+          try {
+            const res = await axios.get('https://api.dexscreener.com/latest/dex/search?q=' + encodeURIComponent(tokenName), { timeout: 2500 });
+            const p = res.data?.pairs?.[0];
+            if (p && p.priceUsd) {
+              const close = parseFloat(p.priceUsd);
+              const chg = parseFloat(p.priceChange?.h24 || 0);
+              prices[s] = {
+                close,
+                change: chg,
+                change_abs: close * (chg / 100),
+                volume: parseFloat(p.volume?.h24 || 0)
+              };
+            }
+          } catch (e) {}
+        }));
+      }
 
       if (typeof serverWatchlistPriceCache !== 'undefined') {
         Object.assign(serverWatchlistPriceCache, prices);
