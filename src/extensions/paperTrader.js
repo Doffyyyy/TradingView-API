@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { computeAllIndicators } = require('./indicators');
+const { computeAllIndicators, getMultiTimeframeAnalysis, getBtcMarketRegime } = require('./indicators');
 const { validateSymbol } = require('./validation');
 const { sendTelegramAlert } = require('./alert');
 const axios = require('axios');
@@ -307,6 +307,12 @@ class PaperTradingEngine {
       return null;
     }
 
+    // Directional consistency guard: Never hedge or open opposite positions
+    if (this.portfolio.positions.some(p => p.side !== side)) {
+      this.log(`⚠️ Aborting ${side} on ${symbol}: Portfolio already holds active ${side === 'LONG' ? 'SHORT' : 'LONG'} position(s). Enforcing single-direction exposure.`);
+      return null;
+    }
+
     // Don't open if symbol is under cooldown
     if (this.symbolCooldowns[symbol] && Date.now() < this.symbolCooldowns[symbol]) {
       return null;
@@ -542,7 +548,19 @@ class PaperTradingEngine {
       return;
     }
 
-    // 5. Scan symbols for high win-rate confluence:
+    // 5. Directional Consistency Lock:
+    // Determine existing portfolio direction to avoid cross-hedging and dual fees
+    const existingSides = new Set(this.portfolio.positions.map(p => p.side));
+    const hasActiveLong = existingSides.has('LONG');
+    const hasActiveShort = existingSides.has('SHORT');
+
+    // 6. BTC Macro Market Regime Gate (Beta Filter)
+    let btcRegime = 'CHOPPY_REGIME';
+    try {
+      btcRegime = await getBtcMarketRegime();
+    } catch (e) {}
+
+    // 7. Scan monitored symbols with Multi-Timeframe Framework:
     for (const sym of this.monitoredSymbols) {
       if (this.portfolio.positions.some(p => p.symbol === sym)) continue;
 
@@ -552,191 +570,124 @@ class PaperTradingEngine {
       }
 
       try {
-        const [taValidation, indics] = await Promise.all([
+        const [taValidation, mtf] = await Promise.all([
           validateSymbol(sym).catch(() => null),
-          computeAllIndicators(sym, '15', ['RSI', 'MACD', 'Supertrend', 'Galton', 'Footprint', 'RLM']).catch(() => null),
+          getMultiTimeframeAnalysis(sym).catch(() => null),
         ]);
 
-        if (!taValidation || !indics) continue;
+        if (!taValidation || !mtf || !mtf.htf || !mtf.ltf) continue;
 
-        const currentPrice = this.latestPrices[sym]?.price || indics.currentPrice;
-        const rsi = indics.indicators.RSI?.value || 50;
-        const supertrend = indics.indicators.Supertrend?.trend; // 'BUY' or 'SELL'
-        const macdTrend = indics.indicators.MACD?.trend; // 'BULLISH' or 'BEARISH'
+        const currentPrice = this.latestPrices[sym]?.price || mtf.currentPrice;
+        const htf = mtf.htf; // { curPrice, ema50, ema200, bias, supertrend, rlm, nearestRes, nearestSup }
+        const ltf = mtf.ltf; // { rsi, macdTrend, supertrend, galton, footprint, rlm }
+
         const buyVotes = taValidation.consensus.buy;
         const sellVotes = taValidation.consensus.sell;
+        const rsi = ltf.rsi;
+        const buyFlow = ltf.galton ? ltf.galton.buyRatio : 0.5;
+        const sellFlow = ltf.galton ? ltf.galton.sellRatio : 0.5;
+        const ovlScore = ltf.footprint ? ltf.footprint.ovlScore : 0.5;
+        const hasBearishAbsorptionTop = ltf.footprint ? ltf.footprint.hasBearishAbsorptionTop : false;
+        const hasBullishAbsorptionBottom = ltf.footprint ? ltf.footprint.hasBullishAbsorptionBottom : false;
+        const isChoppy = ltf.footprint?.marketStructure === 'CHOPPY_ROTATION';
+        const rlmSignal = ltf.rlm?.signal || null;
 
-        const galton = indics.indicators?.Galton || null;
-        const footprint = indics.indicators?.Footprint || null;
-        const rlm = indics.indicators?.ReactionLevelMatrix || null;
+        // =========================================================================
+        // HTF DIRECTION 1: LONG SETUP
+        // Requirements:
+        //  1. Portfolio is NOT holding any SHORT positions (Direction Consistency)
+        //  2. Macro Market is NOT in BEAR_REGIME
+        //  3. Symbol 1H Trend is BULL (Price > EMA50_1H)
+        //  4. No heavy 1H Resistance ceiling right above (< 1.5%)
+        //  5. 15M Entry is a PULLBACK / RETEST (RSI 36-56), never buy an overbought pump
+        //  6. Orderflow clean: buyFlow >= 0.48, no bearish absorption top
+        // =========================================================================
+        const canLong = !hasActiveShort &&
+                        btcRegime !== 'BEAR_REGIME' &&
+                        htf.bias === 'BULL' &&
+                        (!htf.nearestRes || htf.nearestRes.distancePct >= 1.5);
 
-        const buyFlow = galton ? galton.buyRatio : 0.5;
-        const sellFlow = galton ? galton.sellRatio : 0.5;
-        const ovlScore = footprint ? footprint.ovlScore : 0.5;
-        const hasBearishAbsorptionTop = footprint ? footprint.hasBearishAbsorptionTop : false;
-        const hasBullishAbsorptionBottom = footprint ? footprint.hasBullishAbsorptionBottom : false;
-        const isChoppy = footprint?.marketStructure === 'CHOPPY_ROTATION';
+        if (canLong && buyFlow >= 0.48 && !hasBearishAbsorptionTop && rsi <= 56) {
+          let triggerType = null;
+          let strategyName = '';
+          let lev = 1;
 
-        const rlmSignal = rlm?.signal || null;
-        const htfBias = rlm?.htfBias || 'NEUTRAL';
-        const nearestRes = rlm?.nearestResistance || null;
-        const nearestSup = rlm?.nearestSupport || null;
+          // Trigger A: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
+          if (rlmSignal && rlmSignal.type === 'LONG' && rlmSignal.levelScore >= 50) {
+            triggerType = 'RLM_REJECTION';
+            strategyName = 'HTF Bull + RLM Sniper Long';
+            lev = isDefensive ? 1 : 2;
+          }
+          // Trigger B: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
+          else if (ltf.supertrend === 'BUY' && ltf.macdTrend === 'BULLISH' && buyVotes >= 14 && sellVotes <= 6 && !isChoppy && rsi >= 36) {
+            triggerType = 'PULLBACK_MOMENTUM';
+            strategyName = 'HTF Trend + 15M Pullback Long';
+            if (isDefensive) {
+              lev = 1;
+            } else if (isTargetHit) {
+              lev = buyVotes >= 16 ? 2 : 1;
+            } else {
+              lev = (buyVotes >= 17 && buyFlow >= 0.58 && ovlScore <= 0.55) ? 3 : (buyVotes >= 15 && buyFlow >= 0.52 ? 2 : 1);
+            }
+          }
 
-        // --- STRATEGY 1: RLM Key Level Rejection Sniper (A+ Pivot Setup) ---
-        if (rlmSignal && rlmSignal.levelScore >= 50) {
-          if (rlmSignal.type === 'LONG' && rsi <= 65 && !hasBearishAbsorptionTop && buyFlow >= 0.48) {
-            const lev = isDefensive ? 1 : 2;
-            const strategyName = 'RLM Key Level Rejection Sniper Long';
-            const reason = `${strategyName} [${lev}x]: Rejection at Support $${formatTokenPrice(rlmSignal.levelPrice)} (Score: ${rlmSignal.levelScore}, Touches: ${rlmSignal.touches}). Wick SL: $${formatTokenPrice(rlmSignal.sl)}.`;
-            this.log(`🎯 A+ RLM Signal: ${sym} LONG (${lev}x Lev) | ${reason}`);
-            await this.openPosition(sym, 'LONG', strategyName, reason, lev, galton, rlm);
-            if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
-            continue;
-          } else if (rlmSignal.type === 'SHORT' && rsi >= 35 && !hasBullishAbsorptionBottom && sellFlow >= 0.48) {
-            const lev = isDefensive ? 1 : 2;
-            const strategyName = 'RLM Key Level Rejection Sniper Short';
-            const reason = `${strategyName} [${lev}x]: Rejection at Resistance $${formatTokenPrice(rlmSignal.levelPrice)} (Score: ${rlmSignal.levelScore}, Touches: ${rlmSignal.touches}). Wick SL: $${formatTokenPrice(rlmSignal.sl)}.`;
-            this.log(`🎯 A+ RLM Signal: ${sym} SHORT (${lev}x Lev) | ${reason}`);
-            await this.openPosition(sym, 'SHORT', strategyName, reason, lev, galton, rlm);
+          if (triggerType) {
+            const flowStr = ltf.galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${ltf.galton.pocPrice}]` : '';
+            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}.`;
+            this.log(`🚀 HTF-Aligned Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
+            await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;
           }
         }
 
-        // --- STRATEGY 2: High Confluence Trend Momentum ---
-        // Long Setup
-        if (supertrend === 'BUY' && macdTrend === 'BULLISH') {
-          // 1. HTF Trend Filter: Do not take long when macro bias is Bearish
-          if (htfBias === 'BEARISH') {
-            continue;
-          }
+        // =========================================================================
+        // HTF DIRECTION 2: SHORT SETUP
+        // Requirements:
+        //  1. Portfolio is NOT holding any LONG positions (Direction Consistency)
+        //  2. Macro Market is NOT in BULL_REGIME
+        //  3. Symbol 1H Trend is BEAR (Price < EMA50_1H)
+        //  4. No heavy 1H Support floor right below (< 1.5%)
+        //  5. 15M Entry is a RETRACEMENT BOUNCE (RSI 44-64), never short an oversold dump
+        //  6. Orderflow clean: sellFlow >= 0.48, no bullish absorption bottom
+        // =========================================================================
+        const canShort = !hasActiveLong &&
+                         btcRegime !== 'BULL_REGIME' &&
+                         htf.bias === 'BEAR' &&
+                         (!htf.nearestSup || htf.nearestSup.distancePct >= 1.5);
 
-          // 2. Ceiling Filter: Avoid buying into heavy RLM resistance ceiling right above (<1.2%)
-          if (nearestRes && nearestRes.score >= 50 && nearestRes.distancePct < 1.2) {
-            continue;
-          }
-
-          // 3. Choppy Filter: Do not chase momentum in choppy range rotation
-          if (isChoppy) {
-            continue;
-          }
-
-          // 4. Flow Filter
-          if (buyFlow < 0.48 || hasBearishAbsorptionTop) {
-            continue;
-          }
-
+        if (canShort && sellFlow >= 0.48 && !hasBullishAbsorptionBottom && rsi >= 44) {
+          let triggerType = null;
+          let strategyName = '';
           let lev = 1;
-          let strategyName = 'Supertrend + MACD Momentum';
 
-          if (isDefensive) {
-            if (buyVotes >= 15 && sellVotes <= 5 && rsi >= 48 && rsi <= 65 && buyFlow >= 0.52) {
+          // Trigger A: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
+          if (rlmSignal && rlmSignal.type === 'SHORT' && rlmSignal.levelScore >= 50) {
+            triggerType = 'RLM_REJECTION';
+            strategyName = 'HTF Bear + RLM Sniper Short';
+            lev = isDefensive ? 1 : 2;
+          }
+          // Trigger B: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
+          else if (ltf.supertrend === 'SELL' && ltf.macdTrend === 'BEARISH' && sellVotes >= 14 && buyVotes <= 6 && !isChoppy && rsi <= 64) {
+            triggerType = 'RETRACEMENT_BREAKDOWN';
+            strategyName = 'HTF Trend + 15M Retrace Short';
+            if (isDefensive) {
               lev = 1;
-              strategyName = 'Defensive Orderflow Long';
+            } else if (isTargetHit) {
+              lev = sellVotes >= 16 ? 2 : 1;
             } else {
-              continue;
-            }
-          } else if (isTargetHit) {
-            if (buyVotes >= 16 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.55) {
-              lev = 2;
-              strategyName = 'Sniper A+ Galton-Confluence Long';
-            } else {
-              continue;
-            }
-          } else {
-            // Normal Trading:
-            // Tier 3: 3x Leverage (Ultra A+ setup: buyVotes >= 17, sellVotes <= 4, pristine RSI 48-62, strong Buy flow >= 58%, directional OVL <= 55%)
-            if (buyVotes >= 17 && sellVotes <= 4 && rsi >= 48 && rsi <= 62 && buyFlow >= 0.58 && ovlScore <= 0.55) {
-              lev = 3;
-              strategyName = 'Ultra A+ Galton/Footprint Sniper Long';
-            }
-            // Tier 2: 2x Leverage (Strong setup: buyVotes >= 15, sellVotes <= 5, RSI 46-66, buyFlow >= 0.52)
-            else if (buyVotes >= 15 && sellVotes <= 5 && rsi >= 46 && rsi <= 66 && buyFlow >= 0.52) {
-              lev = 2;
-              strategyName = 'High Confluence Orderflow Long';
-            }
-            // Tier 1: 1x Leverage (Standard setup: buyVotes >= 13, sellVotes <= 6, RSI 45-70, buyFlow >= 0.50)
-            else if (buyVotes >= 13 && sellVotes <= 6 && rsi >= 45 && rsi <= 70 && buyFlow >= 0.50) {
-              lev = 1;
-              strategyName = 'Standard Momentum Long';
-            } else {
-              continue;
+              lev = (sellVotes >= 17 && sellFlow >= 0.58 && ovlScore <= 0.55) ? 3 : (sellVotes >= 15 && sellFlow >= 0.52 ? 2 : 1);
             }
           }
 
-          const flowStr = galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${galton.pocPrice}]` : '';
-          const fpStr = footprint ? ` [FP: ${footprint.marketStructure}, OVL: ${(ovlScore * 100).toFixed(0)}%]` : '';
-          const reason = `${strategyName} [${lev}x]: Supertrend Bullish, MACD Bullish, HTF ${htfBias}, RSI ${rsi}, 26-TA Buy (${buyVotes}/26, sell: ${sellVotes})${flowStr}${fpStr}.`;
-          this.log(`🚀 Entry Signal: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
-          await this.openPosition(sym, 'LONG', strategyName, reason, lev, galton, rlm);
-          if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
-        }
-
-        // Short Setup
-        else if (supertrend === 'SELL' && macdTrend === 'BEARISH') {
-          // 1. HTF Trend Filter: Do not short when macro bias is Bullish
-          if (htfBias === 'BULLISH') {
+          if (triggerType) {
+            const flowStr = ltf.galton ? ` [Flow: ${Math.round(sellFlow * 100)}% Sell, POC: $${ltf.galton.pocPrice}]` : '';
+            const reason = `${strategyName} [${lev}x]: 1H Macro BEAR (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Retrace RSI ${rsi}, 26-TA Sell (${sellVotes}/26)${flowStr}.`;
+            this.log(`🚀 HTF-Aligned Entry: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
+            await this.openPosition(sym, 'SHORT', strategyName, reason, lev, ltf.galton, ltf.rlm);
+            if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;
           }
-
-          // 2. Floor Filter: Avoid shorting right into heavy RLM support floor right below (<1.2%)
-          if (nearestSup && nearestSup.score >= 50 && nearestSup.distancePct < 1.2) {
-            continue;
-          }
-
-          // 3. Choppy Filter: Do not chase momentum in choppy range rotation
-          if (isChoppy) {
-            continue;
-          }
-
-          // 4. Flow Filter
-          if (sellFlow < 0.48 || hasBullishAbsorptionBottom) {
-            continue;
-          }
-
-          let lev = 1;
-          let strategyName = 'Supertrend + MACD Breakdown';
-
-          if (isDefensive) {
-            if (sellVotes >= 15 && buyVotes <= 5 && rsi >= 35 && rsi <= 52 && sellFlow >= 0.52) {
-              lev = 1;
-              strategyName = 'Defensive Orderflow Short';
-            } else {
-              continue;
-            }
-          } else if (isTargetHit) {
-            if (sellVotes >= 16 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.55) {
-              lev = 2;
-              strategyName = 'Sniper A+ Galton-Confluence Short';
-            } else {
-              continue;
-            }
-          } else {
-            // Tier 3: 3x Leverage (Ultra A+ setup: sellVotes >= 17, buyVotes <= 4, pristine RSI 38-52, sellFlow >= 58%, directional OVL <= 55%)
-            if (sellVotes >= 17 && buyVotes <= 4 && rsi >= 38 && rsi <= 52 && sellFlow >= 0.58 && ovlScore <= 0.55) {
-              lev = 3;
-              strategyName = 'Ultra A+ Galton/Footprint Sniper Short';
-            }
-            // Tier 2: 2x Leverage (Strong setup: sellVotes >= 15, buyVotes <= 5, RSI 34-54, sellFlow >= 0.52)
-            else if (sellVotes >= 15 && buyVotes <= 5 && rsi >= 34 && rsi <= 54 && sellFlow >= 0.52) {
-              lev = 2;
-              strategyName = 'High Confluence Orderflow Short';
-            }
-            // Tier 1: 1x Leverage (Standard setup: sellVotes >= 13, buyVotes <= 6, RSI 30-55, sellFlow >= 0.50)
-            else if (sellVotes >= 13 && buyVotes <= 6 && rsi >= 30 && rsi <= 55 && sellFlow >= 0.50) {
-              lev = 1;
-              strategyName = 'Standard Momentum Short';
-            } else {
-              continue;
-            }
-          }
-
-          const flowStr = galton ? ` [Flow: ${Math.round(sellFlow * 100)}% Sell, POC: $${galton.pocPrice}]` : '';
-          const fpStr = footprint ? ` [FP: ${footprint.marketStructure}, OVL: ${(ovlScore * 100).toFixed(0)}%]` : '';
-          const reason = `${strategyName} [${lev}x]: Supertrend Bearish, MACD Bearish, HTF ${htfBias}, RSI ${rsi}, 26-TA Sell (${sellVotes}/26, buy: ${buyVotes})${flowStr}${fpStr}.`;
-          this.log(`🚀 Entry Signal: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
-          await this.openPosition(sym, 'SHORT', strategyName, reason, lev, galton, rlm);
-          if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
         }
       } catch (err) {
         // Continue next symbol

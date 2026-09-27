@@ -158,13 +158,60 @@ function calcIchimoku(candles, conversionPeriod = 9, basePeriod = 26, spanBPerio
 }
 
 async function fetchCandles(symbol, timeframe = '60', limit = 150) {
+  // 1. Fast CEX REST Kline loader for Binance pairs
+  if (symbol.startsWith('BINANCE:') || (symbol.endsWith('USDT') && !symbol.includes('BYBIT:'))) {
+    try {
+      let pair = symbol.split(':')[1] || symbol;
+      pair = pair.replace(/\.P$/i, '').toUpperCase();
+      const intervalMap = { '1': '1m', '5': '5m', '15': '15m', '60': '1h', '240': '4h', 'D': '1d', '1D': '1d' };
+      const interval = intervalMap[timeframe] || '1h';
+      const url = `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+      const res = await axios.get(url, { timeout: 3500 });
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map(k => ({
+          time: Math.floor(k[0] / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+          volume: parseFloat(k[5]),
+        }));
+      }
+    } catch (e) {}
+  }
+
+  // 2. Fast CEX REST Kline loader for Bybit pairs (e.g. HYPE, VVV)
+  if (symbol.startsWith('BYBIT:') || symbol.includes('HYPE')) {
+    try {
+      let pair = symbol.split(':')[1] || symbol;
+      pair = pair.replace(/\.P$/i, '').toUpperCase();
+      if (!pair.endsWith('USDT') && !pair.endsWith('USDC')) pair += 'USDT';
+      const intervalMap = { '1': '1', '5': '5', '15': '15', '60': '60', '240': '240', 'D': 'D', '1D': 'D' };
+      const interval = intervalMap[timeframe] || '60';
+      const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${pair}&interval=${interval}&limit=${limit}`;
+      const res = await axios.get(url, { timeout: 3500 });
+      const list = res.data?.result?.list || [];
+      if (Array.isArray(list) && list.length > 0) {
+        return list.slice().reverse().map(k => ({
+          time: Math.floor(parseInt(k[0], 10) / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+          volume: parseFloat(k[5]),
+        }));
+      }
+    } catch (e) {}
+  }
+
+  // 3. Fallback to TradingView WebSocket
   return new Promise((resolve, reject) => {
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
     let timer = setTimeout(() => {
       try { chart.delete(); client.end(); } catch (e) {}
-      reject(new Error('Timeout fetching candles for indicator calculation'));
-    }, 6000);
+      reject(new Error('Timeout fetching candles for ' + symbol));
+    }, 5500);
 
     chart.setMarket(symbol, { timeframe });
     chart.onError((...err) => {
@@ -173,7 +220,7 @@ async function fetchCandles(symbol, timeframe = '60', limit = 150) {
       reject(new Error(err.join(' ')));
     });
     chart.onUpdate(() => {
-      if (chart.periods && chart.periods.length >= Math.min(50, limit)) {
+      if (chart.periods && chart.periods.length >= Math.min(30, limit)) {
         clearTimeout(timer);
         const candles = chart.periods.slice().reverse().map(p => ({
           time: p.time,
@@ -780,6 +827,92 @@ async function getPineIndicatorMetadata(queryOrId) {
   return searchResults;
 }
 
+// --- MULTI-TIMEFRAME ENGINE (HTF 1H Macro Filter + LTF 15M Scalp / Sniper) ---
+const htfAnalysisCache = new Map();
+
+async function getMultiTimeframeAnalysis(symbol) {
+  const now = Date.now();
+  const cached = htfAnalysisCache.get(symbol);
+
+  // 1. Fetch / reuse HTF 1H Data (cached for 60s)
+  let htfData = null;
+  if (cached && (now - cached.timestamp < 60000)) {
+    htfData = cached.data;
+  } else {
+    try {
+      const candles1h = await fetchCandles(symbol, '60', 150);
+      const closes1h = candles1h.map(c => c.close);
+      const cur1h = closes1h[closes1h.length - 1];
+      const ema50Arr = calcEMA(closes1h, 50);
+      const ema200Arr = calcEMA(closes1h, Math.min(150, closes1h.length));
+      const e50 = ema50Arr.length ? ema50Arr[ema50Arr.length - 1] : cur1h;
+      const e200 = ema200Arr.length ? ema200Arr[ema200Arr.length - 1] : e50;
+
+      const st1hSeries = calcSupertrend(candles1h, 10, 3);
+      const st1h = st1hSeries.length ? st1hSeries[st1hSeries.length - 1] : null;
+      const rlm1h = calcReactionLevelMatrix(candles1h);
+
+      let bias = 'CHOPPY';
+      if (cur1h > e50 && (e50 >= e200 || cur1h > e200)) bias = 'BULL';
+      else if (cur1h < e50 && (e50 <= e200 || cur1h < e200)) bias = 'BEAR';
+
+      htfData = {
+        curPrice: cur1h,
+        ema50: e50,
+        ema200: e200,
+        bias,
+        supertrend: st1h?.trend,
+        rlm: rlm1h,
+        nearestRes: rlm1h?.nearestResistance,
+        nearestSup: rlm1h?.nearestSupport,
+      };
+      htfAnalysisCache.set(symbol, { timestamp: now, data: htfData });
+    } catch (e) {
+      if (cached) htfData = cached.data;
+    }
+  }
+
+  // 2. Fetch fresh LTF 15M Data (fast)
+  const candles15m = await fetchCandles(symbol, '15', 80);
+  const closes15m = candles15m.map(c => c.close);
+  const currentPrice = closes15m[closes15m.length - 1];
+
+  const rsiSeries = calcRSI(closes15m, 14);
+  const curRsi = rsiSeries.length ? rsiSeries[rsiSeries.length - 1] : 50;
+  const macdData = calcMACD(closes15m, 12, 26, 9);
+  const st15mSeries = calcSupertrend(candles15m, 10, 3);
+  const st15m = st15mSeries.length ? st15mSeries[st15mSeries.length - 1] : null;
+  const galton = calcGaltonVolumeProfile(candles15m, 40);
+  const footprint = calcVolumeFootprint(candles15m, 5, 3.0);
+  const rlm15m = calcReactionLevelMatrix(candles15m);
+
+  return {
+    symbol,
+    currentPrice,
+    htf: htfData || { bias: 'CHOPPY', ema50: currentPrice, ema200: currentPrice },
+    ltf: {
+      rsi: Math.round(curRsi * 100) / 100,
+      macdTrend: macdData ? (macdData.histogram > 0 ? 'BULLISH' : 'BEARISH') : 'NEUTRAL',
+      supertrend: st15m?.trend,
+      galton,
+      footprint,
+      rlm: rlm15m,
+    }
+  };
+}
+
+async function getBtcMarketRegime() {
+  try {
+    const analysis = await getMultiTimeframeAnalysis('BINANCE:BTCUSDT');
+    const bias = analysis.htf?.bias;
+    if (bias === 'BULL') return 'BULL_REGIME';
+    if (bias === 'BEAR') return 'BEAR_REGIME';
+    return 'CHOPPY_REGIME';
+  } catch (e) {
+    return 'CHOPPY_REGIME';
+  }
+}
+
 module.exports = {
   computeAllIndicators,
   fetchCandles,
@@ -792,5 +925,7 @@ module.exports = {
   calcGaltonVolumeProfile,
   calcVolumeFootprint,
   calcReactionLevelMatrix,
+  getMultiTimeframeAnalysis,
+  getBtcMarketRegime,
   getPineIndicatorMetadata,
 };
