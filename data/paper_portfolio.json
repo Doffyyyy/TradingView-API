@@ -1,10 +1,10 @@
 {
   "initialBalance": 10000,
   "cash": 5165.254354994172,
-  "equity": 6634.15,
+  "equity": 6642.36,
   "dailyTargetMin": 67,
   "dailyTargetMax": 202,
-  "dailyRealizedPnl": -104.98276357764681,
+  "dailyRealizedPnl": 0,
   "lastResetDate": "2026-09-27",
   "autoTradeEnabled": true,
   "riskPerTradePercent": 1.5,
@@ -1661,6 +1661,9 @@
     }
   ],
   "logs": [
+    "[2:56:48 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[2:52:22 PM] Auto-trading switched to: ACTIVE",
+    "[2:52:20 PM] Auto-trading switched to: PAUSED",
     "[2:51:40 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[2:51:16 PM] CLOSED SHORT BINANCE:BNBUSDT [2x]: Net PnL $-0.05 (0% ROE). Manual Rebalance: Enforcing Single-Direction Exposure",
     "[2:51:16 PM] ⏳ Cooldown active for BINANCE:BNBUSDT (30 mins until 15:21:16) after loss.",
@@ -1707,10 +1710,7 @@
     "[8:31:07 AM] OPENED LONG on BINANCE:SUIUSDT @ $1.17 [1x Lev | Margin: $604, Notional: $604]. Target TP: $1.18 (+1.8%), SL: $1.16 (-0.9%) [Strategy: Standard Momentum Long]",
     "[8:31:07 AM] 🚀 Entry Signal: BINANCE:SUIUSDT LONG (1x Lev) | Reason: Standard Momentum Long [1x]: Supertrend Bullish, MACD Bullish, HTF BULLISH, RSI 54.47, 26-TA Buy (13/26, sell: 6) [Flow: 52% Buy, POC: $1.18] [FP: BALANCED, OVL: 67%].",
     "[8:28:57 AM] OPENED LONG on BINANCE:ETHUSDT @ $2,693.22 [1x Lev | Margin: $930, Notional: $930]. Target TP: $2,730.93 (+1.8%), SL: $2,678.25 (-0.9%) [Strategy: Standard Momentum Long]",
-    "[8:28:57 AM] 🚀 Entry Signal: BINANCE:ETHUSDT LONG (1x Lev) | Reason: Standard Momentum Long [1x]: Supertrend Bullish, MACD Bullish, HTF BULLISH, RSI 54.53, 26-TA Buy (16/26, sell: 5) [Flow: 50% Buy, POC: $2687.92] [FP: DIRECTIONAL, OVL: 31%].",
-    "[8:23:29 AM] OPENED LONG on BINANCE:ARBUSDT @ $0.2267 [2x Lev | Margin: $1431, Notional: $2861]. Target TP: $0.2300 (+1.6%), SL: $0.2249 (-0.8%) [Strategy: High Confluence Orderflow Long]",
-    "[8:23:29 AM] 🚀 Entry Signal: BINANCE:ARBUSDT LONG (2x Lev) | Reason: High Confluence Orderflow Long [2x]: Supertrend Bullish, MACD Bullish, HTF BULLISH, RSI 59.92, 26-TA Buy (18/26, sell: 2) [Flow: 54% Buy, POC: $0.22] [FP: DIRECTIONAL, OVL: 22%].",
-    "[8:23:20 AM] CLOSED SHORT BINANCE:BTCUSDT [2x]: Net PnL $-26.98 (-1.5% ROE). Stop Loss / Trailing Stop hit at $84,369.26 (-0.68%)"
+    "[8:28:57 AM] 🚀 Entry Signal: BINANCE:ETHUSDT LONG (1x Lev) | Reason: Standard Momentum Long [1x]: Supertrend Bullish, MACD Bullish, HTF BULLISH, RSI 54.53, 26-TA Buy (16/26, sell: 5) [Flow: 50% Buy, POC: $2687.92] [FP: DIRECTIONAL, OVL: 31%]."
   ],
   "dailyHistory": [
     {
@@ -1754,5 +1754,6 @@
       "closingEquity": 10252.66
     }
   ],
-  "dailyStopLossMax": 121
+  "dailyStopLossMax": 121,
+  "defensiveDisabled": true
 }

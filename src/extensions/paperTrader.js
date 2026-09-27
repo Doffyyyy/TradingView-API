@@ -543,7 +543,7 @@ class PaperTradingEngine {
     // Dynamic slot control:
     // - Target Min reached ($100+): max 1 position to safeguard profit
     // - Defensive mode (loss >= -$90, 50% of stoploss limit): max 1 position, 1x leverage only
-    const isDefensive = this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5);
+    const isDefensive = !this.portfolio.defensiveDisabled && (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5));
     if ((isTargetHit || isDefensive) && this.portfolio.positions.length >= 1) {
       return;
     }
@@ -741,13 +741,13 @@ class PaperTradingEngine {
     const isTargetMaxHit = this.portfolio.dailyRealizedPnl >= (this.portfolio.dailyTargetMax || 300.0);
 
     let tradingMode = 'ACTIVE (Normal Confluence)';
-    if (isDailyStopLossHit) {
+    if (!this.portfolio.defensiveDisabled && isDailyStopLossHit) {
       tradingMode = 'HALTED (Daily Stop Loss Hit)';
     } else if (isTargetMaxHit) {
       tradingMode = 'LOCKED (Daily 3% Max Target Reached)';
     } else if (isTargetHit) {
       tradingMode = 'SNIPER (A+ Setups Only, 2x Max)';
-    } else if (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5)) {
+    } else if (!this.portfolio.defensiveDisabled && this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5)) {
       tradingMode = 'DEFENSIVE (Risk Reduced, 1x Only)';
     }
 
