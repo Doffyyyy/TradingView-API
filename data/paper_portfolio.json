@@ -1,7 +1,7 @@
 {
   "initialBalance": 10000,
-  "cash": 3333.2440983724337,
-  "equity": 6607.26,
+  "cash": 2166.6040983724333,
+  "equity": 6604.34,
   "dailyTargetMin": 67,
   "dailyTargetMax": 202,
   "dailyRealizedPnl": -37.19025662173798,
@@ -97,6 +97,28 @@
         "valPrice": 0.54,
         "buyRatio": 0.525,
         "sellRatio": 0.475
+      }
+    },
+    {
+      "id": "pos_1790507180745",
+      "symbol": "BINANCE:PUMPUSDT",
+      "side": "LONG",
+      "entryPrice": 0.004453,
+      "size": 523979.33977094095,
+      "margin": 1166.64,
+      "notional": 2333.28,
+      "leverage": 2,
+      "stopLoss": 0.00441738,
+      "takeProfit": 0.00451534,
+      "entryTime": "2026-09-27T11:06:20.745Z",
+      "strategy": "HTF Trend + 15M Pullback Long",
+      "reason": "HTF Trend + 15M Pullback Long [2x]: 1H Macro BULL (EMA50: $0.004336), 15M Pullback RSI 53.22, 26-TA Buy (17/26) [Flow: 56% Buy, POC: $0].",
+      "orderFlow": {
+        "pocPrice": 0,
+        "vahPrice": 0,
+        "valPrice": 0,
+        "buyRatio": 0.563,
+        "sellRatio": 0.437
       }
     }
   ],
@@ -1737,6 +1759,10 @@
     }
   ],
   "logs": [
+    "[6:07:01 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
+    "[6:06:20 PM] OPENED LONG on BINANCE:PUMPUSDT @ $0.004453 [2x Lev | Margin: $1167, Notional: $2333]. Target TP: $0.004515 (+1.6%), SL: $0.004417 (-0.8%) [Strategy: HTF Trend + 15M Pullback Long]",
+    "[6:06:20 PM] 🚀 HTF-Aligned Entry: BINANCE:PUMPUSDT LONG (2x Lev) | Reason: HTF Trend + 15M Pullback Long [2x]: 1H Macro BULL (EMA50: $0.004336), 15M Pullback RSI 53.22, 26-TA Buy (17/26) [Flow: 56% Buy, POC: $0].",
+    "[5:59:47 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[5:51:17 PM] Engine started. Initial Fund: $10000.00, Target: $50-$100/day.",
     "[5:19:58 PM] OPENED LONG on BINANCE:ONDOUSDT @ $0.5435 [2x Lev | Margin: $1795, Notional: $3590]. Target TP: $0.5511 (+1.6%), SL: $0.5392 (-0.8%) [Strategy: HTF Trend + 15M Pullback Long]",
     "[5:19:58 PM] 🚀 HTF-Aligned Entry: BINANCE:ONDOUSDT LONG (2x Lev) | Reason: HTF Trend + 15M Pullback Long [2x]: 1H Macro BULL (EMA50: $0.5336), 15M Pullback RSI 55.64, 26-TA Buy (17/26) [Flow: 53% Buy, POC: $0.54].",
@@ -1782,11 +1808,7 @@
     "[10:13:37 AM] CLOSED LONG BINANCE:ARBUSDT [2x]: Net PnL $-25.97 (-1.82% ROE). Stop Loss / Trailing Stop hit at $0.2248 (-0.84%)",
     "[10:13:37 AM] ⏳ Cooldown active for BINANCE:ARBUSDT (30 mins until 10:43:37) after loss.",
     "[9:58:51 AM] OPENED SHORT on BINANCE:PUMPUSDT @ $0.004408 [2x Lev | Margin: $319, Notional: $639]. Target TP: $0.004209 (+1.6%), SL: $0.004433 (-0.8%) [Strategy: RLM Key Level Rejection Sniper Short]",
-    "[9:58:51 AM] 🎯 A+ RLM Signal: BINANCE:PUMPUSDT SHORT (2x Lev) | RLM Key Level Rejection Sniper Short [2x]: Rejection at Resistance $0.004432 (Score: 66, Touches: 2). Wick SL: $0.004433.",
-    "[9:58:48 AM] CLOSED LONG BINANCE:NEARUSDT [2x]: Net PnL $-7.18 (-1.83% ROE). Stop Loss / Trailing Stop hit at $5.05 (-0.84%)",
-    "[9:58:48 AM] ⏳ Cooldown active for BINANCE:NEARUSDT (30 mins until 10:28:48) after loss.",
-    "[9:56:49 AM] OPENED LONG on BYBIT:HYPEUSDT @ $93.29 [1x Lev | Margin: $284, Notional: $284]. Target TP: $94.63 (+1.8%), SL: $92.45 (-0.9%) [Strategy: Standard Momentum Long]",
-    "[9:56:49 AM] 🚀 Entry Signal: BYBIT:HYPEUSDT LONG (1x Lev) | Reason: Standard Momentum Long [1x]: Supertrend Bullish, MACD Bullish, HTF BULLISH, RSI 68.17, 26-TA Buy (18/26, sell: 3) [Flow: 51% Buy, POC: $92.4] [FP: BALANCED, OVL: 57%]."
+    "[9:58:51 AM] 🎯 A+ RLM Signal: BINANCE:PUMPUSDT SHORT (2x Lev) | RLM Key Level Rejection Sniper Short [2x]: Rejection at Resistance $0.004432 (Score: 66, Touches: 2). Wick SL: $0.004433."
   ],
   "dailyHistory": [
     {

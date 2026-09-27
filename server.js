@@ -149,49 +149,75 @@ const htmlContent = `<!DOCTYPE html>
       --accent-purple: #a855f7;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    body { background-color: var(--bg-primary); color: var(--text-primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body {
+      background: #080b12 radial-gradient(circle at 50% 0%, #111728 0%, #06080e 100%);
+      color: var(--text-primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
 
     header {
-      background-color: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-color);
+      background: rgba(12, 16, 26, 0.72) !important;
+      backdrop-filter: blur(24px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
       padding: 8px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 20;
     }
     .brand-section { display: flex; align-items: center; gap: 10px; }
     .badge {
-      display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;
-      background: rgba(38, 166, 154, 0.15); color: var(--accent-green);
-      border-radius: 999px; font-size: 11px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: rgba(38, 166, 154, 0.12) !important; color: #4ade80 !important;
+      border-radius: 999px; font-size: 11px; font-weight: 700;
+      border: 1px solid rgba(74, 222, 128, 0.28) !important;
+      backdrop-filter: blur(8px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.15);
     }
-    .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse 1.8s infinite; }
+    .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; animation: pulse 1.8s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
 
-    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tabs { display: flex; gap: 6px; align-items: center; }
     .tab-btn {
-      background: transparent; color: var(--text-secondary); border: 1px solid transparent;
-      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+      background: rgba(255, 255, 255, 0.035); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(8px);
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.1);
     }
-    .tab-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-    .tab-btn.active { background: var(--accent-blue); color: #fff; }
+    .tab-btn:hover {
+      color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0.5px rgba(255, 255, 255, 0.18);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.95)) !important;
+      color: #fff !important; border: 1px solid rgba(96, 165, 250, 0.45) !important;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    }
 
     .content-area { flex: 1; position: relative; overflow: hidden; }
     .view-panel { width: 100%; height: 100%; display: none; flex-direction: column; }
     .view-panel.active { display: flex; }
 
     .controls-bar {
-      background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color);
+      background: rgba(16, 20, 32, 0.72) !important;
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
       padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
     .preset-group, .tf-group { display: flex; gap: 4px; }
     .btn {
-      background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;
-      padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer;
+      background: rgba(255, 255, 255, 0.04); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;
+      backdrop-filter: blur(6px); transition: all 0.15s;
     }
-    .btn:hover { color: var(--text-primary); border-color: var(--border-color); }
-    .btn.active { background: var(--accent-blue); color: #fff; font-weight: 600; }
+    .btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
+    .btn.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.95)) !important;
+      color: #fff !important; border-color: rgba(96, 165, 250, 0.45) !important;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3), inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
+    }
 
     .search-input {
       background: var(--bg-tertiary); border: 1px solid var(--border-color);
@@ -362,17 +388,22 @@ const htmlContent = `<!DOCTYPE html>
     .wl-row .wl-del:hover { opacity: 1; color: var(--accent-red); background: rgba(239, 83, 80, 0.15); }
 
     #watchlist-sidebar {
-      width: 315px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
+      width: 315px;
+      background: rgba(10, 13, 22, 0.72) !important;
+      backdrop-filter: blur(22px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(22px) saturate(190%) !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
       display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 5;
       overflow: hidden; box-sizing: border-box;
+      box-shadow: 4px 0 25px rgba(0, 0, 0, 0.35);
     }
     #watchlist-list {
       flex: 1; overflow-y: auto; overflow-x: hidden;
-      scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
+      scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
     #watchlist-list::-webkit-scrollbar { width: 4px; }
     #watchlist-list::-webkit-scrollbar-track { background: transparent; }
-    #watchlist-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+    #watchlist-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
 
     .search-sug-item {
       display: flex; align-items: center; justify-content: space-between;
@@ -382,25 +413,35 @@ const htmlContent = `<!DOCTYPE html>
     .search-sug-item:hover { background: var(--bg-tertiary); }
     .search-sug-item.active { background: rgba(41, 98, 255, 0.2); }
 
-    /* Hyperliquid Two-Tier Market Header & Chart Toolbar */
+    /* Hyperliquid Two-Tier Market Header & Chart Toolbar - iOS Liquid Glass */
     .hl-ticker-bar {
       display: flex; align-items: center;
-      padding: 4px 14px; background: #0c0e12; border-bottom: 1px solid #1c2028;
-      height: 40px; gap: 14px; overflow-x: auto; user-select: none; flex-shrink: 0;
+      padding: 4px 14px;
+      background: rgba(10, 14, 22, 0.70) !important;
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+      height: 42px; gap: 14px; overflow-x: auto; user-select: none; flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
     .hl-ticker-bar::-webkit-scrollbar { height: 2px; }
     .hl-ticker-left {
       display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
     .hl-drag-handle {
-      color: #4a505e; font-size: 14px; cursor: grab; padding: 0 2px;
+      color: #64748b; font-size: 14px; cursor: grab; padding: 0 2px;
     }
     .hl-market-badge {
       display: flex; align-items: center; gap: 8px; padding: 4px 10px;
-      background: #14171e; border: 1px solid #232834; border-radius: 5px;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 9px !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.18);
     }
     .hl-badge-sub {
-      font-size: 8px; font-weight: 700; color: #848e9c; text-transform: uppercase; line-height: 1; letter-spacing: 0.6px; margin-bottom: 3.5px; display: block;
+      font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; line-height: 1; letter-spacing: 0.6px; margin-bottom: 3.5px; display: block;
     }
     .hl-badge-title {
       font-size: 13px; font-weight: 800; color: #fff; line-height: 1.1; letter-spacing: 0.4px;
@@ -413,7 +454,7 @@ const htmlContent = `<!DOCTYPE html>
       display: flex; flex-direction: column; flex-shrink: 0;
     }
     .hl-stat-lbl {
-      font-size: 8px; color: #787b86; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 1px;
+      font-size: 8px; color: #8c93a3; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 1.5px;
     }
     .hl-stat-val {
       font-size: 11px; font-weight: 800; color: #fff; line-height: 1.1;
@@ -422,95 +463,151 @@ const htmlContent = `<!DOCTYPE html>
       font-variant-numeric: tabular-nums;
     }
     .hl-vdiv {
-      width: 1px; height: 16px; background: #232834; flex-shrink: 0;
+      width: 1px; height: 16px; background: rgba(255, 255, 255, 0.08); flex-shrink: 0;
     }
 
     /* Tier 2: Chart Toolbar */
     .hl-chart-toolbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 3px 12px; background: #11141a; border-bottom: 1px solid #1c2028;
-      height: 32px; gap: 6px; font-size: 11.5px; user-select: none; flex-shrink: 0;
+      padding: 3px 12px;
+      background: rgba(12, 16, 26, 0.65) !important;
+      backdrop-filter: blur(16px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+      height: 34px; gap: 6px; font-size: 11.5px; user-select: none; flex-shrink: 0;
     }
     .hl-tb-left {
       display: flex; align-items: center; gap: 2px;
     }
     .hl-tf-btn {
-      background: transparent; border: none; color: #8c93a3; font-size: 11.5px; font-weight: 600;
-      padding: 2px 6px; border-radius: 3px; cursor: pointer; transition: all 0.1s;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid transparent; color: #8c93a3; font-size: 11px; font-weight: 600;
+      padding: 2px 7px; border-radius: 5px; cursor: pointer; transition: all 0.15s;
     }
-    .hl-tf-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
-    .hl-tf-btn.active { color: #f7931a !important; font-weight: 800; }
+    .hl-tf-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.1); }
+    .hl-tf-btn.active {
+      color: #fff !important; background: rgba(247, 147, 26, 0.2) !important;
+      border-color: rgba(247, 147, 26, 0.4) !important; font-weight: 800;
+      box-shadow: 0 0 10px rgba(247, 147, 26, 0.25);
+    }
     .hl-tool-btn {
-      display: flex; align-items: center; gap: 4px; background: transparent; border: 1px solid transparent;
-      color: #d1d4dc; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px; cursor: pointer;
+      display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #d1d4dc; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; cursor: pointer;
+      backdrop-filter: blur(6px); transition: all 0.15s;
     }
-    .hl-tool-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-    .hl-tool-btn.active { background: rgba(168, 85, 247, 0.2); color: #c084fc; border-color: #a855f7; }
+    .hl-tool-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); color: #fff; }
+    .hl-tool-btn.active {
+      background: rgba(168, 85, 247, 0.2) !important; color: #c084fc !important;
+      border-color: rgba(168, 85, 247, 0.45) !important;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+    }
     .hl-icon-btn {
-      background: transparent; border: none; color: #8c93a3; font-size: 12px; padding: 3px 6px;
-      border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #8c93a3; font-size: 12px; padding: 3px 6px;
+      border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
-    .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
 
-    /* Proliquid Trading Dock Styles - Modular Blocks */
+    /* Proliquid Trading Dock Styles - iOS Liquid Glass Modular Blocks */
     .dock-panel {
-      width: 400px; background: #0c0e14; border-left: 1px solid #1a1e2b;
+      width: 400px;
+      background: rgba(10, 14, 24, 0.72) !important;
+      backdrop-filter: blur(24px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
       display: flex; flex-direction: column; height: 100%; z-index: 5; flex-shrink: 0;
-      overflow-y: auto; overflow-x: hidden; padding: 10px; gap: 10px;
+      overflow-y: auto; overflow-x: hidden; padding: 12px; gap: 12px;
+      box-shadow: -6px 0 30px rgba(0, 0, 0, 0.45);
     }
-    .dock-panel::-webkit-scrollbar { width: 5px; }
-    .dock-panel::-webkit-scrollbar-thumb { background: #262b3d; border-radius: 3px; }
+    .dock-panel::-webkit-scrollbar { width: 4px; }
+    .dock-panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 2px; }
 
     /* Top Dock Navigation Segment */
     .dock-segmented-bar {
-      display: flex; background: #131722; border: 1px solid #222736; border-radius: 6px;
-      padding: 2px; gap: 2px; flex-shrink: 0;
+      display: flex;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 10px !important;
+      padding: 3px; gap: 3px; flex-shrink: 0;
+      backdrop-filter: blur(14px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.12);
     }
     .dock-seg-btn {
-      flex: 1; padding: 4px 6px; font-size: 10px; font-weight: 700; color: #8c93a3;
-      background: transparent; border: none; border-radius: 4px; cursor: pointer;
-      transition: all 0.15s; text-align: center; white-space: nowrap;
+      flex: 1; padding: 5px 8px; font-size: 10px; font-weight: 700; color: #8c93a3;
+      background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); text-align: center; white-space: nowrap;
     }
-    .dock-seg-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
-    .dock-seg-btn.active { color: #fff; background: #2962ff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+    .dock-seg-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+    .dock-seg-btn.active {
+      color: #fff !important;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.95)) !important;
+      border: 1px solid rgba(96, 165, 250, 0.45) !important;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    }
 
     /* Modular Dock Cards / Blocks */
     .dock-block {
-      background: #11141c; border: 1px solid #1f2433; border-radius: 8px;
-      padding: 10px 12px; display: flex; flex-direction: column; position: relative;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      background: rgba(16, 21, 34, 0.65) !important;
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 14px !important;
+      padding: 12px 14px; display: flex; flex-direction: column; position: relative;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38), 
+                  0 2px 6px rgba(0, 0, 0, 0.2), 
+                  inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dock-block:hover {
+      border-color: rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.48), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
     }
     .dock-block-header {
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
-      padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: #fff;
     }
     
     /* Account & Web3 Connect */
     .badge-paper {
-      font-size: 8.5px; padding: 2px 6px; border-radius: 4px;
-      background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 800; border: 1px solid rgba(34, 197, 94, 0.3);
+      font-size: 8.5px; padding: 2px 7px; border-radius: 999px;
+      background: rgba(34, 197, 94, 0.12); color: #4ade80; font-weight: 800;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      backdrop-filter: blur(6px);
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.15);
     }
     .badge-hl-live {
-      font-size: 8.5px; padding: 2px 6px; border-radius: 4px;
-      background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.4);
+      font-size: 8.5px; padding: 2px 7px; border-radius: 999px;
+      background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      backdrop-filter: blur(6px);
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.15);
     }
     .btn-wallet-connect {
-      display: flex; align-items: center; gap: 5px; padding: 4px 8px; font-size: 10px; font-weight: 700;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: 1px solid #3b82f6;
-      border-radius: 5px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+      display: flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 10px; font-weight: 700;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.95)) !important;
+      color: #fff; border: 1px solid rgba(96, 165, 250, 0.5) !important;
+      border-radius: 8px !important; cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
     }
     .btn-wallet-connect:hover {
-      background: linear-gradient(135deg, #3b82f6, #2563eb); transform: translateY(-1px);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 1)) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
     }
     .account-details-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px;
     }
     .acc-stat-box {
-      background: #161a25; border: 1px solid #23293a; border-radius: 6px; padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 9px !important; padding: 7px 10px;
       min-height: 48px; display: flex; flex-direction: column; justify-content: center;
+      backdrop-filter: blur(10px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.15) !important;
     }
-    .acc-stat-lbl { font-size: 8.5px; color: #787f94; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.3px; }
+    .acc-stat-lbl { font-size: 8.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.3px; }
     .acc-stat-val { 
       font-size: 11.5px; font-weight: 700; color: #f0f3f6; 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -526,29 +623,34 @@ const htmlContent = `<!DOCTYPE html>
       align-items: center;
     }
     .scr-row {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
     .scr-header-row {
       margin-bottom: 2px; padding-bottom: 5px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .scr-col-th {
-      text-align: right; font-size: 9.5px; color: #8c93a3; font-weight: 700; letter-spacing: 0.5px;
+      text-align: right; font-size: 9.5px; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;
     }
-    .scr-label { color: #8c93a3; font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
+    .scr-label { color: #94a3b8; font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
     .scr-val { text-align: right; font-family: monospace; font-weight: 700; font-size: 11px; }
     
     /* Orderbook L2 */
-    .ob-row { position: relative; display: flex; justify-content: space-between; padding: 2.5px 6px; font-size: 10px; cursor: pointer; transition: background 0.1s; }
-    .ob-row:hover { background: rgba(255,255,255,0.07); }
-    .ob-bg { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.22; pointer-events: none; z-index: 1; transition: width 0.15s; }
+    .ob-row { position: relative; display: flex; justify-content: space-between; padding: 2.5px 6px; font-size: 10px; cursor: pointer; transition: background 0.1s; border-radius: 3px; }
+    .ob-row:hover { background: rgba(255,255,255,0.08); }
+    .ob-bg { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.22; pointer-events: none; z-index: 1; transition: width 0.15s; border-radius: 3px; }
     .ob-bg-ask { background: #ef5350; }
     .ob-bg-bid { background: #26a69a; }
     .ob-cell { z-index: 2; text-align: right; font-family: monospace; }
     .ob-cell-price { z-index: 2; text-align: left; font-weight: 700; font-family: monospace; }
     .ob-spread-bar {
-      padding: 5px 8px; margin: 4px 0; background: #161a25; border: 1px solid #23293a; border-radius: 5px;
+      padding: 5px 8px; margin: 5px 0;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 8px !important;
       display: flex; justify-content: space-between; align-items: center; font-size: 9.5px;
+      backdrop-filter: blur(10px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.12) !important;
     }
     .ob-ratio-bar {
       width: 100%; height: 4px; background: #ef5350; border-radius: 2px; overflow: hidden; margin-top: 2px;
@@ -558,41 +660,66 @@ const htmlContent = `<!DOCTYPE html>
 
     /* Execution Panel */
     .exec-input-group {
-      background: #161a25; border: 1px solid #23293a; border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 9px !important;
       padding: 5px 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;
+      backdrop-filter: blur(10px) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.12) !important;
+      transition: border-color 0.15s;
     }
-    .exec-input-group:focus-within { border-color: var(--accent-blue); }
+    .exec-input-group:focus-within { border-color: rgba(96, 165, 250, 0.5) !important; }
     .exec-input {
       background: transparent; border: none; color: #fff; font-family: monospace; font-size: 11.5px;
       font-weight: 700; outline: none; width: 100%;
     }
     .exec-slider {
       width: 100%; -webkit-appearance: none; height: 4px; border-radius: 2px;
-      background: #1e2433; outline: none; margin: 6px 0;
+      background: rgba(255, 255, 255, 0.08); outline: none; margin: 6px 0;
     }
     .exec-slider::-webkit-slider-thumb {
-      -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%;
-      background: var(--accent-blue); cursor: pointer; box-shadow: 0 0 6px rgba(41, 98, 255, 0.6);
+      -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%;
+      background: #3b82f6; cursor: pointer; box-shadow: 0 0 8px rgba(59, 130, 246, 0.7);
     }
     .pct-chips { display: flex; gap: 4px; margin-bottom: 6px; }
     .pct-chip {
-      flex: 1; background: #161a25; border: 1px solid #23293a; color: var(--text-secondary);
-      border-radius: 4px; font-size: 9px; font-weight: 700; padding: 3px 0; text-align: center; cursor: pointer;
-      transition: all 0.15s;
+      flex: 1; background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: #94a3b8; border-radius: 6px !important;
+      font-size: 9px; font-weight: 700; padding: 3px 0; text-align: center; cursor: pointer;
+      transition: all 0.15s; backdrop-filter: blur(6px);
     }
-    .pct-chip:hover, .pct-chip.active { background: rgba(41, 98, 255, 0.2); color: #fff; border-color: var(--accent-blue); }
+    .pct-chip:hover, .pct-chip.active { background: rgba(37, 99, 235, 0.25) !important; color: #fff; border-color: rgba(96, 165, 250, 0.5) !important; }
     .exec-btn {
-      width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;
+      width: 100%; padding: 8px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s;
     }
     .exec-btn-buy {
-      background: rgba(38, 166, 154, 0.15); border: 1px solid #26a69a; color: #4ade80;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.1)) !important;
+      border: 1px solid rgba(74, 222, 128, 0.35) !important;
+      color: #4ade80 !important;
+      backdrop-filter: blur(8px) !important;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.15), inset 0 1px 0.5px rgba(255, 255, 255, 0.2) !important;
     }
-    .exec-btn-buy:hover { background: #26a69a; color: #fff; box-shadow: 0 0 12px rgba(38, 166, 154, 0.4); }
+    .exec-btn-buy:hover {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.85), rgba(16, 185, 129, 0.95)) !important;
+      color: #fff !important;
+      border-color: rgba(134, 239, 172, 0.5) !important;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    }
     .exec-btn-sell {
-      background: rgba(239, 83, 80, 0.15); border: 1px solid #ef5350; color: #f87171;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)) !important;
+      border: 1px solid rgba(248, 113, 113, 0.35) !important;
+      color: #f87171 !important;
+      backdrop-filter: blur(8px) !important;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15), inset 0 1px 0.5px rgba(255, 255, 255, 0.2) !important;
     }
-    .exec-btn-sell:hover { background: #ef5350; color: #fff; box-shadow: 0 0 12px rgba(239, 83, 80, 0.4); }
+    .exec-btn-sell:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.85), rgba(220, 38, 38, 0.95)) !important;
+      color: #fff !important;
+      border-color: rgba(252, 165, 165, 0.5) !important;
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    }
 
     /* Web3 Wallet Modal */
     .web3-modal-overlay {
@@ -871,8 +998,8 @@ const htmlContent = `<!DOCTYPE html>
     </div>
     <div class="nav-tabs" id="main-nav">
       <button class="tab-btn active" data-target="view-chart">📈 Live Chart</button>
-      <button class="tab-btn" data-target="view-paper" style="background: rgba(38, 166, 154, 0.15); color: #4ade80; border: 1px solid #26a69a;">💼 Paper Trade ($10k)</button>
-      <button class="tab-btn" data-target="view-journal" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); font-weight: 700;">📅 Daily PnL Journal</button>
+      <button class="tab-btn" data-target="view-paper" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.32); font-weight: 700;">💼 Paper Trade ($10k)</button>
+      <button class="tab-btn" data-target="view-journal" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700;">📅 Daily PnL Journal</button>
       <button class="tab-btn" data-target="view-validation">🛡️ Validation Bot (26 TA)</button>
       <button class="tab-btn" data-target="view-backtest">🧪 Astra Backtest</button>
       <button class="tab-btn" data-target="view-replay">⏪ Replay Engine</button>
