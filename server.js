@@ -201,10 +201,50 @@ const htmlContent = `<!DOCTYPE html>
     #chart-container { flex: 1; width: 100%; position: relative; }
     #indicators-hud-stack::-webkit-scrollbar { width: 4px; }
     #indicators-hud-stack::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+
+    /* iOS Liquid Glass Design System */
+    .ios-glass-panel {
+      pointer-events: auto;
+      background: rgba(14, 18, 30, 0.65) !important;
+      backdrop-filter: blur(20px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border-radius: 14px !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 
+                  0 4px 12px rgba(0, 0, 0, 0.25), 
+                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+                  inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25) !important;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .ios-glass-panel:hover {
+      background: rgba(16, 21, 35, 0.78) !important;
+      border-color: rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 
+                  0 6px 16px rgba(0, 0, 0, 0.3), 
+                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+    .ios-glass-card {
+      background: rgba(255, 255, 255, 0.045) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 8px !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.15) !important;
+    }
+    .ios-glass-pill {
+      border-radius: 20px !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.2) !important;
+    }
     .legend-overlay {
       position: absolute; top: 12px; left: 16px; z-index: 10; pointer-events: none;
-      font-size: 12px; line-height: 1.5; background: rgba(15, 17, 23, 0.7); backdrop-filter: blur(4px);
-      padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
+      font-size: 11.5px; line-height: 1.5; background: rgba(13, 17, 28, 0.65);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0.5px rgba(255, 255, 255, 0.18);
     }
     .legend-item { display: inline-block; margin-right: 12px; }
     .legend-label { color: var(--text-secondary); margin-right: 4px; }
@@ -1107,12 +1147,12 @@ const htmlContent = `<!DOCTYPE html>
               <span class="legend-item"><span class="legend-label">Vol:</span><span id="leg-vol">--</span></span>
             </div>
             <!-- Indicators Floating HUD Container -->
-            <div id="indicators-hud-stack" style="position: absolute; top: 12px; right: 82px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 24px); overflow-y: auto; pointer-events: none;">
+            <div id="indicators-hud-stack" style="position: absolute; top: 12px; right: 82px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 24px); overflow-y: auto; pointer-events: none; padding-right: 2px;">
               <!-- 1. FiboRadar HUD -->
-              <div id="fiboradar-hud" style="pointer-events: auto; background: rgba(15, 17, 23, 0.90); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 700; color: #c084fc;">🎯 FiboRadar [Mr_Rakun]</span>
-                  <span id="fibo-swing-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(74, 222, 128, 0.2); color: #4ade80;">BULL</span>
+              <div id="fiboradar-hud" class="ios-glass-panel" style="border: 1px solid rgba(192, 132, 252, 0.35) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 18px rgba(168, 85, 247, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; padding: 10px 14px; font-size: 11px; width: 250px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 800; color: #c084fc; letter-spacing: 0.3px;">🎯 FiboRadar [Mr_Rakun]</span>
+                  <span id="fibo-swing-badge" class="ios-glass-pill" style="font-size: 9px; font-weight: 700; padding: 1px 7px; background: rgba(74, 222, 128, 0.18); color: #4ade80;">BULL</span>
                 </div>
                 <div style="margin-bottom: 6px; font-size: 10px; color: var(--text-secondary);">
                   Zone: <strong id="fibo-current-zone" style="color: #fbbf24;">--</strong>
@@ -1121,30 +1161,30 @@ const htmlContent = `<!DOCTYPE html>
               </div>
 
               <!-- 2. Galton Volume Profile HUD -->
-              <div id="galton-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.92); backdrop-filter: blur(8px); border: 1px solid #0284c7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 260px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 800; color: #38bdf8;">📊 Galton Volume Profile</span>
-                  <span id="galton-engine-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">BVC</span>
+              <div id="galton-hud" class="ios-glass-panel" style="display: none; border: 1px solid rgba(56, 189, 248, 0.35) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 18px rgba(56, 189, 248, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; padding: 10px 14px; font-size: 11px; width: 280px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 800; color: #38bdf8; letter-spacing: 0.3px;">📊 Galton Volume Profile</span>
+                  <span id="galton-engine-badge" class="ios-glass-pill" style="font-size: 9px; font-weight: 700; padding: 1px 7px; background: rgba(56, 189, 248, 0.18); color: #38bdf8;">BVC</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 5px;">
                   <span>Buy/Sell Flow:</span>
                   <span id="galton-flow-delta" style="font-weight: 700;">--</span>
                 </div>
                 <!-- Buy vs Sell Flow Bar -->
-                <div style="width: 100%; height: 6px; background: #222634; border-radius: 3px; overflow: hidden; display: flex; margin-bottom: 6px;">
+                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; display: flex; margin-bottom: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);">
                   <div id="galton-buy-bar" style="width: 50%; height: 100%; background: #2979ff;"></div>
                   <div id="galton-sell-bar" style="width: 50%; height: 100%; background: #ff1744;"></div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align: center; margin-bottom: 6px; font-size: 9.5px;">
-                  <div style="background: rgba(255,255,255,0.03); padding: 3px; border-radius: 4px;">
+                  <div class="ios-glass-card" style="padding: 4px 2px;">
                     <div style="color: #94a3b8; font-size: 8.5px;">VAL (70%)</div>
                     <div id="galton-val" style="color: #38bdf8; font-weight: 700;">--</div>
                   </div>
-                  <div style="background: rgba(251, 191, 36, 0.08); padding: 3px; border-radius: 4px; border: 1px solid rgba(251, 191, 36, 0.2);">
+                  <div class="ios-glass-card" style="padding: 4px 2px; border: 1px solid rgba(251, 191, 36, 0.3) !important; background: rgba(251, 191, 36, 0.08) !important;">
                     <div style="color: #fbbf24; font-size: 8.5px; font-weight: 700;">● POC</div>
                     <div id="galton-poc" style="color: #fbbf24; font-weight: 800;">--</div>
                   </div>
-                  <div style="background: rgba(255,255,255,0.03); padding: 3px; border-radius: 4px;">
+                  <div class="ios-glass-card" style="padding: 4px 2px;">
                     <div style="color: #94a3b8; font-size: 8.5px;">VAH (70%)</div>
                     <div id="galton-vah" style="color: #38bdf8; font-weight: 700;">--</div>
                   </div>
@@ -1154,18 +1194,18 @@ const htmlContent = `<!DOCTYPE html>
               </div>
 
               <!-- 3. Volume Footprint: Math & Geometry HUD -->
-              <div id="footprint-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.92); backdrop-filter: blur(8px); border: 1px solid #6366f1; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 260px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 800; color: #818cf8;">👣 Volume Footprint</span>
-                  <span id="footprint-window-badge" style="font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(99, 102, 241, 0.15); color: #818cf8;">5 BARS</span>
+              <div id="footprint-hud" class="ios-glass-panel" style="display: none; border: 1px solid rgba(129, 140, 248, 0.35) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 18px rgba(99, 102, 241, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; padding: 10px 14px; font-size: 11px; width: 280px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 800; color: #818cf8; letter-spacing: 0.3px;">👣 Volume Footprint</span>
+                  <span id="footprint-window-badge" class="ios-glass-pill" style="font-size: 9px; font-weight: 700; padding: 1px 7px; background: rgba(99, 102, 241, 0.18); color: #818cf8;">5 BARS</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; font-size: 10px;">
-                  <div style="background: rgba(255,255,255,0.03); padding: 4px; border-radius: 4px;">
+                  <div class="ios-glass-card" style="padding: 5px 6px;">
                     <div style="color: #94a3b8; font-size: 8.5px;">BAR VOL / Δ</div>
                     <div id="footprint-bar-vol" style="font-weight: 700; color: #e2e8f0;">--</div>
                     <div id="footprint-bar-delta" style="font-size: 9px; font-weight: 800;">--</div>
                   </div>
-                  <div style="background: rgba(255,255,255,0.03); padding: 4px; border-radius: 4px;">
+                  <div class="ios-glass-card" style="padding: 5px 6px;">
                     <div style="color: #94a3b8; font-size: 8.5px;">WIN VOL / WIN Δ</div>
                     <div id="footprint-win-vol" style="font-weight: 700; color: #e2e8f0;">--</div>
                     <div id="footprint-win-delta" style="font-size: 9px; font-weight: 800;">--</div>
@@ -1190,36 +1230,36 @@ const htmlContent = `<!DOCTYPE html>
               </div>
 
               <!-- 4. Reaction Level Matrix HUD -->
-              <div id="rlm-hud" style="display: none; pointer-events: auto; background: rgba(15, 17, 23, 0.94); backdrop-filter: blur(8px); border: 1px solid #f59e0b; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 275px; box-shadow: 0 4px 18px rgba(0,0,0,0.6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 800; color: #fbbf24;">🎯 Reaction Level Matrix</span>
-                  <span id="rlm-trend-badge" style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">BULLISH</span>
+              <div id="rlm-hud" class="ios-glass-panel" style="display: none; border: 1px solid rgba(245, 158, 11, 0.38) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 22px rgba(245, 158, 11, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; padding: 10px 14px; font-size: 11px; width: 295px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                  <span style="font-weight: 800; color: #fbbf24; letter-spacing: 0.3px;">🎯 Reaction Level Matrix</span>
+                  <span id="rlm-trend-badge" class="ios-glass-pill" style="font-size: 9px; font-weight: 700; padding: 1px 7px; background: rgba(245, 158, 11, 0.18); color: #fbbf24;">BULLISH</span>
                 </div>
                 <div style="font-size: 9px; color: #94a3b8; margin-bottom: 6px;">WillyAlgoTrader • 0–100 Scored Reaction Levels</div>
                 
                 <!-- Nearest Key Levels -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-                  <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; padding: 4px;">
+                  <div class="ios-glass-card" style="background: rgba(239, 68, 68, 0.08) !important; border: 1px solid rgba(239, 68, 68, 0.25) !important; padding: 5px 6px;">
                     <div style="font-size: 8.5px; color: #f87171; font-weight: 700;">🔴 NEAREST RES</div>
                     <div id="rlm-res-price" style="font-size: 11px; font-weight: 800; color: #fca5a5;">--</div>
                     <div id="rlm-res-sub" style="font-size: 8.5px; color: #94a3b8;">--</div>
                   </div>
-                  <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 4px; padding: 4px;">
+                  <div class="ios-glass-card" style="background: rgba(34, 197, 94, 0.08) !important; border: 1px solid rgba(34, 197, 94, 0.25) !important; padding: 5px 6px;">
                     <div style="font-size: 8.5px; color: #4ade80; font-weight: 700;">🟢 NEAREST SUP</div>
                     <div id="rlm-sup-price" style="font-size: 11px; font-weight: 800; color: #86efac;">--</div>
                     <div id="rlm-sup-sub" style="font-size: 8.5px; color: #94a3b8;">--</div>
                   </div>
                 </div>
 
-                <!-- Signal Status -->
-                <div id="rlm-signal-box" style="padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,0.03); margin-bottom: 6px; font-size: 10px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: #94a3b8;">Rejection Setup:</span>
-                  <span id="rlm-signal-status" style="font-weight: 700; color: #cbd5e1;">Waiting for Rejection</span>
+                <!-- Signal Status (Single Clean Line) -->
+                <div id="rlm-signal-box" class="ios-glass-card" style="padding: 5px 8px; margin-bottom: 6px; font-size: 9.5px; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; gap: 6px; overflow: hidden;">
+                  <span style="color: #94a3b8; font-weight: 600; flex-shrink: 0;">Rejection Setup:</span>
+                  <span id="rlm-signal-status" style="font-weight: 700; color: #cbd5e1; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Waiting for Rejection</span>
                 </div>
 
                 <!-- Trade Plan (Visible when active) -->
-                <div id="rlm-plan-box" style="display: none; padding: 4px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 6px; font-size: 9.5px;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <div id="rlm-plan-box" class="ios-glass-card" style="display: none; padding: 5px 8px; background: rgba(56, 189, 248, 0.08) !important; border: 1px solid rgba(56, 189, 248, 0.25) !important; margin-bottom: 6px; font-size: 9.5px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                     <span style="color: #38bdf8; font-weight: 700;">ENTRY: <span id="rlm-plan-entry">--</span></span>
                     <span style="color: #f87171; font-weight: 700;">SL: <span id="rlm-plan-sl">--</span></span>
                   </div>
@@ -1231,7 +1271,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
 
                 <!-- Active Level Matrix Mini-list -->
-                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 700;">ACTIVE MATRIX LEVELS (SCORE · TOUCHES):</div>
+                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 3px; font-weight: 700; letter-spacing: 0.2px;">ACTIVE MATRIX LEVELS (SCORE · TOUCHES):</div>
                 <div id="rlm-levels-list" style="display: flex; flex-direction: column; gap: 2px; max-height: 85px; overflow-y: auto;"></div>
               </div>
 
@@ -3175,7 +3215,7 @@ const htmlContent = `<!DOCTYPE html>
           const isSup = l.center < lastClose;
           const roleColor = isSup ? '#4ade80' : '#f87171';
           const polIcon = l.polarity ? ' ⇅' : '';
-          return '<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 2px 5px; border-radius: 3px; font-size: 9.5px;">' +
+          return '<div class="ios-glass-card" style="display: flex; justify-content: space-between; align-items: center; padding: 3px 6px; font-size: 9.5px; margin-bottom: 2px;">' +
             '<span style="color: ' + roleColor + '; font-weight: 700;">' + (isSup ? 'SUP' : 'RES') + ' ' + formatTokenPrice(l.center) + '</span>' +
             '<span style="color: #cbd5e1;">Score: <strong>' + l.score + '</strong></span>' +
             '<span style="font-size: 8.5px; color: #94a3b8;">' + l.totalTouches + 'T' + polIcon + '</span>' +
