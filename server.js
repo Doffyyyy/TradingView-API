@@ -59,6 +59,8 @@ function getHistory(symbol, timeframe, range = 5000) {
     querySymbol = 'INDEX:SPX';
   } else if (querySymbol === 'GOLD' || querySymbol === 'XAUUSD' || querySymbol.includes('GOLD') || querySymbol.includes('XAU')) {
     querySymbol = 'TVC:GOLD';
+  } else if (querySymbol === 'NVDA' || querySymbol.includes('NVDA')) {
+    querySymbol = 'NASDAQ:NVDA';
   }
 
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
@@ -197,6 +199,8 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     #chart-container { flex: 1; width: 100%; position: relative; }
+    #indicators-hud-stack::-webkit-scrollbar { width: 4px; }
+    #indicators-hud-stack::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
     .legend-overlay {
       position: absolute; top: 12px; left: 16px; z-index: 10; pointer-events: none;
       font-size: 12px; line-height: 1.5; background: rgba(15, 17, 23, 0.7); backdrop-filter: blur(4px);
@@ -1103,7 +1107,7 @@ const htmlContent = `<!DOCTYPE html>
               <span class="legend-item"><span class="legend-label">Vol:</span><span id="leg-vol">--</span></span>
             </div>
             <!-- Indicators Floating HUD Container -->
-            <div id="indicators-hud-stack" style="position: absolute; top: 12px; right: 16px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 24px); overflow-y: auto; pointer-events: none;">
+            <div id="indicators-hud-stack" style="position: absolute; top: 12px; right: 82px; z-index: 10; display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 24px); overflow-y: auto; pointer-events: none;">
               <!-- 1. FiboRadar HUD -->
               <div id="fiboradar-hud" style="pointer-events: auto; background: rgba(15, 17, 23, 0.90); backdrop-filter: blur(6px); border: 1px solid #a855f7; border-radius: 6px; padding: 8px 12px; font-size: 11px; width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -3432,6 +3436,9 @@ const htmlContent = `<!DOCTYPE html>
       'BINANCE:XAUUSDT.P': 'metal/gold',
       'BYBIT:XAUUSDT.P': 'metal/gold',
       'BINANCE:PAXGUSDT': 'metal/gold',
+      'NASDAQ:NVDA': 'nvidia',
+      'NVDA': 'nvidia',
+      'BINANCE:NVDAUSDT.P': 'nvidia',
     };
 
     const DEFAULT_WATCHLIST = [
@@ -3443,6 +3450,7 @@ const htmlContent = `<!DOCTYPE html>
       { symbol: 'BINANCE:SUIUSDT', name: 'SUIUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCSUI' },
       { symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', logoId: 'indices/s-and-p-500' },
       { symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', logoId: 'metal/gold' },
+      { symbol: 'NASDAQ:NVDA', name: 'NVDA', exchange: 'NASDAQ', logoId: 'nvidia' },
       { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ', logoId: 'spacex' },
       { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZEC' },
       { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCTAOB' },
@@ -3512,6 +3520,14 @@ const htmlContent = `<!DOCTYPE html>
           logoId: 'metal/gold',
         };
       }
+      if (item.symbol && (item.symbol.includes('NVDA') || item.name === 'NVDA')) {
+        return {
+          symbol: 'NASDAQ:NVDA',
+          name: 'NVDA',
+          exchange: 'NASDAQ',
+          logoId: 'nvidia',
+        };
+      }
       if (!item.logoId && LOGO_MAP[item.symbol]) {
         item.logoId = LOGO_MAP[item.symbol];
       }
@@ -3522,6 +3538,9 @@ const htmlContent = `<!DOCTYPE html>
     }
     if (!customWatchlist.some(w => w.name === 'GOLD' || (w.symbol && (w.symbol.includes('GOLD') || w.symbol.includes('XAU'))))) {
       customWatchlist.push({ symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', logoId: 'metal/gold' });
+    }
+    if (!customWatchlist.some(w => w.name === 'NVDA' || (w.symbol && w.symbol.includes('NVDA')))) {
+      customWatchlist.push({ symbol: 'NASDAQ:NVDA', name: 'NVDA', exchange: 'NASDAQ', logoId: 'nvidia' });
     }
     saveWatchlist();
 
@@ -4246,6 +4265,11 @@ const htmlContent = `<!DOCTYPE html>
       }
       if (rawUp === 'GOLD' || rawUp === 'XAU' || rawUp === 'XAUUSD') {
         addResolvedToken('TVC:GOLD', 'GOLD', 'TVC', 'metal/gold');
+        if (btnConfirm) btnConfirm.textContent = 'Add';
+        return;
+      }
+      if (rawUp === 'NVDA' || rawUp === 'NASDAQ:NVDA' || rawUp.includes('NVDA')) {
+        addResolvedToken('NASDAQ:NVDA', 'NVDA', 'NASDAQ', 'nvidia');
         if (btnConfirm) btnConfirm.textContent = 'Add';
         return;
       }
@@ -6222,6 +6246,17 @@ const server = http.createServer(async (req, res) => {
         return 0;
       });
 
+      if (q.toUpperCase() === 'NVDA' || q.toUpperCase() === 'NASDAQ:NVDA') {
+        list = list.filter(item => item.symbol !== 'NASDAQ:NVDA');
+        list.unshift({
+          symbol: 'NASDAQ:NVDA',
+          name: 'NVDA',
+          exchange: 'NASDAQ',
+          description: 'NVIDIA Corporation',
+          logoId: 'nvidia',
+        });
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ symbols: list.slice(0, 10) }));
     } catch (e) {
@@ -6500,10 +6535,35 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       })();
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold]);
+      // 10.5 Dedicated NVIDIA Handler (Yahoo Finance NVDA)
+      const pNVDA = (async () => {
+        if (!symbols.some(s => s.includes('NVDA'))) return;
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/NVDA', { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose || close;
+            const chg = prev > 0 ? ((close - prev) / prev) * 100 : 0;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: meta.regularMarketVolume || 0,
+            };
+            prices['NASDAQ:NVDA'] = obj;
+            prices['NVDA'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('NVDA')) prices[s] = obj;
+            });
+          }
+        } catch (e) {}
+      })();
+
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA]);
 
       // 11. Generic fallback for any remaining unresolved symbols (DexScreener search)
-      const missingSymbols = symbols.filter(s => !prices[s] || typeof prices[s].close !== 'number');
+      const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD'));
       if (missingSymbols.length > 0) {
         await Promise.all(missingSymbols.map(async (s) => {
           let tokenName = s.split(':')[1] || s;
