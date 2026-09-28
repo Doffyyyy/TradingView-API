@@ -3849,6 +3849,9 @@ const htmlContent = `<!DOCTYPE html>
               color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
             });
             setLegendOHLC(d.candle);
+            if (typeof syncLivePriceToWatchlist === 'function') {
+              syncLivePriceToWatchlist(currentSymbol, d.candle.close);
+            }
             if (currentCandlesCache.length > 0) {
               currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
               updateActiveIndicators(currentCandlesCache);
@@ -4291,6 +4294,71 @@ const htmlContent = `<!DOCTYPE html>
       }).join('');
     }
 
+    // --- High-Speed Realtime Watchlist Sync (Zero-Latency Link with Chart, Header & Orderbook) ---
+    function syncLivePriceToWatchlist(symbolOrCoin, price, changePct, changeAbs) {
+      if (!symbolOrCoin || !price || isNaN(price) || price <= 0) return;
+      const coinUp = symbolOrCoin.toUpperCase();
+      const matched = customWatchlist.find(w => 
+        w.symbol === symbolOrCoin || 
+        w.name === coinUp || 
+        (w.symbol && (w.symbol.split(':')[1] === coinUp || w.symbol.split(':')[1] === (coinUp + 'USDT') || w.symbol.split(':')[1] === (coinUp + 'USDC'))) ||
+        (w.symbol && w.symbol.includes(coinUp))
+      );
+      const targetSymbol = matched ? matched.symbol : symbolOrCoin;
+
+      if (!pricesCache[targetSymbol]) pricesCache[targetSymbol] = {};
+      const prevPrice = pricesCache[targetSymbol].close;
+      pricesCache[targetSymbol].close = price;
+      if (changePct !== undefined && changePct !== null && !isNaN(changePct)) {
+        pricesCache[targetSymbol].change = changePct;
+      }
+      if (changeAbs !== undefined && changeAbs !== null && !isNaN(changeAbs)) {
+        pricesCache[targetSymbol].change_abs = changeAbs;
+      }
+
+      // Direct, zero-latency DOM update on the Watchlist row without re-rendering the whole table
+      const row = document.querySelector(\`.wl-row[data-symbol="\${targetSymbol}"]\`);
+      if (row) {
+        const priceEl = row.querySelector('.wl-cell-last');
+        if (priceEl) {
+          const formatted = formatPrice(price);
+          if (priceEl.textContent !== formatted) {
+            priceEl.textContent = formatted;
+            if (prevPrice && prevPrice !== price) {
+              priceEl.style.transition = 'color 0.2s';
+              priceEl.style.color = price > prevPrice ? '#4ade80' : '#ef5350';
+              setTimeout(() => { priceEl.style.color = 'var(--text-primary)'; }, 350);
+            }
+          }
+        }
+        if (changePct !== undefined && changePct !== null && !isNaN(changePct)) {
+          const cells = row.querySelectorAll('.wl-cell:not(.wl-cell-last)');
+          if (cells.length >= 2) {
+            const chgClass = changePct >= 0 ? 'val-green' : 'val-red';
+            const chgStr = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+            const absVal = changeAbs !== undefined && changeAbs !== null ? changeAbs : (price * changePct / 100);
+            cells[0].textContent = formatChgAbs(absVal);
+            cells[0].className = 'wl-cell ' + chgClass;
+            cells[1].textContent = chgStr;
+            cells[1].className = 'wl-cell ' + chgClass;
+          }
+        }
+      }
+
+      // Keep Header / Ticker Bar in sync
+      if (targetSymbol === currentSymbol || (currentDockCoin && targetSymbol.includes(currentDockCoin))) {
+        const lastEl = document.getElementById('hl-stat-last');
+        if (lastEl) lastEl.textContent = '$' + (price >= 1 ? price.toLocaleString('en-US') : formatTokenPrice(price));
+        if (changePct !== undefined && changePct !== null && !isNaN(changePct)) {
+          const chgEl = document.getElementById('hl-stat-change');
+          if (chgEl) {
+            chgEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+            chgEl.className = 'hl-stat-val ' + (changePct >= 0 ? 'val-green' : 'val-red');
+          }
+        }
+      }
+    }
+
     async function updateWatchlistPrices() {
       if (customWatchlist.length === 0) return;
       const symbols = customWatchlist.map(w => w.symbol);
@@ -4631,7 +4699,7 @@ const htmlContent = `<!DOCTYPE html>
 
     renderWatchlist();
     updateWatchlistPrices();
-    setInterval(updateWatchlistPrices, 8000);
+    setInterval(updateWatchlistPrices, 2500);
 
     // --- Proliquid Trading & Execution Dock Logic ---
     const btnToggleDock = document.getElementById('btn-toggle-dock');
@@ -4795,6 +4863,10 @@ const htmlContent = `<!DOCTYPE html>
                 const bestAsk = asks.length > 0 ? asks[asks.length - 1].price : null;
                 const bestBid = bids.length > 0 ? bids[0].price : null;
                 renderOrderbookData(bids, asks, bestAsk, bestBid);
+                const midPx = (bestAsk && bestBid) ? (bestAsk + bestBid) / 2 : (bestAsk || bestBid);
+                if (midPx && typeof syncLivePriceToWatchlist === 'function') {
+                  syncLivePriceToWatchlist(currentDockCoin, midPx);
+                }
               }
             }
 
@@ -4808,6 +4880,9 @@ const htmlContent = `<!DOCTYPE html>
                   const mktPriceEl = document.getElementById('dock-market-price');
                   if (mktPriceEl) mktPriceEl.textContent = '$' + (currentDockPrice >= 1 ? currentDockPrice.toLocaleString('en-US') : currentDockPrice.toFixed(4));
                   updateExecutionLabels();
+                  if (typeof syncLivePriceToWatchlist === 'function') {
+                    syncLivePriceToWatchlist(currentDockCoin, currentDockPrice);
+                  }
                   if (typeof updateProviewTitle === 'function') updateProviewTitle(currentDockCoin, currentDockPrice);
                 }
               }
@@ -5341,6 +5416,10 @@ const htmlContent = `<!DOCTYPE html>
 
           const lastEl = document.getElementById('hl-stat-last');
           if (lastEl) lastEl.textContent = '$' + lastStr.replace(/^\$/, '');
+
+          if (rawL && typeof syncLivePriceToWatchlist === 'function') {
+            syncLivePriceToWatchlist(coin, rawL, rawChg);
+          }
 
           const idxEl = document.getElementById('hl-stat-index');
           if (idxEl) idxEl.textContent = t.index && t.index !== '--' ? t.index : '$' + lastStr.replace(/^\$/, '');
@@ -6445,9 +6524,9 @@ const server = http.createServer(async (req, res) => {
         Object.assign(prices, serverWatchlistPriceCache);
       }
 
-      // Check if cache was updated very recently (< 2500ms) AND all requested symbols already have valid prices:
+      // Check if cache was updated very recently (< 1200ms) AND all requested symbols already have valid prices:
       const allCached = symbols.every(s => prices[s] && typeof prices[s].close === 'number' && !isNaN(prices[s].close));
-      if (typeof lastWatchlistPriceUpdate !== 'undefined' && (Date.now() - lastWatchlistPriceUpdate < 2500) && allCached) {
+      if (typeof lastWatchlistPriceUpdate !== 'undefined' && (Date.now() - lastWatchlistPriceUpdate < 1200) && allCached) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ prices }));
       }
