@@ -3515,6 +3515,31 @@ const htmlContent = `<!DOCTYPE html>
       },
     });
 
+    // --- Realtime Active Candle Tick Engine (Animates Candle with Every Live Tick) ---
+    function updateActiveCandleWithLivePrice(price) {
+      if (!price || isNaN(price) || price <= 0 || !lastLoadedCandle) return;
+      if (typeof candleSeries === 'undefined' || !candleSeries.update) return;
+
+      const updatedCandle = {
+        time: lastLoadedCandle.time,
+        open: lastLoadedCandle.open,
+        high: Math.max(lastLoadedCandle.high, price),
+        low: Math.min(lastLoadedCandle.low, price),
+        close: price,
+        volume: lastLoadedCandle.volume || 0,
+      };
+
+      lastLoadedCandle = updatedCandle;
+      try {
+        candleSeries.update(updatedCandle);
+      } catch (e) {}
+
+      setLegendOHLC(updatedCandle);
+      if (typeof currentCandlesCache !== 'undefined' && currentCandlesCache && currentCandlesCache.length > 0) {
+        currentCandlesCache[currentCandlesCache.length - 1] = updatedCandle;
+      }
+    }
+
     function resizeChart() {
       chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
     }
@@ -4355,6 +4380,10 @@ const htmlContent = `<!DOCTYPE html>
             chgEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
             chgEl.className = 'hl-stat-val ' + (changePct >= 0 ? 'val-green' : 'val-red');
           }
+        }
+        // Animate live candle on the chart immediately
+        if (typeof updateActiveCandleWithLivePrice === 'function') {
+          updateActiveCandleWithLivePrice(price);
         }
       }
     }
@@ -6874,7 +6903,7 @@ const server = http.createServer(async (req, res) => {
         type: 'candle',
         candle: { time: latest.time, open: latest.open, high: latest.max, low: latest.min, close: latest.close, volume: latest.volume || 0 },
         infos: chart.infos || {},
-      }) + '\\n\\n');
+      }) + '\n\n');
     });
     req.on('close', () => {
       try { chart.delete(); client.end(); } catch (e) {}
