@@ -468,6 +468,7 @@ const htmlContent = `<!DOCTYPE html>
 
     /* Tier 2: Chart Toolbar */
     .hl-chart-toolbar {
+      position: relative; z-index: 40;
       display: flex; align-items: center; justify-content: space-between;
       padding: 3px 12px;
       background: rgba(12, 16, 26, 0.65) !important;
@@ -1135,12 +1136,12 @@ const htmlContent = `<!DOCTYPE html>
 
               <!-- Indicators Dropdown Button -->
               <div style="position: relative; display: inline-block;">
-                <button class="hl-tool-btn" id="btn-indicators-menu">
+                <button class="hl-tool-btn" id="btn-indicators-menu" onclick="toggleIndicatorsMenu(event)">
                   <span style="font-family: serif; font-style: italic; font-weight: 800; color: #a855f7;">fx</span>
                   <span>Indicators</span>
                   <span style="font-size: 8px; color: #8c93a3;">⌄</span>
                 </button>
-                <div id="indicators-dropdown" style="display: none; position: absolute; top: 28px; left: 0; background: #131722; border: 1px solid #2b3040; border-radius: 8px; padding: 10px 12px; z-index: 100; width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+                <div id="indicators-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; width: 290px; padding: 12px 14px; max-height: 80vh; overflow-y: auto;">
                   <div style="font-size: 11px; font-weight: 800; color: #fff; margin-bottom: 8px; border-bottom: 1px solid #2a2e39; padding-bottom: 4px; display: flex; justify-content: space-between;">
                     <span>INDICATORS REPOSITORY</span>
                     <span style="font-size: 10px; color: #8c93a3;">3 Active Tools</span>
@@ -2484,6 +2485,12 @@ const htmlContent = `<!DOCTYPE html>
     let isReduceOnly = false;
     let isTpSlActive = false;
     let dockAvailableBalance = 10000;
+
+    // --- Hyperliquid Realtime WebSocket Streaming Variables ---
+    let hlWs = null;
+    let hlWsActiveCoin = null;
+    let hlWsReconnectTimer = null;
+    let hlWsPingTimer = null;
 
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
@@ -4745,11 +4752,6 @@ const htmlContent = `<!DOCTYPE html>
     // syncDockCoin is defined at the top scope
 
     // --- Hyperliquid Realtime WebSocket Streaming Engine ---
-    let hlWs = null;
-    let hlWsActiveCoin = null;
-    let hlWsReconnectTimer = null;
-    let hlWsPingTimer = null;
-
     function renderOrderbookData(bids, asks, bestAsk, bestBid) {
       if (!bids || !asks) return;
       if (bestAsk || bestBid) {
@@ -4932,7 +4934,7 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     function subscribeHlWebSocket(coin) {
-      if (!hlWs || hlWs.readyState !== WebSocket.OPEN) return;
+      if (typeof WebSocket === 'undefined' || typeof hlWs === 'undefined' || !hlWs || hlWs.readyState !== WebSocket.OPEN) return;
       if (hlWsActiveCoin && hlWsActiveCoin !== coin) {
         try {
           hlWs.send(JSON.stringify({
@@ -5521,16 +5523,27 @@ const htmlContent = `<!DOCTYPE html>
     updateCountdown();
 
     // Indicators dropdown toggle
-    const btnIndMenu = document.getElementById('btn-indicators-menu');
-    const indDropdown = document.getElementById('indicators-dropdown');
-    btnIndMenu?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = indDropdown.style.display === 'none';
+    window.toggleIndicatorsMenu = function(e) {
+      if (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      }
+      const indDropdown = document.getElementById('indicators-dropdown');
+      const btnIndMenu = document.getElementById('btn-indicators-menu');
+      if (!indDropdown) return;
+      const isHidden = indDropdown.style.display === 'none' || !indDropdown.style.display;
       indDropdown.style.display = isHidden ? 'block' : 'none';
-    });
+      if (btnIndMenu) btnIndMenu.classList.toggle('active', isHidden);
+    };
+
+    const btnIndMenu = document.getElementById('btn-indicators-menu');
+    btnIndMenu?.addEventListener('click', (e) => window.toggleIndicatorsMenu(e));
+
     document.addEventListener('click', (e) => {
-      if (indDropdown && !e.target.closest('#indicators-dropdown') && !e.target.closest('#btn-indicators-menu')) {
+      const indDropdown = document.getElementById('indicators-dropdown');
+      const btnIndMenu = document.getElementById('btn-indicators-menu');
+      if (indDropdown && indDropdown.style.display === 'block' && !e.target.closest('#indicators-dropdown') && !e.target.closest('#btn-indicators-menu')) {
         indDropdown.style.display = 'none';
+        btnIndMenu?.classList.remove('active');
       }
     });
 
