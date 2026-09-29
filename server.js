@@ -1136,7 +1136,7 @@ const htmlContent = `<!DOCTYPE html>
 
               <!-- Indicators Dropdown Button -->
               <div style="position: relative; display: inline-block;">
-                <button class="hl-tool-btn" id="btn-indicators-menu" onclick="toggleIndicatorsMenu(event)">
+                <button class="hl-tool-btn" id="btn-indicators-menu">
                   <span style="font-family: serif; font-style: italic; font-weight: 800; color: #a855f7;">fx</span>
                   <span>Indicators</span>
                   <span style="font-size: 8px; color: #8c93a3;">⌄</span>
@@ -5523,24 +5523,22 @@ const htmlContent = `<!DOCTYPE html>
     updateCountdown();
 
     // Indicators dropdown toggle
-    window.toggleIndicatorsMenu = function(e) {
-      if (e) {
-        try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
-      }
-      const indDropdown = document.getElementById('indicators-dropdown');
-      const btnIndMenu = document.getElementById('btn-indicators-menu');
-      if (!indDropdown) return;
+    const btnIndMenu = document.getElementById('btn-indicators-menu');
+    const indDropdown = document.getElementById('indicators-dropdown');
+
+    btnIndMenu?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const isHidden = indDropdown.style.display === 'none' || !indDropdown.style.display;
       indDropdown.style.display = isHidden ? 'block' : 'none';
-      if (btnIndMenu) btnIndMenu.classList.toggle('active', isHidden);
-    };
+      btnIndMenu.classList.toggle('active', isHidden);
+    });
 
-    const btnIndMenu = document.getElementById('btn-indicators-menu');
-    btnIndMenu?.addEventListener('click', (e) => window.toggleIndicatorsMenu(e));
+    indDropdown?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
 
     document.addEventListener('click', (e) => {
-      const indDropdown = document.getElementById('indicators-dropdown');
-      const btnIndMenu = document.getElementById('btn-indicators-menu');
       if (indDropdown && indDropdown.style.display === 'block' && !e.target.closest('#indicators-dropdown') && !e.target.closest('#btn-indicators-menu')) {
         indDropdown.style.display = 'none';
         btnIndMenu?.classList.remove('active');
