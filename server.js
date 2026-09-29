@@ -3775,6 +3775,9 @@ const htmlContent = `<!DOCTYPE html>
       if (typeof syncDockCoin === 'function') {
         syncDockCoin(sym);
       }
+      if (typeof subscribeBinanceWebSocket === 'function') {
+        subscribeBinanceWebSocket(sym);
+      }
 
       // 1. Instant Header & Ticker Update
       const titleEl = document.getElementById('active-symbol-title');
@@ -4419,6 +4422,27 @@ const htmlContent = `<!DOCTYPE html>
             const filter = document.getElementById('watchlist-search')?.value || '';
             renderWatchlist(filter);
             if (typeof updateProviewTitle === 'function') updateProviewTitle();
+
+            // Synchronize active chart candle and right price scale directly from watchlist response
+            const pEntry = data.prices[currentSymbol] || 
+                           (currentDockCoin && (data.prices['BINANCE:' + currentDockCoin + 'USDT'] || data.prices[currentDockCoin] || data.prices['HYPERLIQUID:' + currentDockCoin]));
+            if (pEntry && typeof pEntry.close === 'number' && pEntry.close > 0) {
+              const livePrice = pEntry.close;
+              if (typeof updateActiveCandleWithLivePrice === 'function') {
+                updateActiveCandleWithLivePrice(livePrice);
+              }
+              const lastEl = document.getElementById('hl-stat-last');
+              if (lastEl) lastEl.textContent = '$' + (livePrice >= 1 ? livePrice.toLocaleString('en-US') : formatTokenPrice(livePrice));
+              if (typeof pEntry.change === 'number') {
+                const chgEl = document.getElementById('hl-stat-change');
+                if (chgEl) {
+                  chgEl.textContent = (pEntry.change >= 0 ? '+' : '') + pEntry.change.toFixed(2) + '%';
+                  chgEl.className = 'hl-stat-val ' + (pEntry.change >= 0 ? 'val-green' : 'val-red');
+                }
+              }
+              const dockMktEl = document.getElementById('dock-market-price');
+              if (dockMktEl) dockMktEl.textContent = '$' + (livePrice >= 1 ? livePrice.toLocaleString('en-US') : formatTokenPrice(livePrice));
+            }
           }
         } catch (e) {}
         finally {
@@ -4935,6 +4959,18 @@ const htmlContent = `<!DOCTYPE html>
 
     function subscribeHlWebSocket(coin) {
       if (typeof WebSocket === 'undefined' || typeof hlWs === 'undefined' || !hlWs || hlWs.readyState !== WebSocket.OPEN) return;
+      // Do not subscribe non-crypto indices or stocks to Hyperliquid crypto orderbook
+      if (currentSymbol && (currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:') || currentSymbol.startsWith('NASDAQ:') || currentSymbol.startsWith('NYSE:'))) {
+        if (hlWsActiveCoin) {
+          try {
+            hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'l2Book', coin: hlWsActiveCoin } }));
+            hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'trades', coin: hlWsActiveCoin } }));
+          } catch (e) {}
+          hlWsActiveCoin = null;
+        }
+        return;
+      }
+
       if (hlWsActiveCoin && hlWsActiveCoin !== coin) {
         try {
           hlWs.send(JSON.stringify({
@@ -4958,6 +4994,62 @@ const htmlContent = `<!DOCTYPE html>
           subscription: { type: 'trades', coin }
         }));
       } catch (e) {}
+    }
+
+    // --- Binance Realtime Trade Stream Engine (Tick-by-Tick Instant Candlestick & Price Scale Animation) ---
+    let binanceWs = null;
+    let binanceWsActivePair = null;
+
+    function subscribeBinanceWebSocket(sym) {
+      if (typeof WebSocket === 'undefined') return;
+      if (!sym) return;
+      let pair = sym.toUpperCase();
+      if (pair.includes(':')) pair = pair.split(':')[1];
+      if (pair.endsWith('.P')) pair = pair.slice(0, -2);
+      if (!pair.endsWith('USDT') && !pair.endsWith('USDC') && !pair.endsWith('FDUSD')) {
+        if (binanceWs) {
+          try { binanceWs.close(); } catch (e) {}
+          binanceWs = null;
+          binanceWsActivePair = null;
+        }
+        return;
+      }
+      const streamPair = pair.toLowerCase();
+      if (binanceWsActivePair === streamPair && binanceWs && binanceWs.readyState === WebSocket.OPEN) {
+        return;
+      }
+      if (binanceWs) {
+        try { binanceWs.close(); } catch (e) {}
+        binanceWs = null;
+      }
+      binanceWsActivePair = streamPair;
+      try {
+        binanceWs = new WebSocket('wss://stream.binance.com:9443/ws/' + streamPair + '@trade');
+        binanceWs.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && data.p) {
+              const livePx = parseFloat(data.p);
+              if (livePx > 0 && currentSymbol && currentSymbol.toLowerCase().includes(streamPair)) {
+                if (typeof updateActiveCandleWithLivePrice === 'function') {
+                  updateActiveCandleWithLivePrice(livePx);
+                }
+                if (typeof syncLivePriceToWatchlist === 'function') {
+                  syncLivePriceToWatchlist(currentSymbol, livePx);
+                }
+              }
+            }
+          } catch (e) {}
+        };
+        binanceWs.onclose = () => {
+          if (binanceWsActivePair === streamPair) {
+            setTimeout(() => subscribeBinanceWebSocket(currentSymbol), 4000);
+          }
+        };
+        binanceWs.onerror = () => {
+          try { binanceWs.close(); } catch (e) {}
+        };
+      } catch (err) {}
     }
 
     async function updateDockData() {
