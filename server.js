@@ -1073,9 +1073,9 @@ const htmlContent = `<!DOCTYPE html>
             </div>
 
             <div class="hl-stat-group">
-              <div class="hl-stat-item" style="padding-right: 6px;">
+              <div class="hl-stat-item">
                 <span class="hl-stat-lbl">LAST</span>
-                <strong id="hl-stat-last" class="hl-stat-val">$80,452.00</strong>
+                <strong id="hl-stat-last" class="hl-stat-val" style="display: inline-block; width: 60px; white-space: nowrap;">$80,452.00</strong>
               </div>
               <div class="hl-stat-item">
                 <span class="hl-stat-lbl">INDEX</span>
