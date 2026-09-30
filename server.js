@@ -453,9 +453,6 @@ const htmlContent = `<!DOCTYPE html>
     .hl-stat-item {
       display: flex; flex-direction: column; flex-shrink: 0;
     }
-    .hl-stat-item-last {
-      min-width: 82px;
-    }
     .hl-stat-lbl {
       font-size: 8px; color: #8c93a3; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 1.5px;
     }
@@ -1076,17 +1073,17 @@ const htmlContent = `<!DOCTYPE html>
             </div>
 
             <div class="hl-stat-group">
-              <div class="hl-stat-item hl-stat-item-last">
+              <div class="hl-stat-item" style="padding-right: 6px;">
                 <span class="hl-stat-lbl">LAST</span>
-                <strong id="hl-stat-last" class="hl-stat-val" style="display: inline-block; min-width: 78px; white-space: nowrap;">$80,452.00</strong>
+                <strong id="hl-stat-last" class="hl-stat-val">$80,452.00</strong>
               </div>
-              <div class="hl-stat-item" style="min-width: 72px;">
+              <div class="hl-stat-item">
                 <span class="hl-stat-lbl">INDEX</span>
-                <strong id="hl-stat-index" class="hl-stat-val" style="display: inline-block; min-width: 68px; white-space: nowrap;">$80,440</strong>
+                <strong id="hl-stat-index" class="hl-stat-val">$80,440</strong>
               </div>
-              <div class="hl-stat-item" style="min-width: 58px;">
+              <div class="hl-stat-item">
                 <span class="hl-stat-lbl">CHANGE</span>
-                <strong id="hl-stat-change" class="hl-stat-val val-red" style="display: inline-block; min-width: 52px; white-space: nowrap;">-1.02%</strong>
+                <strong id="hl-stat-change" class="hl-stat-val val-red">-1.02%</strong>
               </div>
               <div class="hl-stat-item">
                 <span class="hl-stat-lbl">VOLUME</span>
