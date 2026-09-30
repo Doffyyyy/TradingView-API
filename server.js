@@ -61,6 +61,8 @@ function getHistory(symbol, timeframe, range = 5000) {
     querySymbol = 'TVC:GOLD';
   } else if (querySymbol === 'NVDA' || querySymbol.includes('NVDA')) {
     querySymbol = 'NASDAQ:NVDA';
+  } else if (querySymbol.toUpperCase() === 'BTSE:OILUSD' || querySymbol.toUpperCase() === 'OILUSD') {
+    querySymbol = 'BTSE:OILUSD.P';
   }
 
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
@@ -6635,6 +6637,17 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
+      if (q.toUpperCase() === 'OILUSD' || q.toUpperCase() === 'BTSE:OILUSD' || q.toUpperCase().includes('OILUSD')) {
+        list = list.filter(item => item.symbol !== 'BTSE:OILUSD.P' && item.symbol !== 'BTSE:OILUSD');
+        list.unshift({
+          symbol: 'BTSE:OILUSD.P',
+          name: 'OILUSD.P',
+          exchange: 'BTSE',
+          description: 'OILUSD Futures Contract (Perpetual)',
+          logoId: 'crude-oil',
+        });
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ symbols: list.slice(0, 10) }));
     } catch (e) {
@@ -6938,10 +6951,60 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       })();
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA]);
+      // 10.5 Dedicated OILUSD Handler (BTSE Futures API with Yahoo CL=F fallback)
+      const pOil = (async () => {
+        if (!symbols.some(s => s.includes('OILUSD') || s.includes('OIL'))) return;
+        try {
+          const res = await axios.get('https://api.btse.com/futures/api/v2.1/market_summary', { timeout: 3500 });
+          const item = res.data?.find?.(d => d.symbol === 'OILPFC' || (d.base === 'OIL' && d.quote === 'USD'));
+          if (item && item.last) {
+            const close = parseFloat(item.last);
+            const chg = parseFloat(item.percentageChange || 0);
+            const prev = chg !== 0 ? close / (1 + chg / 100) : close;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: parseFloat(item.volume || 0),
+            };
+            prices['BTSE:OILUSD.P'] = obj;
+            prices['BTSE:OILUSD'] = obj;
+            prices['OILUSD'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('OILUSD')) prices[s] = obj;
+            });
+            return;
+          }
+        } catch (e) {}
+
+        // Fallback: Yahoo Finance WTI Crude Oil CL=F
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/CL=F', { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose || close;
+            const chg = prev > 0 ? ((close - prev) / prev) * 100 : 0;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: meta.regularMarketVolume || 0,
+            };
+            prices['BTSE:OILUSD.P'] = obj;
+            prices['BTSE:OILUSD'] = obj;
+            prices['OILUSD'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('OILUSD')) prices[s] = obj;
+            });
+          }
+        } catch (err) {}
+      })();
+
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA, pOil]);
 
       // 11. Generic fallback for any remaining unresolved symbols (DexScreener search)
-      const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD'));
+      const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD') && !s.includes('OIL'));
       if (missingSymbols.length > 0) {
         await Promise.all(missingSymbols.map(async (s) => {
           let tokenName = s.split(':')[1] || s;
@@ -6988,8 +7051,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/stream') {
-    const symbol = parsedUrl.query.symbol || 'BINANCE:BTCUSDT';
+    let symbol = parsedUrl.query.symbol || 'BINANCE:BTCUSDT';
     const timeframe = parsedUrl.query.timeframe || '1';
+    if (symbol.toUpperCase() === 'BTSE:OILUSD' || symbol.toUpperCase() === 'OILUSD') {
+      symbol = 'BTSE:OILUSD.P';
+    }
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
