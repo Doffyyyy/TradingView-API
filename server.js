@@ -1862,8 +1862,9 @@ const htmlContent = `<!DOCTYPE html>
               <option value="week">This Week</option>
             </select>
             <select class="ts-select" id="ts-month-mode" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 700;">
-              <option value="march2026">📅 March 2026 (Demo Showcase)</option>
+              <option value="sim6m" selected>📊 6-Month Paper Simulation (March - Sept 2026)</option>
               <option value="current">⚡ Current Live Paper Trading</option>
+              <option value="march2026">📅 March 2026 (Demo Showcase)</option>
             </select>
           </div>
         </div>
@@ -5976,11 +5977,35 @@ const htmlContent = `<!DOCTYPE html>
       }
     };
 
-    let currentJournalMode = "march2026";
-    let currentSelectedDate = "2026-03-19";
+    let currentJournalMode = "sim6m";
+    let currentSelectedDate = "2026-09-29";
     let cachedPaperStatus = null;
+    let cachedSim6mData = null;
 
-    function renderJournalDashboard() {
+    async function loadSim6mData() {
+      if (cachedSim6mData) return cachedSim6mData;
+      try {
+        const res = await fetch('/api/paper/simulated-6m');
+        if (res.ok) {
+          cachedSim6mData = await res.json();
+          return cachedSim6mData;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    let simActiveMonthIndex = 6; // 0=Mar, 1=Apr, 2=May, 3=Jun, 4=Jul, 5=Aug, 6=Sep
+    const simMonthList = [
+      { name: "March 2026", year: 2026, month: 2, prefix: "2026-03" },
+      { name: "April 2026", year: 2026, month: 3, prefix: "2026-04" },
+      { name: "May 2026", year: 2026, month: 4, prefix: "2026-05" },
+      { name: "June 2026", year: 2026, month: 5, prefix: "2026-06" },
+      { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
+      { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
+      { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" }
+    ];
+
+    async function renderJournalDashboard() {
       const modeSelect = document.getElementById("ts-month-mode");
       if (modeSelect) currentJournalMode = modeSelect.value;
 
@@ -5997,9 +6022,39 @@ const htmlContent = `<!DOCTYPE html>
       let longPnl = 0;
       let shortPnl = 0;
       let year = 2026;
-      let month = 2;
+      let month = 8; // September
 
-      if (currentJournalMode === "march2026") {
+      if (currentJournalMode === "sim6m") {
+        const simData = await loadSim6mData();
+        const mInfo = simMonthList[simActiveMonthIndex] || simMonthList[6];
+        if (calTitle) calTitle.textContent = mInfo.name + " (Sim 6M)";
+        year = mInfo.year;
+        month = mInfo.month;
+
+        if (simData && simData.daysMap) {
+          // Filter days for active month
+          for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
+            if (dStr.startsWith(mInfo.prefix)) {
+              daysMap[dStr] = dObj;
+            }
+          }
+          // Calculate stats for all trades in this active month
+          for (const dObj of Object.values(daysMap)) {
+            totalPnl += (dObj.pnl || 0);
+            (dObj.trades || []).forEach(t => {
+              if (t.pnl > 0) {
+                winCount++;
+                winSum += t.pnl;
+              } else {
+                lossCount++;
+                lossSum += Math.abs(t.pnl);
+              }
+              if (t.side === "LONG") longPnl += t.pnl;
+              else shortPnl += t.pnl;
+            });
+          }
+        }
+      } else if (currentJournalMode === "march2026") {
         if (calTitle) calTitle.textContent = "March 2026";
         year = 2026;
         month = 2;
@@ -6253,16 +6308,30 @@ const htmlContent = `<!DOCTYPE html>
 
     // Month Navigation
     document.getElementById("btn-ts-prev-month")?.addEventListener("click", () => {
-      currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
-      const sel = document.getElementById("ts-month-mode");
-      if (sel) sel.value = currentJournalMode;
-      renderJournalDashboard();
+      if (currentJournalMode === "sim6m") {
+        if (simActiveMonthIndex > 0) {
+          simActiveMonthIndex--;
+          renderJournalDashboard();
+        }
+      } else {
+        currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
+        const sel = document.getElementById("ts-month-mode");
+        if (sel) sel.value = currentJournalMode;
+        renderJournalDashboard();
+      }
     });
     document.getElementById("btn-ts-next-month")?.addEventListener("click", () => {
-      currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
-      const sel = document.getElementById("ts-month-mode");
-      if (sel) sel.value = currentJournalMode;
-      renderJournalDashboard();
+      if (currentJournalMode === "sim6m") {
+        if (simActiveMonthIndex < simMonthList.length - 1) {
+          simActiveMonthIndex++;
+          renderJournalDashboard();
+        }
+      } else {
+        currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
+        const sel = document.getElementById("ts-month-mode");
+        if (sel) sel.value = currentJournalMode;
+        renderJournalDashboard();
+      }
     });
 
     // Journal Card quick button
@@ -7211,6 +7280,17 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --- Paper Trader Endpoints ---
+  if (pathname === '/api/paper/simulated-6m') {
+    const simPath = path.join(__dirname, 'data/simulated_6month_pnl.json');
+    if (fs.existsSync(simPath)) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(fs.readFileSync(simPath, 'utf8'));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Simulation file not found' }));
+    }
+  }
+
   if (pathname === '/api/paper/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(paperTraderInstance.getStatus()));
