@@ -63,6 +63,8 @@ function getHistory(symbol, timeframe, range = 5000) {
     querySymbol = 'NASDAQ:NVDA';
   } else if (querySymbol.toUpperCase() === 'BTSE:OILUSD' || querySymbol.toUpperCase() === 'OILUSD') {
     querySymbol = 'BTSE:OILUSD.P';
+  } else if (querySymbol.toUpperCase().includes('BRENT')) {
+    querySymbol = 'HIP3XYZ:BRENTOILUSDC.P';
   }
 
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
@@ -6637,13 +6639,24 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      if (q.toUpperCase() === 'OILUSD' || q.toUpperCase() === 'BTSE:OILUSD' || q.toUpperCase().includes('OILUSD')) {
+      if ((q.toUpperCase().includes('OILUSD') || q.toUpperCase() === 'OIL') && !q.toUpperCase().includes('BRENT')) {
         list = list.filter(item => item.symbol !== 'BTSE:OILUSD.P' && item.symbol !== 'BTSE:OILUSD');
         list.unshift({
           symbol: 'BTSE:OILUSD.P',
           name: 'OILUSD.P',
           exchange: 'BTSE',
           description: 'OILUSD Futures Contract (Perpetual)',
+          logoId: 'crude-oil',
+        });
+      }
+
+      if (q.toUpperCase().includes('BRENT')) {
+        list = list.filter(item => item.symbol !== 'HIP3XYZ:BRENTOILUSDC.P');
+        list.unshift({
+          symbol: 'HIP3XYZ:BRENTOILUSDC.P',
+          name: 'BRENTOIL-USDC',
+          exchange: 'HIP3XYZ',
+          description: 'BRENTOIL Perpetual Contract (HIP-3 Hyperliquid)',
           logoId: 'crude-oil',
         });
       }
@@ -6953,7 +6966,8 @@ const server = http.createServer(async (req, res) => {
 
       // 10.5 Dedicated OILUSD Handler (BTSE Futures API with Yahoo CL=F fallback)
       const pOil = (async () => {
-        if (!symbols.some(s => s.includes('OILUSD') || s.includes('OIL'))) return;
+        // Exclude BRENT oil from WTI crude OILUSD
+        if (!symbols.some(s => (s.includes('OILUSD') || s === 'OILUSD' || s === 'BTSE:OILUSD' || s === 'BTSE:OILUSD.P') && !s.includes('BRENT'))) return;
         try {
           const res = await axios.get('https://api.btse.com/futures/api/v2.1/market_summary', { timeout: 3500 });
           const item = res.data?.find?.(d => d.symbol === 'OILPFC' || (d.base === 'OIL' && d.quote === 'USD'));
@@ -6971,7 +6985,7 @@ const server = http.createServer(async (req, res) => {
             prices['BTSE:OILUSD'] = obj;
             prices['OILUSD'] = obj;
             symbols.forEach(s => {
-              if (s.includes('OILUSD')) prices[s] = obj;
+              if (s.includes('OILUSD') && !s.includes('BRENT')) prices[s] = obj;
             });
             return;
           }
@@ -6995,13 +7009,38 @@ const server = http.createServer(async (req, res) => {
             prices['BTSE:OILUSD'] = obj;
             prices['OILUSD'] = obj;
             symbols.forEach(s => {
-              if (s.includes('OILUSD')) prices[s] = obj;
+              if (s.includes('OILUSD') && !s.includes('BRENT')) prices[s] = obj;
             });
           }
         } catch (err) {}
       })();
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA, pOil]);
+      // 10.6 Dedicated Brent Crude Oil Handler (HIP-3 Hyperliquid / Yahoo BZ=F)
+      const pBrent = (async () => {
+        if (!symbols.some(s => s.includes('BRENT'))) return;
+        try {
+          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/BZ=F', { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500 });
+          const meta = res.data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const close = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose || close;
+            const chg = prev > 0 ? ((close - prev) / prev) * 100 : 0;
+            const obj = {
+              close,
+              change: chg,
+              change_abs: close - prev,
+              volume: meta.regularMarketVolume || 0,
+            };
+            prices['HIP3XYZ:BRENTOILUSDC.P'] = obj;
+            prices['BRENTOIL'] = obj;
+            symbols.forEach(s => {
+              if (s.includes('BRENT')) prices[s] = obj;
+            });
+          }
+        } catch (e) {}
+      })();
+
+      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA, pOil, pBrent]);
 
       // 11. Generic fallback for any remaining unresolved symbols (DexScreener search)
       const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD') && !s.includes('OIL'));
@@ -7055,6 +7094,8 @@ const server = http.createServer(async (req, res) => {
     const timeframe = parsedUrl.query.timeframe || '1';
     if (symbol.toUpperCase() === 'BTSE:OILUSD' || symbol.toUpperCase() === 'OILUSD') {
       symbol = 'BTSE:OILUSD.P';
+    } else if (symbol.toUpperCase().includes('BRENT')) {
+      symbol = 'HIP3XYZ:BRENTOILUSDC.P';
     }
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
