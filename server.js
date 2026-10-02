@@ -3532,6 +3532,17 @@ const htmlContent = `<!DOCTYPE html>
       if (!price || isNaN(price) || price <= 0 || !lastLoadedCandle) return;
       if (typeof candleSeries === 'undefined' || !candleSeries.update) return;
 
+      // Anomaly Protection: Protect active candle from bad ticks / wrong asset cross-contamination
+      // Rejects any tick deviating more than 40% from current candle base (open/close)
+      const baseClose = lastLoadedCandle.close || lastLoadedCandle.open;
+      if (baseClose > 0) {
+        const ratio = price / baseClose;
+        if (ratio < 0.6 || ratio > 1.6) {
+          console.warn('[Tick Anomaly Guard] Blocked extreme tick:', price, 'vs expected base:', baseClose);
+          return;
+        }
+      }
+
       const updatedCandle = {
         time: lastLoadedCandle.time,
         open: lastLoadedCandle.open,
@@ -4334,15 +4345,26 @@ const htmlContent = `<!DOCTYPE html>
       }).join('');
     }
 
+    function cleanTokenBase(sym) {
+      if (!sym) return '';
+      let s = sym.toUpperCase();
+      if (s.includes(':')) s = s.split(':')[1];
+      s = s.replace(/\.P$/i, '').replace(/[-_]?(USDT|USDC|USD|FDUSD)$/i, '');
+      return s.trim();
+    }
+
     // --- High-Speed Realtime Watchlist Sync (Zero-Latency Link with Chart, Header & Orderbook) ---
     function syncLivePriceToWatchlist(symbolOrCoin, price, changePct, changeAbs) {
       if (!symbolOrCoin || !price || isNaN(price) || price <= 0) return;
       const coinUp = symbolOrCoin.toUpperCase();
+      const cleanInput = cleanTokenBase(symbolOrCoin);
+
+      // Exact token matching — NEVER use substring .includes() which causes cross-token pollution (e.g. ANSEMSOL vs SOL)
       const matched = customWatchlist.find(w => 
         w.symbol === symbolOrCoin || 
-        w.name === coinUp || 
-        (w.symbol && (w.symbol.split(':')[1] === coinUp || w.symbol.split(':')[1] === (coinUp + 'USDT') || w.symbol.split(':')[1] === (coinUp + 'USDC'))) ||
-        (w.symbol && w.symbol.includes(coinUp))
+        w.name.toUpperCase() === coinUp ||
+        w.symbol.toUpperCase() === coinUp ||
+        (cleanTokenBase(w.symbol) === cleanInput && (w.name.toUpperCase().replace(/USDT|USDC|USD|\.P$/g, '') === cleanInput || cleanInput.length <= 6))
       );
       const targetSymbol = matched ? matched.symbol : symbolOrCoin;
 
@@ -4385,8 +4407,10 @@ const htmlContent = `<!DOCTYPE html>
         }
       }
 
-      // Keep Header / Ticker Bar in sync
-      if (targetSymbol === currentSymbol || (currentDockCoin && targetSymbol.includes(currentDockCoin))) {
+      // Keep Header / Ticker Bar & Active Chart in sync ONLY if this price belongs to the ACTIVE symbol!
+      const isActiveChartSymbol = (targetSymbol === currentSymbol) || 
+                                  (cleanTokenBase(targetSymbol) === cleanTokenBase(currentSymbol));
+      if (isActiveChartSymbol) {
         const lastEl = document.getElementById('hl-stat-last');
         if (lastEl) lastEl.textContent = '$' + (price >= 1 ? price.toLocaleString('en-US') : formatTokenPrice(price));
         if (changePct !== undefined && changePct !== null && !isNaN(changePct)) {
@@ -4429,8 +4453,9 @@ const htmlContent = `<!DOCTYPE html>
             if (typeof updateProviewTitle === 'function') updateProviewTitle();
 
             // Synchronize active chart candle and right price scale directly from watchlist response
+            const activeBase = cleanTokenBase(currentSymbol);
             const pEntry = data.prices[currentSymbol] || 
-                           (currentDockCoin && (data.prices['BINANCE:' + currentDockCoin + 'USDT'] || data.prices[currentDockCoin] || data.prices['HYPERLIQUID:' + currentDockCoin]));
+                           (activeBase && (data.prices['BINANCE:' + activeBase + 'USDT'] || data.prices['HYPERLIQUID:' + activeBase] || data.prices[activeBase]));
             if (pEntry && typeof pEntry.close === 'number' && pEntry.close > 0) {
               const livePrice = pEntry.close;
               if (typeof updateActiveCandleWithLivePrice === 'function') {
@@ -7374,8 +7399,10 @@ const server = http.createServer(async (req, res) => {
       if ((!ticker.rawLast || ticker.rawLast === 0) && typeof serverWatchlistPriceCache !== 'undefined') {
         const cUp = coin.toUpperCase();
         for (const [sym, data] of Object.entries(serverWatchlistPriceCache)) {
-          const symClean = sym.split(':')[1] || sym;
-          if (symClean.startsWith(cUp) || symClean.includes(cUp)) {
+          let symClean = sym.toUpperCase();
+          if (symClean.includes(':')) symClean = symClean.split(':')[1];
+          symClean = symClean.replace(/\.P$/i, '').replace(/[-_]?(USDT|USDC|USD|FDUSD)$/i, '').trim();
+          if (symClean === cUp) {
             if (data && data.close) {
               ticker.rawLast = data.close;
               ticker.last = formatTokenPriceServer(data.close);
