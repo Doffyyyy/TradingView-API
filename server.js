@@ -314,7 +314,8 @@ const htmlContent = `<!DOCTYPE html>
     /* Proliquid Watchlist Styles */
     .wl-col-header {
       display: grid;
-      grid-template-columns: 92px 64px 50px 52px 24px;
+      grid-template-columns: 86px 68px 54px 52px 20px;
+      column-gap: 6px;
       align-items: center;
       padding: 6px 8px;
       border-bottom: 1px solid var(--border-color);
@@ -332,7 +333,8 @@ const htmlContent = `<!DOCTYPE html>
 
     .wl-row {
       display: grid;
-      grid-template-columns: 92px 64px 50px 52px 24px;
+      grid-template-columns: 86px 68px 54px 52px 20px;
+      column-gap: 6px;
       align-items: center;
       padding: 6px 8px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -4347,25 +4349,26 @@ const htmlContent = `<!DOCTYPE html>
 
     function cleanTokenBase(sym) {
       if (!sym) return '';
-      let s = sym.toUpperCase();
+      let s = sym.toUpperCase().trim();
       if (s.includes(':')) s = s.split(':')[1];
-      s = s.replace(/\.P$/i, '').replace(/[-_]?(USDT|USDC|USD|FDUSD)$/i, '');
+      s = s.replace(/\.P$/i, '');
+      s = s.replace(/[\-_.]?(USDT|USDC|USD|FDUSD)$/i, '');
       return s.trim();
     }
 
     // --- High-Speed Realtime Watchlist Sync (Zero-Latency Link with Chart, Header & Orderbook) ---
     function syncLivePriceToWatchlist(symbolOrCoin, price, changePct, changeAbs) {
       if (!symbolOrCoin || !price || isNaN(price) || price <= 0) return;
-      const coinUp = symbolOrCoin.toUpperCase();
+      const coinUp = symbolOrCoin.toUpperCase().trim();
       const cleanInput = cleanTokenBase(symbolOrCoin);
 
-      // Exact token matching — NEVER use substring .includes() which causes cross-token pollution (e.g. ANSEMSOL vs SOL)
-      const matched = customWatchlist.find(w => 
-        w.symbol === symbolOrCoin || 
-        w.name.toUpperCase() === coinUp ||
-        w.symbol.toUpperCase() === coinUp ||
-        (cleanTokenBase(w.symbol) === cleanInput && (w.name.toUpperCase().replace(/USDT|USDC|USD|\.P$/g, '') === cleanInput || cleanInput.length <= 6))
-      );
+      // Robust tiered token matching — NEVER use substring .includes() which causes cross-token pollution (e.g. KLEDSOL vs SOL)
+      let matched = customWatchlist.find(w => w.symbol === symbolOrCoin || w.symbol.toUpperCase() === coinUp);
+      if (!matched) matched = customWatchlist.find(w => w.name.toUpperCase() === coinUp);
+      if (!matched) matched = customWatchlist.find(w => cleanTokenBase(w.symbol) === cleanInput);
+      if (!matched && cleanInput.length >= 4) {
+        matched = customWatchlist.find(w => cleanTokenBase(w.symbol).startsWith(cleanInput) || w.name.toUpperCase().startsWith(cleanInput));
+      }
       const targetSymbol = matched ? matched.symbol : symbolOrCoin;
 
       if (!pricesCache[targetSymbol]) pricesCache[targetSymbol] = {};
