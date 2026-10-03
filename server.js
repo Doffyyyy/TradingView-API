@@ -53,8 +53,22 @@ function getHistory(symbol, timeframe, range = 5000) {
   }
 
   let querySymbol = symbol;
-  if (querySymbol === 'HYPERLIQUID:HYPE' || querySymbol === 'HYPE') {
-    querySymbol = 'BYBIT:HYPEUSDT';
+  // Use native HyperliquidProvider (Vela Engine) for direct, sub-200ms candle snapshots
+  if (querySymbol.startsWith('HYPERLIQUID:') || querySymbol === 'HYPE' || querySymbol === 'PURR') {
+    return new Promise(async (resolve) => {
+      try {
+        const { hyperliquidProvider } = require('./src/extensions/hyperliquidProvider');
+        const candles = await hyperliquidProvider.getBars(querySymbol, timeframe, Math.min(range || 1000, 5000));
+        if (candles && candles.length > 0) {
+          const info = await hyperliquidProvider.getSymbolInfo(querySymbol);
+          const resData = { candles, infos: info };
+          serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+          return resolve(resData);
+        }
+      } catch (e) {}
+      // fallback to TradingView session if HL API encounters error
+      querySymbol = 'BYBIT:HYPEUSDT';
+    });
   } else if (querySymbol === 'SP500' || querySymbol === 'SPX' || querySymbol.includes('SP500') || querySymbol.includes('SPXUSD')) {
     querySymbol = 'INDEX:SPX';
   } else if (querySymbol === 'GOLD' || querySymbol === 'XAUUSD' || querySymbol.includes('GOLD') || querySymbol.includes('XAU')) {
@@ -2496,8 +2510,10 @@ const htmlContent = `<!DOCTYPE html>
     // --- Hyperliquid Realtime WebSocket Streaming Variables ---
     let hlWs = null;
     let hlWsActiveCoin = null;
+    let hlWsActiveInterval = null;
     let hlWsReconnectTimer = null;
     let hlWsPingTimer = null;
+    let hlWsStallWatchdog = null;
 
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
@@ -3796,6 +3812,9 @@ const htmlContent = `<!DOCTYPE html>
       if (typeof subscribeBinanceWebSocket === 'function') {
         subscribeBinanceWebSocket(sym);
       }
+      if (typeof subscribeHlWebSocket === 'function' && currentDockCoin) {
+        subscribeHlWebSocket(currentDockCoin);
+      }
 
       // 1. Instant Header & Ticker Update
       const titleEl = document.getElementById('active-symbol-title');
@@ -4975,6 +4994,20 @@ const htmlContent = `<!DOCTYPE html>
                 }
               }
             }
+
+            // 3. Realtime native candle stream: channel 'candle' (Vela Hyperliquid Engine)
+            if (msg.channel === 'candle' && msg.data && msg.data.s === currentDockCoin) {
+              const cd = msg.data;
+              const livePx = parseFloat(cd.c);
+              if (livePx > 0) {
+                if (typeof updateActiveCandleWithLivePrice === 'function') {
+                  updateActiveCandleWithLivePrice(livePx);
+                }
+                if (typeof syncLivePriceToWatchlist === 'function') {
+                  syncLivePriceToWatchlist(cd.s, livePx);
+                }
+              }
+            }
           } catch (e) {}
         };
 
@@ -4998,13 +5031,24 @@ const htmlContent = `<!DOCTYPE html>
           try {
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'l2Book', coin: hlWsActiveCoin } }));
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'trades', coin: hlWsActiveCoin } }));
+            if (hlWsActiveInterval) {
+              hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'candle', coin: hlWsActiveCoin, interval: hlWsActiveInterval } }));
+            }
           } catch (e) {}
           hlWsActiveCoin = null;
+          hlWsActiveInterval = null;
         }
         return;
       }
 
-      if (hlWsActiveCoin && hlWsActiveCoin !== coin) {
+      const hlIntervalMap = {
+        '1': '1m', '3': '3m', '5': '5m', '15': '15m', '30': '30m',
+        '60': '1h', '120': '2h', '240': '4h', 'D': '1d', 'W': '1w', 'M': '1M'
+      };
+      const curTf = (typeof currentTimeframe !== 'undefined') ? String(currentTimeframe) : '60';
+      const hlInterval = hlIntervalMap[curTf] || '1h';
+
+      if (hlWsActiveCoin && (hlWsActiveCoin !== coin || hlWsActiveInterval !== hlInterval)) {
         try {
           hlWs.send(JSON.stringify({
             method: 'unsubscribe',
@@ -5014,9 +5058,16 @@ const htmlContent = `<!DOCTYPE html>
             method: 'unsubscribe',
             subscription: { type: 'trades', coin: hlWsActiveCoin }
           }));
+          if (hlWsActiveInterval) {
+            hlWs.send(JSON.stringify({
+              method: 'unsubscribe',
+              subscription: { type: 'candle', coin: hlWsActiveCoin, interval: hlWsActiveInterval }
+            }));
+          }
         } catch (e) {}
       }
       hlWsActiveCoin = coin;
+      hlWsActiveInterval = hlInterval;
       try {
         hlWs.send(JSON.stringify({
           method: 'subscribe',
@@ -5025,6 +5076,10 @@ const htmlContent = `<!DOCTYPE html>
         hlWs.send(JSON.stringify({
           method: 'subscribe',
           subscription: { type: 'trades', coin }
+        }));
+        hlWs.send(JSON.stringify({
+          method: 'subscribe',
+          subscription: { type: 'candle', coin, interval: hlInterval }
         }));
       } catch (e) {}
     }
