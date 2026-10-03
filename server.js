@@ -152,6 +152,7 @@ const htmlContent = `<!DOCTYPE html>
   <link id="page-favicon" rel="icon" type="image/svg+xml" href="/public/favicon.svg">
   <link rel="alternate icon" href="/public/favicon.svg">
   <script src="/public/lightweight-charts.js"></script>
+  <script src="/public/drawingTools.js"></script>
   <style>
     :root {
       --bg-primary: #0f1117;
@@ -529,6 +530,27 @@ const htmlContent = `<!DOCTYPE html>
       transition: all 0.15s;
     }
     .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
+
+    /* Vela-Style Drawing Toolbar */
+    .draw-tool-btn {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid transparent;
+      color: #94a3b8; border-radius: 6px; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .draw-tool-btn:hover {
+      background: rgba(255, 255, 255, 0.08); color: #fff;
+    }
+    .draw-tool-btn.active {
+      background: rgba(168, 85, 247, 0.25) !important;
+      color: #c084fc !important;
+      border-color: rgba(168, 85, 247, 0.5) !important;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+    .draw-sep {
+      width: 20px; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0;
+    }
 
     /* Proliquid Trading Dock Styles - iOS Liquid Glass Modular Blocks */
     .dock-panel {
@@ -1285,8 +1307,67 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Chart Canvas -->
-          <div id="chart-container" style="flex: 1; width: 100%; position: relative;">
+          <!-- Chart Workspace: Left Drawing Toolbar + Main Chart Container -->
+          <div style="flex: 1; display: flex; width: 100%; position: relative; overflow: hidden; height: calc(100% - 74px);">
+            <!-- Left: Drawing Toolbar (Vela & TradingView Architecture) -->
+            <div id="chart-drawing-toolbar" style="width: 38px; display: flex; flex-direction: column; align-items: center; padding: 6px 2px; gap: 4px; z-index: 20; border-right: 1px solid rgba(255,255,255,0.06); background: rgba(12, 16, 26, 0.75); backdrop-filter: blur(16px); flex-shrink: 0; user-select: none;">
+              <!-- 1. Cursor / Crosshair -->
+              <button class="draw-tool-btn active" data-tool="cursor" title="Crosshair / Cursor (Esc)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+              </button>
+              <div class="draw-sep"></div>
+
+              <!-- 2. Trendline -->
+              <button class="draw-tool-btn" data-tool="trendline" title="Trendline (Click 2 points)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
+              </button>
+
+              <!-- 3. Ray Line -->
+              <button class="draw-tool-btn" data-tool="ray" title="Ray Line (Infinite Right)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
+              </button>
+
+              <!-- 4. Horizontal Line -->
+              <button class="draw-tool-btn" data-tool="horizontal" title="Horizontal Support/Resistance Line">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+              </button>
+              <div class="draw-sep"></div>
+
+              <!-- 5. Support / Resistance Box -->
+              <button class="draw-tool-btn" data-tool="box" title="Support/Resistance Zone Box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+              </button>
+
+              <!-- 6. Fibonacci Retracement -->
+              <button class="draw-tool-btn" data-tool="fib" title="Fibonacci Retracement (Golden Pocket)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
+              </button>
+              <div class="draw-sep"></div>
+
+              <!-- 7. Long Position Tool -->
+              <button class="draw-tool-btn" data-tool="long_pos" title="Long Position (Risk/Reward Box)">
+                <span style="font-size: 11px; font-weight: 800; color: #10b981;">▲R</span>
+              </button>
+
+              <!-- 8. Short Position Tool -->
+              <button class="draw-tool-btn" data-tool="short_pos" title="Short Position (Risk/Reward Box)">
+                <span style="font-size: 11px; font-weight: 800; color: #ef4444;">▼R</span>
+              </button>
+              <div class="draw-sep"></div>
+
+              <!-- 9. Magnet Mode -->
+              <button class="draw-tool-btn" id="draw-tool-magnet" data-tool="magnet" title="Magnet Mode (Snap to Candle OHLC)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
+              </button>
+
+              <!-- 10. Clear All Drawings -->
+              <button class="draw-tool-btn" id="draw-tool-trash" data-tool="trash" title="Clear All Drawings on Symbol">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+
+            <!-- Chart Canvas -->
+            <div id="chart-container" style="flex: 1; width: 100%; position: relative; height: 100%;">
             <div class="legend-overlay">
               <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
               <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
@@ -1426,6 +1507,7 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
         </div>
+      </div>
 
         <!-- Right: Proliquid Trading & Execution Dock (Modular Blocks) -->
         <div id="trading-dock" class="dock-panel">
@@ -2507,13 +2589,15 @@ const htmlContent = `<!DOCTYPE html>
     let isTpSlActive = false;
     let dockAvailableBalance = 10000;
 
-    // --- Hyperliquid Realtime WebSocket Streaming Variables ---
+    // --- Hyperliquid & Binance Realtime WebSocket Streaming Variables ---
     let hlWs = null;
     let hlWsActiveCoin = null;
     let hlWsActiveInterval = null;
     let hlWsReconnectTimer = null;
     let hlWsPingTimer = null;
     let hlWsStallWatchdog = null;
+    let binanceWs = null;
+    let binanceWsActivePair = null;
 
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
@@ -3545,6 +3629,11 @@ const htmlContent = `<!DOCTYPE html>
       },
     });
 
+    // --- Initialize Drawing Engine (Phase 2 - Vela Architecture) ---
+    if (window.drawingEngineInstance) {
+      window.drawingEngineInstance.init(chart, candleSeries, chartContainer, currentSymbol);
+    }
+
     // --- Realtime Active Candle Tick Engine (Animates Candle with Every Live Tick) ---
     function updateActiveCandleWithLivePrice(price) {
       if (!price || isNaN(price) || price <= 0 || !lastLoadedCandle) return;
@@ -3583,6 +3672,9 @@ const htmlContent = `<!DOCTYPE html>
 
     function resizeChart() {
       chart.applyOptions({ width: chartContainer.clientWidth, height: chartContainer.clientHeight });
+      if (window.drawingEngineInstance) {
+        window.drawingEngineInstance.resizeCanvas();
+      }
     }
     window.addEventListener('resize', resizeChart);
     resizeChart();
@@ -3814,6 +3906,9 @@ const htmlContent = `<!DOCTYPE html>
       }
       if (typeof subscribeHlWebSocket === 'function' && currentDockCoin) {
         subscribeHlWebSocket(currentDockCoin);
+      }
+      if (window.drawingEngineInstance) {
+        window.drawingEngineInstance.setSymbol(sym);
       }
 
       // 1. Instant Header & Ticker Update
@@ -5085,9 +5180,6 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     // --- Binance Realtime Trade Stream Engine (Tick-by-Tick Instant Candlestick & Price Scale Animation) ---
-    let binanceWs = null;
-    let binanceWsActivePair = null;
-
     function subscribeBinanceWebSocket(sym) {
       if (typeof WebSocket === 'undefined') return;
       if (!sym) return;
@@ -5723,6 +5815,22 @@ const htmlContent = `<!DOCTYPE html>
         indDropdown.style.display = 'none';
         btnIndMenu?.classList.remove('active');
       }
+    });
+
+    // Drawing Toolbar button event handlers (Phase 2 - Vela Architecture)
+    document.querySelectorAll('.draw-tool-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const tool = btn.dataset.tool;
+        if (tool === 'magnet') {
+          window.drawingEngineInstance?.toggleMagnet();
+        } else if (tool === 'trash') {
+          window.drawingEngineInstance?.clearAllDrawings();
+        } else if (tool) {
+          window.drawingEngineInstance?.setActiveTool(tool);
+        }
+      });
     });
 
     // Fullscreen chart toggle
