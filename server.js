@@ -245,6 +245,22 @@ const htmlContent = `<!DOCTYPE html>
       color: var(--text-primary); padding: 5px 10px; border-radius: 5px; font-size: 12px; outline: none; width: 180px;
     }
 
+    /* Dark Mode Theme for Native Select & Options (Prevents white background on Chrome/Windows) */
+    select {
+      background-color: #151924 !important;
+      color: #f0f3f6 !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
+    select option {
+      background-color: #131722 !important;
+      color: #f0f3f6 !important;
+      padding: 6px 10px;
+    }
+    select option:checked, select option:hover {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+
     #chart-container { flex: 1; width: 100%; position: relative; }
     #indicators-hud-stack::-webkit-scrollbar { width: 4px; }
     #indicators-hud-stack::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
@@ -1546,13 +1562,13 @@ const htmlContent = `<!DOCTYPE html>
         <div id="chart-cell-2" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
           <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <select id="grid-sym-select-2" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
-                <option value="BINANCE:ETHUSDT" selected>ETHUSDT</option>
-                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                <option value="BINANCE:SOLUSDT">SOLUSDT</option>
-                <option value="HYPERLIQUID:HYPE">HYPE</option>
-                <option value="BINANCE:BNBUSDT">BNBUSDT</option>
-                <option value="BINANCE:NEARUSDT">NEARUSDT</option>
+              <select id="grid-sym-select-2" class="btn" style="padding: 2px 6px; font-size: 10px; font-weight: 700; color: #f0f3f6; background-color: #131722; border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; outline: none; cursor: pointer;">
+                <option value="BINANCE:ETHUSDT" selected style="background-color: #131722; color: #f0f3f6;">ETHUSDT</option>
+                <option value="BINANCE:BTCUSDT" style="background-color: #131722; color: #f0f3f6;">BTCUSDT</option>
+                <option value="BINANCE:SOLUSDT" style="background-color: #131722; color: #f0f3f6;">SOLUSDT</option>
+                <option value="HYPERLIQUID:HYPE" style="background-color: #131722; color: #f0f3f6;">HYPE</option>
+                <option value="BINANCE:BNBUSDT" style="background-color: #131722; color: #f0f3f6;">BNBUSDT</option>
+                <option value="BINANCE:NEARUSDT" style="background-color: #131722; color: #f0f3f6;">NEARUSDT</option>
               </select>
               <div style="display: flex; gap: 2px;">
                 <button class="grid-tf-btn btn" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
@@ -1570,12 +1586,12 @@ const htmlContent = `<!DOCTYPE html>
         <div id="chart-cell-3" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
           <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <select id="grid-sym-select-3" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
-                <option value="BINANCE:SOLUSDT" selected>SOLUSDT</option>
-                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                <option value="BINANCE:ETHUSDT">ETHUSDT</option>
-                <option value="HYPERLIQUID:HYPE">HYPE</option>
-                <option value="BINANCE:NEARUSDT">NEARUSDT</option>
+              <select id="grid-sym-select-3" class="btn" style="padding: 2px 6px; font-size: 10px; font-weight: 700; color: #f0f3f6; background-color: #131722; border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; outline: none; cursor: pointer;">
+                <option value="BINANCE:SOLUSDT" selected style="background-color: #131722; color: #f0f3f6;">SOLUSDT</option>
+                <option value="BINANCE:BTCUSDT" style="background-color: #131722; color: #f0f3f6;">BTCUSDT</option>
+                <option value="BINANCE:ETHUSDT" style="background-color: #131722; color: #f0f3f6;">ETHUSDT</option>
+                <option value="HYPERLIQUID:HYPE" style="background-color: #131722; color: #f0f3f6;">HYPE</option>
+                <option value="BINANCE:NEARUSDT" style="background-color: #131722; color: #f0f3f6;">NEARUSDT</option>
               </select>
               <div style="display: flex; gap: 2px;">
                 <button class="grid-tf-btn btn active" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
@@ -1593,12 +1609,12 @@ const htmlContent = `<!DOCTYPE html>
         <div id="chart-cell-4" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
           <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <select id="grid-sym-select-4" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
-                <option value="HYPERLIQUID:HYPE" selected>HYPE</option>
-                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                <option value="BINANCE:ETHUSDT">ETHUSDT</option>
-                <option value="BINANCE:SOLUSDT">SOLUSDT</option>
-                <option value="BINANCE:BNBUSDT">BNBUSDT</option>
+              <select id="grid-sym-select-4" class="btn" style="padding: 2px 6px; font-size: 10px; font-weight: 700; color: #f0f3f6; background-color: #131722; border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; outline: none; cursor: pointer;">
+                <option value="HYPERLIQUID:HYPE" selected style="background-color: #131722; color: #f0f3f6;">HYPE</option>
+                <option value="BINANCE:BTCUSDT" style="background-color: #131722; color: #f0f3f6;">BTCUSDT</option>
+                <option value="BINANCE:ETHUSDT" style="background-color: #131722; color: #f0f3f6;">ETHUSDT</option>
+                <option value="BINANCE:SOLUSDT" style="background-color: #131722; color: #f0f3f6;">SOLUSDT</option>
+                <option value="BINANCE:BNBUSDT" style="background-color: #131722; color: #f0f3f6;">BNBUSDT</option>
               </select>
               <div style="display: flex; gap: 2px;">
                 <button class="grid-tf-btn btn" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
