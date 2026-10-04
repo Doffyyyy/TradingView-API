@@ -153,6 +153,8 @@ const htmlContent = `<!DOCTYPE html>
   <link rel="alternate icon" href="/public/favicon.svg">
   <script src="/public/lightweight-charts.js"></script>
   <script src="/public/drawingTools.js"></script>
+  <script src="/public/replayStudio.js"></script>
+  <script src="/public/multiChart.js"></script>
   <style>
     :root {
       --bg-primary: #0f1117;
@@ -1297,6 +1299,35 @@ const htmlContent = `<!DOCTYPE html>
 
               <div class="hl-vdiv"></div>
 
+              <!-- Chart Grid Layout Selector (Vela Architecture) -->
+              <div style="position: relative; display: inline-block;">
+                <button class="hl-tool-btn" id="btn-layout-menu" title="Select Chart Layout">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                  <span id="layout-current-label">1 Chart</span>
+                  <span style="font-size: 8px; color: #8c93a3;">⌄</span>
+                </button>
+                <div id="layout-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; right: 0; z-index: 1000; width: 175px; padding: 6px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);">
+                  <div class="layout-opt-btn" data-layout="1" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: #fff; font-size: 11px; font-weight: 600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                    <span>1 Chart (Single)</span>
+                  </div>
+                  <div class="layout-opt-btn" data-layout="2v" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px; font-weight: 600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                    <span>2 Split Vertical (2V)</span>
+                  </div>
+                  <div class="layout-opt-btn" data-layout="2h" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px; font-weight: 600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                    <span>2 Split Horizontal (2H)</span>
+                  </div>
+                  <div class="layout-opt-btn" data-layout="4" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px; font-weight: 600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                    <span>4 Grid (2x2)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hl-vdiv"></div>
+
               <!-- Fullscreen & Camera -->
               <button class="hl-icon-btn" id="btn-chart-fullscreen" title="Fullscreen chart">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
@@ -1366,8 +1397,11 @@ const htmlContent = `<!DOCTYPE html>
               </button>
             </div>
 
-            <!-- Chart Canvas -->
-            <div id="chart-container" style="flex: 1; width: 100%; position: relative; height: 100%;">
+            <!-- Charts Grid Container (Supports 1, 2V, 2H, 4 - Vela Architecture) -->
+            <div id="charts-grid-wrapper" style="flex: 1; display: flex; width: 100%; height: 100%; position: relative; overflow: hidden;">
+              <!-- Cell 1 (Main Chart) -->
+              <div id="chart-cell-1" class="chart-grid-cell" style="flex: 1; width: 100%; height: 100%; position: relative; display: flex;">
+                <div id="chart-container" style="flex: 1; width: 100%; position: relative; height: 100%;">
             <div class="legend-overlay">
               <span class="legend-item"><span class="legend-label">O:</span><span id="leg-open">--</span></span>
               <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
@@ -1507,7 +1541,79 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
         </div>
+
+        <!-- Cell 2 (Secondary Grid Chart) -->
+        <div id="chart-cell-2" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
+          <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <select id="grid-sym-select-2" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
+                <option value="BINANCE:ETHUSDT" selected>ETHUSDT</option>
+                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
+                <option value="BINANCE:SOLUSDT">SOLUSDT</option>
+                <option value="HYPERLIQUID:HYPE">HYPE</option>
+                <option value="BINANCE:BNBUSDT">BNBUSDT</option>
+                <option value="BINANCE:NEARUSDT">NEARUSDT</option>
+              </select>
+              <div style="display: flex; gap: 2px;">
+                <button class="grid-tf-btn btn" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
+                <button class="grid-tf-btn btn active" data-tf="60" style="padding: 1px 5px; font-size: 9.5px;">1h</button>
+                <button class="grid-tf-btn btn" data-tf="240" style="padding: 1px 5px; font-size: 9.5px;">4h</button>
+                <button class="grid-tf-btn btn" data-tf="D" style="padding: 1px 5px; font-size: 9.5px;">D</button>
+              </div>
+            </div>
+            <span id="grid-legend-2" style="font-size: 10px; font-weight: 700; color: #94a3b8;">ETHUSDT [1h]</span>
+          </div>
+          <div id="chart-container-2" style="flex: 1; width: 100%; height: calc(100% - 26px); position: relative;"></div>
+        </div>
+
+        <!-- Cell 3 (Secondary Grid Chart) -->
+        <div id="chart-cell-3" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
+          <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <select id="grid-sym-select-3" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
+                <option value="BINANCE:SOLUSDT" selected>SOLUSDT</option>
+                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
+                <option value="BINANCE:ETHUSDT">ETHUSDT</option>
+                <option value="HYPERLIQUID:HYPE">HYPE</option>
+                <option value="BINANCE:NEARUSDT">NEARUSDT</option>
+              </select>
+              <div style="display: flex; gap: 2px;">
+                <button class="grid-tf-btn btn active" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
+                <button class="grid-tf-btn btn" data-tf="60" style="padding: 1px 5px; font-size: 9.5px;">1h</button>
+                <button class="grid-tf-btn btn" data-tf="240" style="padding: 1px 5px; font-size: 9.5px;">4h</button>
+                <button class="grid-tf-btn btn" data-tf="D" style="padding: 1px 5px; font-size: 9.5px;">D</button>
+              </div>
+            </div>
+            <span id="grid-legend-3" style="font-size: 10px; font-weight: 700; color: #94a3b8;">SOLUSDT [15m]</span>
+          </div>
+          <div id="chart-container-3" style="flex: 1; width: 100%; height: calc(100% - 26px); position: relative;"></div>
+        </div>
+
+        <!-- Cell 4 (Secondary Grid Chart) -->
+        <div id="chart-cell-4" class="chart-grid-cell" style="display: none; flex-direction: column; position: relative; border-left: 1px solid rgba(255,255,255,0.08); border-top: 1px solid rgba(255,255,255,0.08); background: #0d111a; overflow: hidden;">
+          <div style="height: 26px; background: rgba(16,20,32,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; z-index: 10; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <select id="grid-sym-select-4" class="btn" style="padding: 1px 4px; font-size: 10px; color: #fff; background: rgba(255,255,255,0.05); outline: none;">
+                <option value="HYPERLIQUID:HYPE" selected>HYPE</option>
+                <option value="BINANCE:BTCUSDT">BTCUSDT</option>
+                <option value="BINANCE:ETHUSDT">ETHUSDT</option>
+                <option value="BINANCE:SOLUSDT">SOLUSDT</option>
+                <option value="BINANCE:BNBUSDT">BNBUSDT</option>
+              </select>
+              <div style="display: flex; gap: 2px;">
+                <button class="grid-tf-btn btn" data-tf="15" style="padding: 1px 5px; font-size: 9.5px;">15m</button>
+                <button class="grid-tf-btn btn active" data-tf="60" style="padding: 1px 5px; font-size: 9.5px;">1h</button>
+                <button class="grid-tf-btn btn" data-tf="240" style="padding: 1px 5px; font-size: 9.5px;">4h</button>
+                <button class="grid-tf-btn btn" data-tf="D" style="padding: 1px 5px; font-size: 9.5px;">D</button>
+              </div>
+            </div>
+            <span id="grid-legend-4" style="font-size: 10px; font-weight: 700; color: #94a3b8;">HYPE [1h]</span>
+          </div>
+          <div id="chart-container-4" style="flex: 1; width: 100%; height: calc(100% - 26px); position: relative;"></div>
+        </div>
       </div>
+    </div>
+  </div>
 
         <!-- Right: Proliquid Trading & Execution Dock (Modular Blocks) -->
         <div id="trading-dock" class="dock-panel">
@@ -2333,24 +2439,90 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- VIEW 4: REPLAY ENGINE -->
-    <div class="view-panel" id="view-replay">
-      <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="rep-sym-input" class="search-input" value="BINANCE:BTCUSDT">
-          <button class="btn active" id="btn-run-replay">Execute Bar-by-Bar Replay</button>
-        </div>
-        <span id="rep-status" style="font-size: 12px; color: var(--text-secondary);">Unlimited Free Mode</span>
-      </div>
-      <div class="panel-scroll">
-        <div class="card">
-          <div class="card-title">Replay Simulation Parameters</div>
-          <div class="grid-3">
-            <div class="stat-box"><div class="stat-label">Mode</div><div class="stat-value" style="font-size: 14px;">BAR_BY_BAR_WALKFORWARD</div></div>
-            <div class="stat-box"><div class="stat-label">Total Bars Processed</div><div class="stat-value" id="rep-bars">--</div></div>
-            <div class="stat-box"><div class="stat-label">Stress-Test Profit</div><div class="stat-value" id="rep-profit">--</div></div>
+    <!-- VIEW 4: REPLAY ENGINE (Phase 3 - Vela Replay Studio) -->
+    <div class="view-panel" id="view-replay" style="position: relative; width: 100%; height: 100%; overflow: hidden; display: none; flex-direction: column;">
+      <!-- Replay Controls Bar -->
+      <div class="controls-bar" style="padding: 6px 16px; background: rgba(12, 16, 26, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; z-index: 10; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong style="color: #38bdf8; font-size: 12px; display: flex; align-items: center; gap: 5px;">
+            <span>⏪ Market Replay Studio</span>
+            <span class="ios-glass-pill" style="font-size: 9px; padding: 1px 6px; background: rgba(56, 189, 248, 0.18); color: #38bdf8;">Vela Walkforward</span>
+          </strong>
+          <div class="hl-vdiv"></div>
+          <input type="text" id="rep-symbol-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 140px; padding: 3px 8px; font-size: 11px;">
+          <!-- Quick picks -->
+          <div style="display: flex; gap: 3px;">
+            <button class="rep-chip-btn btn active" data-sym="BINANCE:BTCUSDT" style="padding: 2px 6px; font-size: 10px;">BTC</button>
+            <button class="rep-chip-btn btn" data-sym="BINANCE:ETHUSDT" style="padding: 2px 6px; font-size: 10px;">ETH</button>
+            <button class="rep-chip-btn btn" data-sym="BINANCE:SOLUSDT" style="padding: 2px 6px; font-size: 10px;">SOL</button>
+            <button class="rep-chip-btn btn" data-sym="HYPERLIQUID:HYPE" style="padding: 2px 6px; font-size: 10px;">HYPE</button>
           </div>
-          <p id="rep-dates" style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);"></p>
+          <div class="hl-vdiv"></div>
+          <!-- Timeframes -->
+          <div style="display: flex; gap: 2px;">
+            <button class="rep-tf-btn btn" data-tf="1" style="padding: 2px 6px; font-size: 10px;">1m</button>
+            <button class="rep-tf-btn btn" data-tf="5" style="padding: 2px 6px; font-size: 10px;">5m</button>
+            <button class="rep-tf-btn btn" data-tf="15" style="padding: 2px 6px; font-size: 10px;">15m</button>
+            <button class="rep-tf-btn btn active" data-tf="60" style="padding: 2px 6px; font-size: 10px;">1h</button>
+            <button class="rep-tf-btn btn" data-tf="240" style="padding: 2px 6px; font-size: 10px;">4h</button>
+            <button class="rep-tf-btn btn" data-tf="D" style="padding: 2px 6px; font-size: 10px;">D</button>
+          </div>
+          <button class="btn" id="btn-rep-load" style="background: rgba(37, 99, 235, 0.3); color: #60a5fa; border: 1px solid #2563eb; padding: 2px 8px; font-size: 10.5px; font-weight: 700;">Load Chart</button>
+        </div>
+        <span id="rep-status-text" style="font-size: 11px; color: #94a3b8;">Ready: 1000 bars loaded.</span>
+      </div>
+
+      <!-- Replay Chart Canvas -->
+      <div style="flex: 1; width: 100%; position: relative; height: calc(100% - 42px); overflow: hidden;">
+        <div id="replay-chart-container" style="width: 100%; height: 100%; position: relative;"></div>
+
+        <!-- Floating iOS Liquid Glass Playback Controller (Docked Bottom Center) -->
+        <div class="ios-glass-panel" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 30; padding: 8px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 16px 40px rgba(0,0,0,0.7); pointer-events: auto; border: 1px solid rgba(255,255,255,0.18);">
+          <!-- Buttons Group -->
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button class="btn" id="btn-rep-reset" title="Reset to start cut-off position" style="padding: 4px 8px; font-size: 11px;">⏮ Reset</button>
+            <button class="btn" id="btn-rep-step-back" title="Step back 1 bar" style="padding: 4px 8px; font-size: 11px;">⏪ -1 Bar</button>
+            <button class="btn active" id="btn-rep-play" title="Play / Pause Replay" style="padding: 4px 14px; font-size: 11.5px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399;">
+              <span style="font-size: 14px;">▶</span> <span>Play</span>
+            </button>
+            <button class="btn" id="btn-rep-step-fwd" title="Step forward 1 bar" style="padding: 4px 8px; font-size: 11px;">⏩ +1 Bar</button>
+          </div>
+
+          <div class="hl-vdiv" style="height: 22px;"></div>
+
+          <!-- Speed Selection -->
+          <div style="display: flex; align-items: center; gap: 2px;">
+            <span style="font-size: 10px; color: #94a3b8; font-weight: 700; margin-right: 2px;">SPEED:</span>
+            <button class="rep-speed-btn btn active" data-speed="1" style="padding: 2px 6px; font-size: 10px;">1x</button>
+            <button class="rep-speed-btn btn" data-speed="2" style="padding: 2px 6px; font-size: 10px;">2x</button>
+            <button class="rep-speed-btn btn" data-speed="5" style="padding: 2px 6px; font-size: 10px;">5x</button>
+            <button class="rep-speed-btn btn" data-speed="10" style="padding: 2px 6px; font-size: 10px;">10x</button>
+          </div>
+
+          <div class="hl-vdiv" style="height: 22px;"></div>
+
+          <!-- Timeline Slider -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="range" id="rep-slider" min="20" max="1000" value="750" style="width: 140px; cursor: pointer;">
+          </div>
+
+          <div class="hl-vdiv" style="height: 22px;"></div>
+
+          <!-- Live Readout Stats -->
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">CURRENT PRICE</span>
+              <strong id="rep-cur-price" style="color: #fff; font-family: monospace;">--</strong>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">PNL CHANGE</span>
+              <strong id="rep-pnl-change" class="rep-stat-val" style="font-family: monospace;">--</strong>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">BAR / TIME</span>
+              <span id="rep-bar-time" style="color: #cbd5e1; font-size: 10px;">--</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2458,6 +2630,21 @@ const htmlContent = `<!DOCTYPE html>
         if (typeof triggerAutoSave === 'function') triggerAutoSave();
         if (btn.dataset.target === 'view-journal' && typeof renderJournalDashboard === 'function') {
           renderJournalDashboard();
+        }
+        if (btn.dataset.target === 'view-replay') {
+          if (window.replayStudioInstance) {
+            const repHost = document.getElementById('replay-chart-container');
+            if (!window.replayStudioInstance.isInitialized) {
+              window.replayStudioInstance.init(repHost);
+            } else {
+              window.replayStudioInstance.resize();
+            }
+          }
+        }
+        if (btn.dataset.target === 'view-chart') {
+          setTimeout(() => {
+            if (typeof resizeChart === 'function') resizeChart();
+          }, 50);
         }
       });
     });
@@ -3632,6 +3819,11 @@ const htmlContent = `<!DOCTYPE html>
     // --- Initialize Drawing Engine (Phase 2 - Vela Architecture) ---
     if (window.drawingEngineInstance) {
       window.drawingEngineInstance.init(chart, candleSeries, chartContainer, currentSymbol);
+    }
+
+    // --- Initialize Multi-Chart Manager (Phase 3 - Vela Architecture) ---
+    if (window.multiChartManagerInstance) {
+      window.multiChartManagerInstance.init();
     }
 
     // --- Realtime Active Candle Tick Engine (Animates Candle with Every Live Tick) ---
