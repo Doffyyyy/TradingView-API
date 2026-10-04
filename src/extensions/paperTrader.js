@@ -170,24 +170,37 @@ class PaperTradingEngine {
       const curr = this.latestPrices[pos.symbol]?.price;
       if (!curr) continue;
 
-      // Trailing stop / Break-even lock:
-      // When price moves >= +1.0% in profit, lock SL at entry + 0.35% (guarantees profit that easily covers round-trip fees)
+      // Composite Edge Tiered Trailing Stop & Profit Lock:
+      // When price moves >= +1.6% in profit, lock SL at entry + 0.40% (safely locks fee-free profit)
+      // When price moves >= +2.4% in profit, lock SL at entry + 1.20% (locks runner gains)
       if (pos.side === 'LONG') {
         const gainPct = (curr - pos.entryPrice) / pos.entryPrice;
-        if (gainPct >= 0.010) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0035);
+        if (gainPct >= 0.024) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0120);
           if (pos.stopLoss < lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
+            this.log(`Runner Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at +1.2% ($${formatTokenPrice(lockPrice)})`);
+          }
+        } else if (gainPct >= 0.016) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0040);
+          if (pos.stopLoss < lockPrice) {
+            pos.stopLoss = lockPrice;
+            this.log(`Breakeven Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at +0.4% ($${formatTokenPrice(lockPrice)})`);
           }
         }
       } else {
         const gainPct = (pos.entryPrice - curr) / pos.entryPrice;
-        if (gainPct >= 0.010) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9965);
+        if (gainPct >= 0.024) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9880);
           if (pos.stopLoss > lockPrice) {
             pos.stopLoss = lockPrice;
-            this.log(`Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at breakeven+$ ($${formatTokenPrice(lockPrice)})`);
+            this.log(`Runner Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at +1.2% ($${formatTokenPrice(lockPrice)})`);
+          }
+        } else if (gainPct >= 0.016) {
+          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9960);
+          if (pos.stopLoss > lockPrice) {
+            pos.stopLoss = lockPrice;
+            this.log(`Breakeven Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at +0.4% ($${formatTokenPrice(lockPrice)})`);
           }
         }
       }
@@ -334,18 +347,18 @@ class PaperTradingEngine {
     const size = notional / currPrice;
     this.portfolio.cash -= margin;
 
-    // Adaptive targets tailored to leverage:
-    // 1x: Base TP 1.8%, SL 0.9% (RR 2:1)
-    // 2x: Base TP 1.6%, SL 0.8% (RR 2:1)
-    // 3x: Base TP 1.5%, SL 0.75% (RR 2:1)
-    let slPercent = 0.009;
-    let tpPercent = 0.018;
+    // Adaptive targets tailored to leverage (Composite Edge R:R 2.4:1):
+    // 1x: Base TP 2.4%, SL 1.0% (RR 2.4:1)
+    // 2x: Base TP 2.0%, SL 0.8% (RR 2.5:1)
+    // 3x: Base TP 1.8%, SL 0.75% (RR 2.4:1)
+    let slPercent = 0.010;
+    let tpPercent = 0.024;
     if (lev === 2) {
       slPercent = 0.008;
-      tpPercent = 0.016;
+      tpPercent = 0.020;
     } else if (lev === 3) {
       slPercent = 0.0075;
-      tpPercent = 0.015;
+      tpPercent = 0.018;
     }
 
     // Hard Minimum Take Profit Distance (at least 1.4% to safely out-earn fees by 15x-20x)

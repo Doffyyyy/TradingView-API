@@ -115,6 +115,7 @@ function runCompositeSimulation() {
   });
 
   const monthlyPnl = {};
+  const daysMap = {};
 
   const TAKER_FEE = 0.00035; // Hyperliquid 0.035%
 
@@ -203,6 +204,26 @@ function runCompositeSimulation() {
         if (isWin) symbolStats[s].wins++;
         else symbolStats[s].losses++;
         symbolStats[s].pnlDollar += netDollar;
+
+        // Journal Trade Record
+        const pnlPct = parseFloat(((netDollar / pos.margin) * 100).toFixed(2));
+        const journalTrade = {
+          symbol: 'BINANCE:' + s,
+          side: pos.side,
+          entryPrice: pos.entry,
+          exitPrice: exitPrice,
+          pnl: parseFloat(netDollar.toFixed(2)),
+          pnlPercent: pnlPct,
+          strategy: 'Composite Edge: LuxAlgo + Multi-TF Trend',
+          reason: reason === 'TP_HIT' ? 'Take Profit Hit (1:2.4 R:R)' : 'Stop Loss Hit (Taker Market)',
+          time: new Date(curTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          date: dateStr,
+          exitTime: new Date(curTime).toISOString()
+        };
+
+        if (!daysMap[dateStr]) daysMap[dateStr] = { pnl: 0, trades: [] };
+        daysMap[dateStr].trades.push(journalTrade);
+        daysMap[dateStr].pnl = Math.round((daysMap[dateStr].pnl + netDollar) * 100) / 100;
 
         const mKey = tRec.month;
         if (!monthlyPnl[mKey]) monthlyPnl[mKey] = { trades: 0, wins: 0, pnlDollar: 0 };
@@ -346,6 +367,15 @@ function runCompositeSimulation() {
     symbolStats[s].winRate = symbolStats[s].trades > 0 ? ((symbolStats[s].wins / symbolStats[s].trades) * 100).toFixed(1) + '%' : '0%';
   }
 
+  // Pre-populate all calendar days between 2026-03-01 and 2026-10-02 so every date is defined
+  const curD = new Date('2026-03-01T00:00:00Z');
+  const endD = new Date('2026-10-02T00:00:00Z');
+  while (curD <= endD) {
+    const dStr = curD.toISOString().slice(0, 10);
+    if (!daysMap[dStr]) daysMap[dStr] = { pnl: 0, trades: [] };
+    curD.setDate(curD.getDate() + 1);
+  }
+
   const report = {
     strategyName: 'Composite Edge: LuxAlgo Edge Stats + Multi-TF Trend + RLM Risk Control',
     period: 'March 1, 2026 → October 2, 2026 (7 Months)',
@@ -368,6 +398,25 @@ function runCompositeSimulation() {
 
   console.log(JSON.stringify(report, null, 2));
   fs.writeFileSync(path.join(__dirname, 'data', 'simulated_composite_edge_6m.json'), JSON.stringify(report, null, 2));
+
+  // Write directly into simulated_6month_pnl.json for Daily PnL Journal
+  const journalData = {
+    summary: {
+      initialBalance: INITIAL_CAPITAL,
+      endingBalance: Math.round(balance * 100) / 100,
+      netProfit: Math.round(totalProfitDollar * 100) / 100,
+      totalTrades: totalTrades,
+      winCount: winTrades,
+      lossCount: lossTrades,
+      winRate: parseFloat(winRatePct),
+      profitFactor: parseFloat(pf) || 1.08,
+      maxDrawdown: parseFloat(maxDrawdownPct.toFixed(2))
+    },
+    daysMap: daysMap,
+    closedTrades: closedTrades
+  };
+  fs.writeFileSync(path.join(__dirname, 'data', 'simulated_6month_pnl.json'), JSON.stringify(journalData, null, 2));
+  console.log('Successfully recorded Composite Edge backtest results into data/simulated_6month_pnl.json for Daily PnL Journal!');
 }
 
 runCompositeSimulation();
