@@ -12,6 +12,7 @@ const { sendTelegramAlert } = require('./src/extensions/alert');
 const { hubInstance } = require('./src/extensions/agentHub');
 const { paperTraderInstance } = require('./src/extensions/paperTrader');
 const { hyperliquidInstance, normalizeCoin } = require('./src/extensions/hyperliquid');
+const { computeEdgeStats } = require('./src/extensions/statsEngine');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -2408,6 +2409,48 @@ const htmlContent = `<!DOCTYPE html>
           </div>
           <p id="val-reason" style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);"></p>
         </div>
+
+        <!-- Quantitative Edge Statistics Card (LuxAlgo edge-stats) -->
+        <div class="card" id="val-edge-stats-card" style="margin-bottom: 14px; border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(14, 18, 30, 0.65);">
+          <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #38bdf8; font-weight: 800;">📐 Quantitative Edge Statistics</span>
+              <span class="ios-glass-pill" style="font-size: 9.5px; padding: 1px 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">LuxAlgo Wilson 95% CI</span>
+            </div>
+            <span id="edge-eval-range" style="font-size: 11px; color: var(--text-secondary);">Sample History: --</span>
+          </div>
+
+          <div class="grid-4" style="margin-top: 8px;">
+            <div class="stat-box">
+              <div class="stat-label">Touch Prior High (PDH)</div>
+              <div class="stat-value val-green" id="edge-pdh-rate">--</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-pdh-ci">95% CI: --</div>
+              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-pdh-sub">Dist: --</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Touch Prior Low (PDL)</div>
+              <div class="stat-value val-red" id="edge-pdl-rate">--</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-pdl-ci">95% CI: --</div>
+              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-pdl-sub">Dist: --</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Session Gap Fill Rate</div>
+              <div class="stat-value" style="color: #fbbf24;" id="edge-gap-rate">--</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-gap-ci">95% CI: --</div>
+              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-gap-time">Time: --</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">ORB Trend Expansion</div>
+              <div class="stat-value" style="color: #a855f7;" id="edge-orb-rate">--</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-orb-ci">95% CI: --</div>
+              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-orb-false">False Break: --</div>
+            </div>
+          </div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 8px; font-style: italic;" id="edge-disclaimer">
+            * Historical conditional frequencies with 95% Wilson confidence intervals. Sample size N attached to every number. Not predictions or advice.
+          </div>
+        </div>
+
         <div class="grid-2">
           <div class="card">
             <div class="card-title">Oscillators (11 Indicators)</div>
@@ -4209,6 +4252,9 @@ const htmlContent = `<!DOCTYPE html>
             setLegendOHLC(lastLoadedCandle);
             updateActiveIndicators(currentCandlesCache);
             updateProviewTitle(sym, lastLoadedCandle.close);
+            if (typeof refreshEdgeStats === 'function') {
+              refreshEdgeStats(sym);
+            }
           }
         }
       } catch (e) {}
@@ -6134,10 +6180,109 @@ const htmlContent = `<!DOCTYPE html>
         \`).join('');
 
         document.getElementById('val-status').textContent = 'Evaluation Complete';
+
+        // Load Quantitative Edge Stats (LuxAlgo edge-stats)
+        refreshEdgeStats(sym);
       } catch (e) {
         document.getElementById('val-status').textContent = 'Error: ' + e.message;
       }
     });
+
+    // --- Quantitative Edge Stats Client Updater (LuxAlgo edge-stats) ---
+    async function refreshEdgeStats(sym) {
+      if (!sym) sym = currentSymbol || 'BINANCE:BTCUSDT';
+      try {
+        const res = await fetch('/api/edge-stats?symbol=' + encodeURIComponent(sym));
+        const data = await res.json();
+        if (data.error || !data.edges) return;
+
+        const { edges, liveSession, symbolMeta } = data;
+
+        // 1. Populate Validation Bot Card
+        const evalRangeEl = document.getElementById('edge-eval-range');
+        if (evalRangeEl && symbolMeta) {
+          evalRangeEl.textContent = 'Sample: ' + symbolMeta.totalSessions + ' sessions (' + symbolMeta.evaluatedDateRange + ')';
+        }
+
+        const pdhRateEl = document.getElementById('edge-pdh-rate');
+        if (pdhRateEl) pdhRateEl.textContent = edges.pdhTouch.estimate;
+        const pdhCiEl = document.getElementById('edge-pdh-ci');
+        if (pdhCiEl) pdhCiEl.textContent = '95% CI: ' + edges.pdhTouch.ci95 + ' (N=' + edges.pdhTouch.n + ')';
+        const pdhSubEl = document.getElementById('edge-pdh-sub');
+        if (pdhSubEl && liveSession) {
+          pdhSubEl.textContent = liveSession.isPdhAlreadyTouched ? '✓ Touched Today' : 'Dist: +' + liveSession.distToPdhPct + '% ($' + liveSession.prevHigh.toLocaleString() + ')';
+          pdhSubEl.style.color = liveSession.isPdhAlreadyTouched ? '#4ade80' : '#94a3b8';
+        }
+
+        const pdlRateEl = document.getElementById('edge-pdl-rate');
+        if (pdlRateEl) pdlRateEl.textContent = edges.pdlTouch.estimate;
+        const pdlCiEl = document.getElementById('edge-pdl-ci');
+        if (pdlCiEl) pdlCiEl.textContent = '95% CI: ' + edges.pdlTouch.ci95 + ' (N=' + edges.pdlTouch.n + ')';
+        const pdlSubEl = document.getElementById('edge-pdl-sub');
+        if (pdlSubEl && liveSession) {
+          pdlSubEl.textContent = liveSession.isPdlAlreadyTouched ? '✓ Touched Today' : 'Dist: -' + liveSession.distToPdlPct + '% ($' + liveSession.prevLow.toLocaleString() + ')';
+          pdlSubEl.style.color = liveSession.isPdlAlreadyTouched ? '#ef5350' : '#94a3b8';
+        }
+
+        const gapRateEl = document.getElementById('edge-gap-rate');
+        if (gapRateEl) gapRateEl.textContent = edges.gapFill.estimate;
+        const gapCiEl = document.getElementById('edge-gap-ci');
+        if (gapCiEl) gapCiEl.textContent = '95% CI: ' + edges.gapFill.ci95 + ' (N=' + edges.gapFill.n + ')';
+        const gapTimeEl = document.getElementById('edge-gap-time');
+        if (gapTimeEl) gapTimeEl.textContent = edges.gapFill.timeDistribution;
+
+        const orbRateEl = document.getElementById('edge-orb-rate');
+        if (orbRateEl) orbRateEl.textContent = edges.orbContinuation.estimate;
+        const orbCiEl = document.getElementById('edge-orb-ci');
+        if (orbCiEl) orbCiEl.textContent = '95% CI: ' + edges.orbContinuation.ci95 + ' (N=' + edges.orbContinuation.n + ')';
+        const orbFalseEl = document.getElementById('edge-orb-false');
+        if (orbFalseEl) orbFalseEl.textContent = 'False Break: ' + edges.orbContinuation.falseBreakRate;
+
+        // 2. Populate Dock Block (#dock-block-edgestats)
+        const dRangeEl = document.getElementById('dock-edge-sample-range');
+        if (dRangeEl && symbolMeta) dRangeEl.textContent = 'N=' + symbolMeta.totalSessions + ' sessions';
+
+        const dPdhProb = document.getElementById('dock-edge-pdh-prob');
+        if (dPdhProb) dPdhProb.textContent = edges.pdhTouch.estimate;
+        const dPdhCi = document.getElementById('dock-edge-pdh-ci');
+        if (dPdhCi) dPdhCi.textContent = 'CI: ' + edges.pdhTouch.ci95;
+        const dPdhDist = document.getElementById('dock-edge-pdh-dist');
+        if (dPdhDist && liveSession) dPdhDist.textContent = 'Dist: +' + liveSession.distToPdhPct + '%';
+        const dPdhHit = document.getElementById('dock-edge-pdh-hit');
+        if (dPdhHit && liveSession) dPdhHit.style.display = liveSession.isPdhAlreadyTouched ? 'inline' : 'none';
+
+        const dPdlProb = document.getElementById('dock-edge-pdl-prob');
+        if (dPdlProb) dPdlProb.textContent = edges.pdlTouch.estimate;
+        const dPdlCi = document.getElementById('dock-edge-pdl-ci');
+        if (dPdlCi) dPdlCi.textContent = 'CI: ' + edges.pdlTouch.ci95;
+        const dPdlDist = document.getElementById('dock-edge-pdl-dist');
+        if (dPdlDist && liveSession) dPdlDist.textContent = 'Dist: -' + liveSession.distToPdlPct + '%';
+        const dPdlHit = document.getElementById('dock-edge-pdl-hit');
+        if (dPdlHit && liveSession) dPdlHit.style.display = liveSession.isPdlAlreadyTouched ? 'inline' : 'none';
+
+        const dGapProb = document.getElementById('dock-edge-gap-prob');
+        if (dGapProb) dGapProb.textContent = edges.gapFill.estimate;
+        const dGapCi = document.getElementById('dock-edge-gap-ci');
+        if (dGapCi) dGapCi.textContent = 'CI: ' + edges.gapFill.ci95;
+        const dGapTime = document.getElementById('dock-edge-gap-time');
+        if (dGapTime) dGapTime.textContent = 'Gap: ' + (liveSession ? liveSession.gapPct : 0) + '%';
+
+        const dOrbProb = document.getElementById('dock-edge-orb-prob');
+        if (dOrbProb) dOrbProb.textContent = edges.orbContinuation.estimate;
+        const dOrbCi = document.getElementById('dock-edge-orb-ci');
+        if (dOrbCi) dOrbCi.textContent = 'CI: ' + edges.orbContinuation.ci95;
+        const dOrbFalse = document.getElementById('dock-edge-orb-false');
+        if (dOrbFalse) dOrbFalse.textContent = 'False: ' + edges.orbContinuation.falseBreakRate;
+
+        const dPdhVal = document.getElementById('dock-edge-pdh-val');
+        if (dPdhVal && liveSession) dPdhVal.textContent = '$' + liveSession.prevHigh.toLocaleString();
+        const dPdlVal = document.getElementById('dock-edge-pdl-val');
+        if (dPdlVal && liveSession) dPdlVal.textContent = '$' + liveSession.prevLow.toLocaleString();
+        const dStab = document.getElementById('dock-edge-stability');
+        if (dStab) dStab.textContent = edges.pdhTouch.stability.split('(')[0].trim();
+
+      } catch (e) {}
+    }
 
     document.getElementById('btn-run-backtest').addEventListener('click', async () => {
       const sym = document.getElementById('bt-sym-input').value.trim();
@@ -7701,6 +7846,25 @@ const server = http.createServer(async (req, res) => {
       const result = await validateSymbol(symbol, getHistory);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: err.message }));
+    }
+  }
+
+  if (pathname === '/api/edge-stats') {
+    const symbol = parsedUrl.query.symbol || (await parseBody(req)).symbol || 'BINANCE:BTCUSDT';
+    const timeframe = parsedUrl.query.timeframe || '60';
+    try {
+      const hist = await getHistory(symbol, timeframe, 1500);
+      if (!hist || !hist.candles || hist.candles.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'No candles history available for ' + symbol }));
+      }
+      const lastPrice = hist.candles[hist.candles.length - 1].close;
+      const stats = computeEdgeStats(hist.candles, lastPrice);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(stats));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: err.message }));

@@ -1,0 +1,99 @@
+{
+  "backtestWindow": "March 1, 2026 → October 2, 2026 (7 Months, 5,162 1H Bars)",
+  "testedUniverse": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "NEARUSDT"
+  ],
+  "initialCapital": "$10,000",
+  "finalEquity": "$3712.08",
+  "netProfitDollar": "-$6287.92",
+  "netProfitPercent": "-62.88%",
+  "profitFactor": "0.68",
+  "totalTrades": 218,
+  "winRate": "29.4%",
+  "wilson95CI": "[23.7%, 35.7%]",
+  "maxDrawdownPct": "-71.22%",
+  "sharpeRatio": "-3.06",
+  "symbolStats": {
+    "BTCUSDT": {
+      "trades": 59,
+      "wins": 19,
+      "losses": 40,
+      "pnlDollar": -1865.864957376022,
+      "grossProfit": 5666.474765563833,
+      "grossLoss": 7532.339722939855
+    },
+    "ETHUSDT": {
+      "trades": 39,
+      "wins": 10,
+      "losses": 29,
+      "pnlDollar": -1740.5676352504172,
+      "grossProfit": 2834.318122713263,
+      "grossLoss": 4574.885757963681
+    },
+    "SOLUSDT": {
+      "trades": 44,
+      "wins": 11,
+      "losses": 33,
+      "pnlDollar": -1609.8227001257937,
+      "grossProfit": 1938.5966239294896,
+      "grossLoss": 3548.4193240552822
+    },
+    "BNBUSDT": {
+      "trades": 37,
+      "wins": 9,
+      "losses": 28,
+      "pnlDollar": -1202.104555257114,
+      "grossProfit": 1074.0604126086023,
+      "grossLoss": 2276.164967865716
+    },
+    "NEARUSDT": {
+      "trades": 39,
+      "wins": 15,
+      "losses": 24,
+      "pnlDollar": 130.438376604151,
+      "grossProfit": 2043.7659760786387,
+      "grossLoss": 1913.3275994744877
+    }
+  },
+  "monthlyBreakdown": {
+    "2026-03": {
+      "trades": 20,
+      "wins": 7,
+      "pnlDollar": -502.57
+    },
+    "2026-04": {
+      "trades": 35,
+      "wins": 12,
+      "pnlDollar": -154.97999999999985
+    },
+    "2026-05": {
+      "trades": 31,
+      "wins": 8,
+      "pnlDollar": -1182.3899999999999
+    },
+    "2026-06": {
+      "trades": 46,
+      "wins": 13,
+      "pnlDollar": -994.5100000000002
+    },
+    "2026-07": {
+      "trades": 25,
+      "wins": 4,
+      "pnlDollar": -1814.7100000000003
+    },
+    "2026-08": {
+      "trades": 36,
+      "wins": 10,
+      "pnlDollar": -1468.1099999999997
+    },
+    "2026-09": {
+      "trades": 25,
+      "wins": 10,
+      "pnlDollar": -170.62999999999994
+    }
+  }
+}
