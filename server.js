@@ -4084,6 +4084,9 @@ const htmlContent = `<!DOCTYPE html>
     function saveWatchlist() {
       try {
         localStorage.setItem('tv_custom_watchlist_v4', JSON.stringify(customWatchlist));
+        if (window.multiChartManagerInstance) {
+          window.multiChartManagerInstance.populateWatchlistTokens(customWatchlist);
+        }
       } catch (e) {}
     }
 
@@ -4312,7 +4315,26 @@ const htmlContent = `<!DOCTYPE html>
           // 6. Journal Mode
           journal: {
             mode: typeof currentJournalMode !== 'undefined' ? currentJournalMode : 'march2026',
-          }
+          },
+
+          // 7. Multi-Chart Grid Session (Layout, Cells 2, 3, 4 Token & Timeframe)
+          multiChart: window.multiChartManagerInstance ? {
+            layout: window.multiChartManagerInstance.currentLayout,
+            cells: {
+              '2': {
+                symbol: document.getElementById('grid-sym-select-2')?.value || window.multiChartManagerInstance.defaultConfigs['2']?.symbol || 'BINANCE:ETHUSDT',
+                timeframe: document.querySelector('#chart-cell-2 .grid-tf-btn.active')?.dataset.tf || '60',
+              },
+              '3': {
+                symbol: document.getElementById('grid-sym-select-3')?.value || window.multiChartManagerInstance.defaultConfigs['3']?.symbol || 'BINANCE:SOLUSDT',
+                timeframe: document.querySelector('#chart-cell-3 .grid-tf-btn.active')?.dataset.tf || '15',
+              },
+              '4': {
+                symbol: document.getElementById('grid-sym-select-4')?.value || window.multiChartManagerInstance.defaultConfigs['4']?.symbol || 'HYPERLIQUID:HYPE',
+                timeframe: document.querySelector('#chart-cell-4 .grid-tf-btn.active')?.dataset.tf || '60',
+              }
+            }
+          } : null
         };
 
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
@@ -4477,6 +4499,24 @@ const htmlContent = `<!DOCTYPE html>
         if (s.activeTab && s.activeTab !== 'view-chart') {
           const tabBtn = document.querySelector('.tab-btn[data-target="' + s.activeTab + '"]');
           if (tabBtn) tabBtn.click();
+        }
+
+        // 6. Restore Multi-Chart Grid Session (Layout, Cells 2, 3, 4 Token & Timeframe)
+        if (s.multiChart && window.multiChartManagerInstance) {
+          if (s.multiChart.cells) {
+            Object.keys(s.multiChart.cells).forEach(cellId => {
+              const cellCfg = s.multiChart.cells[cellId];
+              if (window.multiChartManagerInstance.defaultConfigs[cellId]) {
+                if (cellCfg.symbol) window.multiChartManagerInstance.defaultConfigs[cellId].symbol = cellCfg.symbol;
+                if (cellCfg.timeframe) window.multiChartManagerInstance.defaultConfigs[cellId].timeframe = cellCfg.timeframe;
+              }
+            });
+          }
+          if (s.multiChart.layout && s.multiChart.layout !== '1') {
+            setTimeout(() => {
+              window.multiChartManagerInstance.setLayout(s.multiChart.layout);
+            }, 120);
+          }
         }
 
         const badgeText = document.getElementById('session-auto-save-text');

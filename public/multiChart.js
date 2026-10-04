@@ -2,6 +2,7 @@
  * Hyperview Multi-Chart Grid & Layout Manager (Phase 3 - Vela Multi-Chart Architecture)
  * Supports 1 (Single), 2V (Vertical Split), 2H (Horizontal Split), and 4 (2x2 Grid)
  * Pre-loaded with Technical Indicators (EMA 20, EMA 50, Reaction Level Matrix S/R Lines, Volume)
+ * Full Watchlist token integration and Persistent Session Auto-Save & Restore
  */
 
 (function (window) {
@@ -12,7 +13,6 @@
     const k = 2 / (period + 1);
     const result = [];
     
-    // First value: simple average of first `period` bars
     let sum = 0;
     for (let i = 0; i < period; i++) {
       sum += candles[i].close;
@@ -37,10 +37,39 @@
         '3': { symbol: 'BINANCE:SOLUSDT', timeframe: '15' },
         '4': { symbol: 'HYPERLIQUID:HYPE', timeframe: '60' },
       };
+      this.watchlist = [];
     }
 
-    init() {
+    init(watchlist) {
+      if (watchlist && watchlist.length) {
+        this.watchlist = watchlist;
+        this.populateWatchlistTokens(watchlist);
+      }
       this.bindLayoutDropdown();
+    }
+
+    populateWatchlistTokens(items) {
+      if (!items || !items.length) return;
+      this.watchlist = items;
+
+      ['2', '3', '4'].forEach(cellId => {
+        const selectEl = document.getElementById('grid-sym-select-' + cellId);
+        if (!selectEl) return;
+        const currentVal = this.defaultConfigs[cellId]?.symbol || selectEl.value;
+
+        let html = '';
+        items.forEach(item => {
+          const sym = item.symbol || item;
+          const name = item.name || sym.split(':')[1] || sym;
+          const isSelected = sym === currentVal;
+          html += `<option value="${sym}" style="background-color: #131722; color: #f0f3f6;" ${isSelected ? 'selected' : ''}>${name}</option>`;
+        });
+        selectEl.innerHTML = html;
+
+        if (currentVal && Array.from(selectEl.options).some(o => o.value === currentVal)) {
+          selectEl.value = currentVal;
+        }
+      });
     }
 
     bindLayoutDropdown() {
@@ -173,6 +202,8 @@
           }
         });
       }, 60);
+
+      if (typeof triggerAutoSave === 'function') triggerAutoSave();
     }
 
     ensureChartCell(cellId, cellEl) {
@@ -224,6 +255,17 @@
       });
       volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
+      const symSelect = document.getElementById('grid-sym-select-' + cellId);
+      if (symSelect && cfg.symbol) {
+        symSelect.value = cfg.symbol;
+      }
+
+      const activeTf = cfg.timeframe || '60';
+      const tfButtons = cellEl.querySelectorAll('.grid-tf-btn');
+      tfButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tf === activeTf);
+      });
+
       this.charts[cellId] = {
         chart,
         candleSeries,
@@ -233,16 +275,14 @@
         priceLines: [],
         container: chartHost,
         symbol: cfg.symbol,
-        timeframe: cfg.timeframe,
+        timeframe: activeTf,
       };
 
       // Bind cell mini toolbar controls
-      const symSelect = document.getElementById('grid-sym-select-' + cellId);
-      const tfButtons = cellEl.querySelectorAll('.grid-tf-btn');
-
       symSelect?.addEventListener('change', (e) => {
         this.charts[cellId].symbol = e.target.value;
         this.loadCellChart(cellId);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
       });
 
       tfButtons.forEach(btn => {
@@ -251,6 +291,7 @@
           btn.classList.add('active');
           this.charts[cellId].timeframe = btn.dataset.tf;
           this.loadCellChart(cellId);
+          if (typeof triggerAutoSave === 'function') triggerAutoSave();
         });
       });
 
