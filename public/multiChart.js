@@ -1,15 +1,36 @@
 /**
  * Hyperview Multi-Chart Grid & Layout Manager (Phase 3 - Vela Multi-Chart Architecture)
- * Supports 1 (Single), 2V (Vertical Split), 2H (Horizontal Split), and 4 (2x2 Grid) with synchronized crosshair.
+ * Supports 1 (Single), 2V (Vertical Split), 2H (Horizontal Split), and 4 (2x2 Grid)
+ * Pre-loaded with Technical Indicators (EMA 20, EMA 50, Reaction Level Matrix S/R Lines, Volume)
  */
 
 (function (window) {
   'use strict';
 
+  function calculateEMA(candles, period) {
+    if (!candles || candles.length < period) return [];
+    const k = 2 / (period + 1);
+    const result = [];
+    
+    // First value: simple average of first `period` bars
+    let sum = 0;
+    for (let i = 0; i < period; i++) {
+      sum += candles[i].close;
+    }
+    let ema = sum / period;
+    result.push({ time: candles[period - 1].time, value: parseFloat(ema.toFixed(4)) });
+
+    for (let i = period; i < candles.length; i++) {
+      ema = (candles[i].close - ema) * k + ema;
+      result.push({ time: candles[i].time, value: parseFloat(ema.toFixed(4)) });
+    }
+    return result;
+  }
+
   class MultiChartManager {
     constructor() {
       this.currentLayout = '1';
-      this.charts = {}; // { 'cell-2': { chart, candleSeries, volumeSeries, symbol, timeframe } }
+      this.charts = {}; // { 'cell-2': { chart, candleSeries, volumeSeries, ema20Series, ema50Series, priceLines: [], symbol, timeframe } }
       this.isSyncCrosshair = true;
       this.defaultConfigs = {
         '2': { symbol: 'BINANCE:ETHUSDT', timeframe: '60' },
@@ -179,6 +200,24 @@
         wickDownColor: '#ef5350',
       });
 
+      // Technical Indicators for Secondary Windows:
+      // 1. EMA 20 (Cyan)
+      const ema20Series = chart.addLineSeries({
+        color: '#38bdf8',
+        lineWidth: 1.5,
+        title: 'EMA 20',
+        crosshairMarkerVisible: true,
+      });
+
+      // 2. EMA 50 (Amber)
+      const ema50Series = chart.addLineSeries({
+        color: '#f59e0b',
+        lineWidth: 1.5,
+        title: 'EMA 50',
+        crosshairMarkerVisible: true,
+      });
+
+      // 3. Volume Histogram
       const volumeSeries = chart.addHistogramSeries({
         priceFormat: { type: 'volume' },
         priceScaleId: '',
@@ -189,6 +228,9 @@
         chart,
         candleSeries,
         volumeSeries,
+        ema20Series,
+        ema50Series,
+        priceLines: [],
         container: chartHost,
         symbol: cfg.symbol,
         timeframe: cfg.timeframe,
@@ -230,10 +272,60 @@
             color: b.close >= b.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
           })));
 
+          // Calculate and set EMAs
+          const ema20 = calculateEMA(data.candles, 20);
+          if (ema20.length > 0) c.ema20Series.setData(ema20);
+
+          const ema50 = calculateEMA(data.candles, 50);
+          if (ema50.length > 0) c.ema50Series.setData(ema50);
+
+          // Clear existing S/R price lines
+          if (c.priceLines && c.priceLines.length > 0) {
+            c.priceLines.forEach(pl => {
+              try { c.candleSeries.removePriceLine(pl); } catch (e) {}
+            });
+            c.priceLines = [];
+          }
+
+          // Compute Support & Resistance levels from recent swing points (Reaction Level Matrix S/R)
+          const recent = data.candles.slice(-150);
+          let highRes = -Infinity;
+          let lowSup = Infinity;
+          for (const b of recent) {
+            if (b.high > highRes) highRes = b.high;
+            if (b.low < lowSup) lowSup = b.low;
+          }
+
+          if (highRes > 0 && lowSup > 0 && highRes !== lowSup) {
+            const resLine = c.candleSeries.createPriceLine({
+              price: highRes,
+              color: '#ef5350',
+              lineWidth: 1,
+              lineStyle: LightweightCharts.LineStyle.Dashed,
+              axisLabelVisible: true,
+              title: 'RES',
+            });
+            const supLine = c.candleSeries.createPriceLine({
+              price: lowSup,
+              color: '#22c55e',
+              lineWidth: 1,
+              lineStyle: LightweightCharts.LineStyle.Dashed,
+              axisLabelVisible: true,
+              title: 'SUP',
+            });
+            c.priceLines.push(resLine, supLine);
+          }
+
           const legendEl = document.getElementById('grid-legend-' + cellId);
           if (legendEl) {
             const last = data.candles[data.candles.length - 1];
-            legendEl.textContent = `${c.symbol.split(':')[1] || c.symbol} [${c.timeframe}m]: $${last.close.toLocaleString()}`;
+            const lastEma20 = ema20.length > 0 ? ema20[ema20.length - 1].value : null;
+            const lastEma50 = ema50.length > 0 ? ema50[ema50.length - 1].value : null;
+
+            let legendText = `${c.symbol.split(':')[1] || c.symbol} [${c.timeframe}m]: $${last.close.toLocaleString()}`;
+            if (lastEma20) legendText += ` <span style="color:#38bdf8;margin-left:4px;">E20:$${lastEma20}</span>`;
+            if (lastEma50) legendText += ` <span style="color:#f59e0b;margin-left:4px;">E50:$${lastEma50}</span>`;
+            legendEl.innerHTML = legendText;
           }
         }
       } catch (e) {}

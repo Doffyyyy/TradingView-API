@@ -2440,7 +2440,7 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <!-- VIEW 4: REPLAY ENGINE (Phase 3 - Vela Replay Studio) -->
-    <div class="view-panel" id="view-replay" style="position: relative; width: 100%; height: 100%; overflow: hidden; display: none; flex-direction: column;">
+    <div class="view-panel" id="view-replay" style="position: relative; width: 100%; height: 100%; overflow: hidden; flex-direction: column;">
       <!-- Replay Controls Bar -->
       <div class="controls-bar" style="padding: 6px 16px; background: rgba(12, 16, 26, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; z-index: 10; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -6116,9 +6116,10 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    document.getElementById('btn-run-replay').addEventListener('click', async () => {
-      const sym = document.getElementById('rep-sym-input').value.trim();
-      document.getElementById('rep-status').textContent = 'Executing bar-by-bar walkforward...';
+    document.getElementById('btn-run-replay')?.addEventListener('click', async () => {
+      const sym = document.getElementById('rep-sym-input')?.value.trim() || 'BINANCE:BTCUSDT';
+      const repStatus = document.getElementById('rep-status');
+      if (repStatus) repStatus.textContent = 'Executing bar-by-bar walkforward...';
       try {
         const res = await fetch('/api/replay', {
           method: 'POST',
