@@ -1960,7 +1960,7 @@ const htmlContent = `<!DOCTYPE html>
               <option value="week">This Week</option>
             </select>
             <select class="ts-select" id="ts-month-mode" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 700;">
-              <option value="sim6m" selected>📊 6-Month Paper Simulation (March - Sept 2026)</option>
+              <option value="sim6m" selected>📊 Paper Trading Journal (March - Oct 2026)</option>
               <option value="current">⚡ Current Live Paper Trading</option>
               <option value="march2026">📅 March 2026 (Demo Showcase)</option>
             </select>
@@ -6169,9 +6169,10 @@ const htmlContent = `<!DOCTYPE html>
     };
 
     let currentJournalMode = "sim6m";
-    let currentSelectedDate = "2026-09-29";
+    let currentSelectedDate = "2026-10-04";
     let cachedPaperStatus = null;
     let cachedSim6mData = null;
+    let currentJournalDaysMap = {};
 
     async function loadSim6mData() {
       if (cachedSim6mData) return cachedSim6mData;
@@ -6185,7 +6186,7 @@ const htmlContent = `<!DOCTYPE html>
       return null;
     }
 
-    let simActiveMonthIndex = 6; // 0=Mar, 1=Apr, 2=May, 3=Jun, 4=Jul, 5=Aug, 6=Sep
+    let simActiveMonthIndex = 7; // Default to October 2026 (index 7: 0=Mar, ..., 6=Sep, 7=Oct)
     const simMonthList = [
       { name: "March 2026", year: 2026, month: 2, prefix: "2026-03" },
       { name: "April 2026", year: 2026, month: 3, prefix: "2026-04" },
@@ -6193,7 +6194,8 @@ const htmlContent = `<!DOCTYPE html>
       { name: "June 2026", year: 2026, month: 5, prefix: "2026-06" },
       { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
       { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
-      { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" }
+      { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" },
+      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10" }
     ];
 
     async function renderJournalDashboard() {
@@ -6213,12 +6215,17 @@ const htmlContent = `<!DOCTYPE html>
       let longPnl = 0;
       let shortPnl = 0;
       let year = 2026;
-      let month = 8; // September
+      let month = 9; // October
+
+      // Always ensure fresh paper status is available
+      if (!cachedPaperStatus && typeof refreshPaperStatus === 'function') {
+        try { await refreshPaperStatus(); } catch (e) {}
+      }
 
       if (currentJournalMode === "sim6m") {
         const simData = await loadSim6mData();
-        const mInfo = simMonthList[simActiveMonthIndex] || simMonthList[6];
-        if (calTitle) calTitle.textContent = mInfo.name + " (Sim 6M)";
+        const mInfo = simMonthList[simActiveMonthIndex] || simMonthList[simMonthList.length - 1];
+        if (calTitle) calTitle.textContent = mInfo.name + (mInfo.prefix === "2026-10" ? " (Live Paper)" : " (Sim)");
         year = mInfo.year;
         month = mInfo.month;
 
@@ -6226,24 +6233,61 @@ const htmlContent = `<!DOCTYPE html>
           // Filter days for active month
           for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
             if (dStr.startsWith(mInfo.prefix)) {
-              daysMap[dStr] = dObj;
+              daysMap[dStr] = {
+                pnl: dObj.pnl,
+                trades: [...(dObj.trades || [])]
+              };
             }
           }
-          // Calculate stats for all trades in this active month
-          for (const dObj of Object.values(daysMap)) {
-            totalPnl += (dObj.pnl || 0);
-            (dObj.trades || []).forEach(t => {
-              if (t.pnl > 0) {
-                winCount++;
-                winSum += t.pnl;
-              } else {
-                lossCount++;
-                lossSum += Math.abs(t.pnl);
+        }
+
+        // Dynamically merge real live paper trades from portfolio if on October (or current live session)
+        if (cachedPaperStatus && cachedPaperStatus.allTrades) {
+          cachedPaperStatus.allTrades.forEach(t => {
+            const exitTime = t.exitTime || t.entryTime;
+            if (!exitTime) return;
+            const dStr = exitTime.slice(0, 10);
+            if (dStr.startsWith(mInfo.prefix)) {
+              if (!daysMap[dStr]) {
+                daysMap[dStr] = { pnl: 0, trades: [] };
               }
-              if (t.side === "LONG") longPnl += t.pnl;
-              else shortPnl += t.pnl;
-            });
-          }
+              const exists = daysMap[dStr].trades.some(x => (t.id && x.id === t.id) || (x.symbol === t.symbol && x.time === exitTime.slice(11, 16)));
+              if (!exists) {
+                const tPnl = Math.round(Number(t.pnl || 0) * 100) / 100;
+                daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + tPnl) * 100) / 100;
+                daysMap[dStr].trades.push({
+                  id: t.id,
+                  symbol: t.symbol,
+                  side: t.side,
+                  entryPrice: t.entryPrice,
+                  exitPrice: t.exitPrice,
+                  pnl: tPnl,
+                  pnlPercent: t.pnlPercent,
+                  strategy: t.strategy || 'Live Paper Trade',
+                  reason: t.reason,
+                  time: exitTime.slice(11, 16),
+                  date: dStr,
+                  exitTime: exitTime
+                });
+              }
+            }
+          });
+        }
+
+        // Calculate stats for all trades in this active month
+        for (const dObj of Object.values(daysMap)) {
+          totalPnl += (dObj.pnl || 0);
+          (dObj.trades || []).forEach(t => {
+            if (t.pnl > 0) {
+              winCount++;
+              winSum += t.pnl;
+            } else {
+              lossCount++;
+              lossSum += Math.abs(t.pnl);
+            }
+            if (t.side === "LONG") longPnl += t.pnl;
+            else shortPnl += t.pnl;
+          });
         }
       } else if (currentJournalMode === "march2026") {
         if (calTitle) calTitle.textContent = "March 2026";
@@ -6262,37 +6306,43 @@ const htmlContent = `<!DOCTYPE html>
         year = now.getFullYear();
         month = now.getMonth();
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        if (calTitle) calTitle.textContent = monthNames[month] + " " + year;
+        if (calTitle) calTitle.textContent = monthNames[month] + " " + year + " (Live Paper)";
 
+        const currentMonthPrefix = year + "-" + String(month + 1).padStart(2, "0");
         const allTrades = (cachedPaperStatus && cachedPaperStatus.allTrades) || [];
         allTrades.forEach(t => {
           const exitTime = t.exitTime || t.entryTime;
           if (!exitTime) return;
           const dStr = exitTime.slice(0, 10);
-          if (!daysMap[dStr]) daysMap[dStr] = { pnl: 0, trades: [] };
-          daysMap[dStr].pnl += (t.pnl || 0);
-          daysMap[dStr].trades.push({
-            symbol: t.symbol,
-            side: t.side,
-            entryPrice: t.entryPrice,
-            exitPrice: t.exitPrice,
-            pnl: t.pnl,
-            pnlPercent: t.pnlPercent,
-            strategy: t.strategy,
-            reason: t.reason,
-            time: new Date(exitTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-          });
+          if (dStr.startsWith(currentMonthPrefix)) {
+            if (!daysMap[dStr]) daysMap[dStr] = { pnl: 0, trades: [] };
+            daysMap[dStr].pnl += (t.pnl || 0);
+            daysMap[dStr].trades.push({
+              id: t.id,
+              symbol: t.symbol,
+              side: t.side,
+              entryPrice: t.entryPrice,
+              exitPrice: t.exitPrice,
+              pnl: t.pnl,
+              pnlPercent: t.pnlPercent,
+              strategy: t.strategy,
+              reason: t.reason,
+              time: exitTime.slice(11, 16),
+              date: dStr,
+              exitTime: exitTime
+            });
 
-          if (t.pnl > 0) {
-            winCount++;
-            winSum += t.pnl;
-          } else {
-            lossCount++;
-            lossSum += Math.abs(t.pnl);
+            if (t.pnl > 0) {
+              winCount++;
+              winSum += t.pnl;
+            } else {
+              lossCount++;
+              lossSum += Math.abs(t.pnl);
+            }
+            if (t.side === "LONG") longPnl += t.pnl;
+            else shortPnl += t.pnl;
+            totalPnl += t.pnl;
           }
-          if (t.side === "LONG") longPnl += t.pnl;
-          else shortPnl += t.pnl;
-          totalPnl += t.pnl;
         });
 
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -6360,7 +6410,7 @@ const htmlContent = `<!DOCTYPE html>
       let weekPnl = 0;
       let weekTrades = 0;
 
-      for (let row = 0; row < 5; row++) {
+      for (let row = 0; row < 6; row++) {
         weekPnl = 0;
         weekTrades = 0;
 
@@ -6409,6 +6459,7 @@ const htmlContent = `<!DOCTYPE html>
         if (currentDay > daysInMonth) break;
       }
 
+      currentJournalDaysMap = daysMap;
       gridBody.innerHTML = html;
 
       gridBody.querySelectorAll(".ts-cal-cell:not(.empty)").forEach(cell => {
@@ -6527,8 +6578,7 @@ const htmlContent = `<!DOCTYPE html>
 
     // Journal Card quick button
     document.getElementById("btn-ts-journal-card")?.addEventListener("click", () => {
-      const days = currentJournalMode === "march2026" ? MARCH_2026_DEMO_DAYS : {};
-      openDayJournalModal(currentSelectedDate, days[currentSelectedDate]);
+      openDayJournalModal(currentSelectedDate, currentJournalDaysMap[currentSelectedDate]);
     });
 
     // Export CSV

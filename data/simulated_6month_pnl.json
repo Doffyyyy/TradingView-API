@@ -1,12 +1,12 @@
 {
   "summary": {
-    "initialBalance": 10000,
-    "endingBalance": 7690.96,
-    "netProfit": -2309.04,
-    "totalTrades": 1695,
-    "winCount": 854,
-    "lossCount": 841,
-    "winRate": 50.4
+    "initialBalance": 10000.0,
+    "endingBalance": 7498.11,
+    "netProfit": -2501.89,
+    "totalTrades": 1705,
+    "winCount": 857,
+    "lossCount": 848,
+    "winRate": 50.3
   },
   "daysMap": {
     "2026-03-01": {
@@ -23102,6 +23102,156 @@
           "time": "07:15",
           "date": "2026-09-30",
           "exitTime": "2026-09-30T00:15:00.000Z"
+        }
+      ]
+    },
+    "2026-10-04": {
+      "pnl": -196.81,
+      "trades": [
+        {
+          "symbol": "BINANCE:TAOUSDT",
+          "side": "SHORT",
+          "entryPrice": 291,
+          "exitPrice": 306.7,
+          "pnl": -196.81,
+          "pnlPercent": -10.93,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $306.70 (-5.40%)",
+          "time": "00:44",
+          "date": "2026-10-04",
+          "exitTime": "2026-10-04T00:44:23.583Z"
+        }
+      ]
+    },
+    "2026-10-03": {
+      "pnl": 9.02,
+      "trades": [
+        {
+          "symbol": "BINANCE:NEARUSDT",
+          "side": "SHORT",
+          "entryPrice": 4.683,
+          "exitPrice": 4.668,
+          "pnl": 9.02,
+          "pnlPercent": 0.5,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $4.67 (0.32%)",
+          "time": "05:09",
+          "date": "2026-10-03",
+          "exitTime": "2026-10-03T05:09:59.760Z"
+        }
+      ]
+    },
+    "2026-10-02": {
+      "pnl": 127.47,
+      "trades": [
+        {
+          "symbol": "BINANCE:ZECUSDT",
+          "side": "SHORT",
+          "entryPrice": 1361.64,
+          "exitPrice": 1283.01,
+          "pnl": 206.29,
+          "pnlPercent": 11.46,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Take Profit hit at $1,283.01 (+5.77%)",
+          "time": "22:22",
+          "date": "2026-10-02",
+          "exitTime": "2026-10-02T22:22:53.237Z"
+        },
+        {
+          "symbol": "BINANCE:NEARUSDT",
+          "side": "SHORT",
+          "entryPrice": 4.834,
+          "exitPrice": 4.876,
+          "pnl": -33.81,
+          "pnlPercent": -1.88,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $4.88 (-0.87%)",
+          "time": "17:19",
+          "date": "2026-10-02",
+          "exitTime": "2026-10-02T17:19:51.835Z"
+        },
+        {
+          "symbol": "BINANCE:TAOUSDT",
+          "side": "LONG",
+          "entryPrice": 313.4,
+          "exitPrice": 309.7,
+          "pnl": -45.01,
+          "pnlPercent": -2.5,
+          "strategy": "HTF Trend + 15M Pullback Long",
+          "reason": "Stop Loss / Trailing Stop hit at $309.70 (-1.18%)",
+          "time": "14:37",
+          "date": "2026-10-02",
+          "exitTime": "2026-10-02T14:37:19.882Z"
+        }
+      ]
+    },
+    "2026-10-01": {
+      "pnl": -132.53,
+      "trades": [
+        {
+          "symbol": "BINANCE:LINKUSDT",
+          "side": "SHORT",
+          "entryPrice": 14.322,
+          "exitPrice": 14.44,
+          "pnl": -32.19,
+          "pnlPercent": -1.79,
+          "strategy": "HTF Bear + RLM Sniper Short",
+          "reason": "Stop Loss / Trailing Stop hit at $14.44 (-0.82%)",
+          "time": "12:40",
+          "date": "2026-10-01",
+          "exitTime": "2026-10-01T12:40:19.369Z"
+        },
+        {
+          "symbol": "BINANCE:ARBUSDT",
+          "side": "SHORT",
+          "entryPrice": 0.2047,
+          "exitPrice": 0.2064,
+          "pnl": -32.43,
+          "pnlPercent": -1.8,
+          "strategy": "HTF Bear + RLM Sniper Short",
+          "reason": "Stop Loss / Trailing Stop hit at $0.2064 (-0.83%)",
+          "time": "05:06",
+          "date": "2026-10-01",
+          "exitTime": "2026-10-01T05:06:59.421Z"
+        },
+        {
+          "symbol": "BYBIT:VVVUSDT",
+          "side": "SHORT",
+          "entryPrice": 27.254,
+          "exitPrice": 27.537,
+          "pnl": -39.91,
+          "pnlPercent": -2.22,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $27.54 (-1.04%)",
+          "time": "05:02",
+          "date": "2026-10-01",
+          "exitTime": "2026-10-01T05:02:59.198Z"
+        },
+        {
+          "symbol": "BINANCE:ZECUSDT",
+          "side": "SHORT",
+          "entryPrice": 1425.4,
+          "exitPrice": 1420.71,
+          "pnl": 4.66,
+          "pnlPercent": 0.26,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $1,420.71 (0.33%)",
+          "time": "03:39",
+          "date": "2026-10-01",
+          "exitTime": "2026-10-01T03:39:38.034Z"
+        },
+        {
+          "symbol": "BINANCE:ARBUSDT",
+          "side": "SHORT",
+          "entryPrice": 0.2031,
+          "exitPrice": 0.2048,
+          "pnl": -32.66,
+          "pnlPercent": -1.81,
+          "strategy": "HTF Trend + 15M Retrace Short",
+          "reason": "Stop Loss / Trailing Stop hit at $0.2048 (-0.84%)",
+          "time": "03:01",
+          "date": "2026-10-01",
+          "exitTime": "2026-10-01T03:01:28.022Z"
         }
       ]
     }
