@@ -1,0 +1,110 @@
+{
+  "strategyName": "LuxAlgo Signals & Overlays (Smart Trail + Reversal Zones) + Composite Edge System",
+  "period": "March 1, 2026 → October 4, 2026 (7 Months, 20,648 15M Bars)",
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "NEARUSDT"
+  ],
+  "initialCapital": "$10,000",
+  "endingCapital": "$7581.51",
+  "netProfitDollar": "-$2418.49",
+  "netProfitPercent": "-24.18%",
+  "winRate": "34.7%",
+  "wilson95CI": "[31.4%, 38.2%]",
+  "profitFactor": "0.89",
+  "avgWin": "$38.15",
+  "avgLoss": "-$22.77",
+  "payoffRatio": "1.68",
+  "maxDrawdown": "-26.12%",
+  "totalTrades": 749,
+  "symbolStats": {
+    "BTCUSDT": {
+      "trades": 151,
+      "wins": 49,
+      "losses": 102,
+      "pnlDollar": 53.09,
+      "winRate": "32.5%"
+    },
+    "ETHUSDT": {
+      "trades": 152,
+      "wins": 51,
+      "losses": 101,
+      "pnlDollar": -173.99,
+      "winRate": "33.6%"
+    },
+    "SOLUSDT": {
+      "trades": 140,
+      "wins": 54,
+      "losses": 86,
+      "pnlDollar": -174.04,
+      "winRate": "38.6%"
+    },
+    "BNBUSDT": {
+      "trades": 108,
+      "wins": 28,
+      "losses": 80,
+      "pnlDollar": -507.22,
+      "winRate": "25.9%"
+    },
+    "NEARUSDT": {
+      "trades": 198,
+      "wins": 78,
+      "losses": 120,
+      "pnlDollar": -416.33,
+      "winRate": "39.4%"
+    }
+  },
+  "monthlyBreakdown": {
+    "2026-03": {
+      "trades": 82,
+      "wins": 27,
+      "pnlDollar": -191.22,
+      "winRate": "32.9%"
+    },
+    "2026-04": {
+      "trades": 95,
+      "wins": 27,
+      "pnlDollar": -537.45,
+      "winRate": "28.4%"
+    },
+    "2026-05": {
+      "trades": 109,
+      "wins": 32,
+      "pnlDollar": -355.35,
+      "winRate": "29.4%"
+    },
+    "2026-06": {
+      "trades": 124,
+      "wins": 60,
+      "pnlDollar": 447.68,
+      "winRate": "48.4%"
+    },
+    "2026-07": {
+      "trades": 98,
+      "wins": 34,
+      "pnlDollar": -15.43,
+      "winRate": "34.7%"
+    },
+    "2026-08": {
+      "trades": 105,
+      "wins": 37,
+      "pnlDollar": 166.44,
+      "winRate": "35.2%"
+    },
+    "2026-09": {
+      "trades": 133,
+      "wins": 43,
+      "pnlDollar": -679.93,
+      "winRate": "32.3%"
+    },
+    "2026-10": {
+      "trades": 3,
+      "wins": 0,
+      "pnlDollar": -53.25,
+      "winRate": "0.0%"
+    }
+  }
+}
