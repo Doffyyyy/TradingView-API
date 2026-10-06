@@ -578,23 +578,58 @@ const htmlContent = `<!DOCTYPE html>
       padding: 0 10px !important;
       border-radius: 6px !important;
       cursor: pointer !important;
-      color: #cbd5e1 !important;
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      color: #94a3b8 !important;
       font-size: 11.5px !important;
+      font-family: inherit !important;
       white-space: nowrap !important;
       box-sizing: border-box !important;
       text-align: left !important;
       line-height: 1 !important;
-      transition: all 0.15s ease;
+      transition: all 0.15s ease !important;
+      outline: none !important;
+    }
+    .draw-dropdown-item svg {
+      color: #94a3b8 !important;
+      transition: color 0.15s ease !important;
     }
     .draw-dropdown-item:hover {
-      background: rgba(255, 255, 255, 0.08) !important;
-      color: #ffffff !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #f1f5f9 !important;
+    }
+    .draw-dropdown-item:hover svg {
+      color: #f1f5f9 !important;
     }
     .draw-dropdown-item.active {
-      background: rgba(56, 189, 248, 0.18) !important;
+      background: rgba(56, 189, 248, 0.14) !important;
       color: #38bdf8 !important;
       border: 1px solid rgba(56, 189, 248, 0.35) !important;
       font-weight: 700 !important;
+    }
+    .draw-dropdown-item.active svg {
+      color: #38bdf8 !important;
+    }
+    .draw-dropdown-item.active span {
+      color: #38bdf8 !important;
+    }
+    .draw-dropdown-item[data-tool="long_pos"] {
+      color: #34d399 !important;
+    }
+    .draw-dropdown-item[data-tool="long_pos"] span {
+      color: #34d399 !important;
+    }
+    .draw-dropdown-item[data-tool="short_pos"] {
+      color: #f87171 !important;
+    }
+    .draw-dropdown-item[data-tool="short_pos"] span {
+      color: #f87171 !important;
+    }
+    .draw-dropdown-item[data-tool="trash"] {
+      color: #ef4444 !important;
+    }
+    .draw-dropdown-item[data-tool="trash"] svg, .draw-dropdown-item[data-tool="trash"] span {
+      color: #ef4444 !important;
     }
     .draw-sep {
       width: 20px; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0;
@@ -1238,48 +1273,48 @@ const htmlContent = `<!DOCTYPE html>
                   </div>
                   
                   <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <button type="button" class="draw-dropdown-item active" data-tool="cursor">
+                    <button type="button" class="draw-dropdown-item active" data-tool="cursor" style="background: rgba(56, 189, 248, 0.16) !important; color: #38bdf8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
                       <span>Crosshair / Cursor</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="trendline">
+                    <button type="button" class="draw-dropdown-item" data-tool="trendline" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
                       <span>Trendline (2 Points)</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="ray">
+                    <button type="button" class="draw-dropdown-item" data-tool="ray" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
                       <span>Ray Line (Infinite)</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="horizontal">
+                    <button type="button" class="draw-dropdown-item" data-tool="horizontal" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
                       <span>Horizontal S/R</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="box">
+                    <button type="button" class="draw-dropdown-item" data-tool="box" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
                       <span>Support/Resistance Box</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="fib">
+                    <button type="button" class="draw-dropdown-item" data-tool="fib" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
                       <span>Fibonacci Retracement</span>
                     </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
-                    <button type="button" class="draw-dropdown-item" data-tool="long_pos" style="color: #4ade80;">
+                    <button type="button" class="draw-dropdown-item" data-tool="long_pos" style="background: transparent !important; color: #34d399 !important;">
                       <span style="font-size: 11px; font-weight: 800; width: 14px; text-align: center; flex-shrink:0;">▲R</span>
                       <span style="font-weight: 600;">Long Position (R:R)</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" data-tool="short_pos" style="color: #f87171;">
+                    <button type="button" class="draw-dropdown-item" data-tool="short_pos" style="background: transparent !important; color: #f87171 !important;">
                       <span style="font-size: 11px; font-weight: 800; width: 14px; text-align: center; flex-shrink:0;">▼R</span>
                       <span style="font-weight: 600;">Short Position (R:R)</span>
                     </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
-                    <button type="button" class="draw-dropdown-item" id="draw-tool-magnet" data-tool="magnet" style="justify-content: space-between;">
+                    <button type="button" class="draw-dropdown-item" id="draw-tool-magnet" data-tool="magnet" style="background: transparent !important; color: #94a3b8 !important; justify-content: space-between;">
                       <div style="display: flex; align-items: center; gap: 10px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
                         <span>Magnet Mode</span>
                       </div>
                       <span id="magnet-mode-badge" style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,0.08); color: #94a3b8; font-weight: 700;">OFF</span>
                     </button>
-                    <button type="button" class="draw-dropdown-item" id="draw-tool-trash" data-tool="trash" style="color: #ef4444;">
+                    <button type="button" class="draw-dropdown-item" id="draw-tool-trash" data-tool="trash" style="background: transparent !important; color: #ef4444 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       <span>Clear All Drawings</span>
                     </button>
@@ -6422,8 +6457,14 @@ const htmlContent = `<!DOCTYPE html>
           if (drawDropdown) drawDropdown.style.display = 'none';
           btnDrawMenu?.classList.remove('active');
         } else if (tool) {
-          document.querySelectorAll('.draw-dropdown-item').forEach(el => el.classList.remove('active'));
+          document.querySelectorAll('.draw-dropdown-item').forEach(el => {
+            el.classList.remove('active');
+            el.style.setProperty('background', 'transparent', 'important');
+            el.style.setProperty('color', '#94a3b8', 'important');
+          });
           btn.classList.add('active');
+          btn.style.setProperty('background', 'rgba(56, 189, 248, 0.16)', 'important');
+          btn.style.setProperty('color', '#38bdf8', 'important');
           window.drawingEngineInstance?.setActiveTool(tool);
 
           const lbl = document.getElementById('active-draw-tool-label');
