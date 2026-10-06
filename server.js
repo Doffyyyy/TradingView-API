@@ -551,7 +551,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     .hl-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
 
-    /* Vela-Style Drawing Toolbar */
+    /* Vela-Style Drawing Toolbar & Dropdown Menu */
     .draw-tool-btn {
       width: 28px; height: 28px;
       display: flex; align-items: center; justify-content: center;
@@ -567,6 +567,34 @@ const htmlContent = `<!DOCTYPE html>
       color: #c084fc !important;
       border-color: rgba(168, 85, 247, 0.5) !important;
       box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+    .draw-dropdown-item {
+      width: 100% !important;
+      height: 32px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 10px !important;
+      padding: 0 10px !important;
+      border-radius: 6px !important;
+      cursor: pointer !important;
+      color: #cbd5e1 !important;
+      font-size: 11.5px !important;
+      white-space: nowrap !important;
+      box-sizing: border-box !important;
+      text-align: left !important;
+      line-height: 1 !important;
+      transition: all 0.15s ease;
+    }
+    .draw-dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #ffffff !important;
+    }
+    .draw-dropdown-item.active {
+      background: rgba(56, 189, 248, 0.18) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.35) !important;
+      font-weight: 700 !important;
     }
     .draw-sep {
       width: 20px; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 2px 0;
@@ -1203,58 +1231,58 @@ const htmlContent = `<!DOCTYPE html>
                   <span>Draw Tools</span>
                   <span style="font-size: 8px; color: #8c93a3;">⌄</span>
                 </button>
-                <div id="draw-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; width: 230px; padding: 10px 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);">
-                  <div style="font-size: 10.5px; font-weight: 800; color: #fff; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; display: flex; justify-content: space-between;">
+                <div id="draw-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; width: 220px; padding: 10px 12px; background: rgba(13, 17, 28, 0.96) !important; backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 10px !important; box-shadow: 0 16px 40px rgba(0,0,0,0.75) !important;">
+                  <div style="font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>DRAWING TOOLS</span>
                     <span id="active-draw-tool-label" style="font-size: 9.5px; color: #38bdf8; font-weight: 700;">Crosshair</span>
                   </div>
                   
-                  <div style="display: flex; flex-direction: column; gap: 3px;">
-                    <div class="draw-dropdown-item draw-tool-btn active" data-tool="cursor" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <button type="button" class="draw-dropdown-item active" data-tool="cursor">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
                       <span>Crosshair / Cursor</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="trendline" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="trendline">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
                       <span>Trendline (2 Points)</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="ray" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
-                      <span>Ray Line (Infinite Right)</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="horizontal" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-                      <span>Horizontal Line (S/R)</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="box" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
-                      <span>Support / Resistance Box</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="fib" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="ray">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
+                      <span>Ray Line (Infinite)</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="horizontal">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+                      <span>Horizontal S/R</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="box">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+                      <span>Support/Resistance Box</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="fib">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
                       <span>Fibonacci Retracement</span>
-                    </div>
+                    </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="long_pos" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #4ade80; font-size: 11px; font-weight: 700;">
-                      <span style="font-size: 12px;">▲R</span>
-                      <span>Long Position (Target R:R)</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" data-tool="short_pos" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #f87171; font-size: 11px; font-weight: 700;">
-                      <span style="font-size: 12px;">▼R</span>
-                      <span>Short Position (Target R:R)</span>
-                    </div>
+                    <button type="button" class="draw-dropdown-item" data-tool="long_pos" style="color: #4ade80;">
+                      <span style="font-size: 11px; font-weight: 800; width: 14px; text-align: center; flex-shrink:0;">▲R</span>
+                      <span style="font-weight: 600;">Long Position (R:R)</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="short_pos" style="color: #f87171;">
+                      <span style="font-size: 11px; font-weight: 800; width: 14px; text-align: center; flex-shrink:0;">▼R</span>
+                      <span style="font-weight: 600;">Short Position (R:R)</span>
+                    </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
-                    <div class="draw-dropdown-item draw-tool-btn" id="draw-tool-magnet" data-tool="magnet" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
-                        <span>Magnet Mode (Snap OHLC)</span>
+                    <button type="button" class="draw-dropdown-item" id="draw-tool-magnet" data-tool="magnet" style="justify-content: space-between;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
+                        <span>Magnet Mode</span>
                       </div>
-                      <span id="magnet-mode-badge" style="font-size: 9px; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.08); color: #94a3b8;">OFF</span>
-                    </div>
-                    <div class="draw-dropdown-item draw-tool-btn" id="draw-tool-trash" data-tool="trash" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #ef4444; font-size: 11px;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      <span id="magnet-mode-badge" style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,0.08); color: #94a3b8; font-weight: 700;">OFF</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" id="draw-tool-trash" data-tool="trash" style="color: #ef4444;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       <span>Clear All Drawings</span>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -6376,7 +6404,7 @@ const htmlContent = `<!DOCTYPE html>
       'short_pos': 'Short Pos ▼R',
     };
 
-    document.querySelectorAll('.draw-tool-btn').forEach(btn => {
+    document.querySelectorAll('.draw-dropdown-item').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
