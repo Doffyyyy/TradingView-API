@@ -1306,6 +1306,30 @@ const htmlContent = `<!DOCTYPE html>
                       </select>
                     </div>
                   </div>
+
+                  <!-- 5. LuxAlgo Signals & Overlays (Smart Trail & Reversal Zones) -->
+                  <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">⚡ LuxAlgo Signals & Overlays</span>
+                      <button class="btn active" id="btn-toggle-luxalgo" style="padding: 2px 8px; font-size: 9.5px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8;">ON</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">LuxAlgo® • Smart Trail & Reversal Zones [v6.1 Clone]</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Smart Trail ATR:</span>
+                      <select id="select-lux-factor" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="4.0" selected>Factor 4.0 (Normal)</option>
+                        <option value="3.0">Factor 3.0 (Fast)</option>
+                        <option value="5.0">Factor 5.0 (Smooth)</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Reversal Zones:</span>
+                      <select id="select-lux-rz" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="ON" selected>SuperSmoother Envelopes</option>
+                        <option value="OFF">Hidden</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3711,11 +3735,175 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+    // 5. LuxAlgo Signals & Overlays (Smart Trail + Reversal Zones v6.1 Clone)
+    let luxalgoEnabled = true;
+    let luxAtrFactor = 4.0;
+    let luxRzEnabled = true;
+    let luxSmartTrailSeries = null;
+    let luxRzUpperSeries = null;
+    let luxRzLowerSeries = null;
+    let luxPriceLines = [];
+
+    function clearLuxAlgoLines() {
+      if (luxSmartTrailSeries) {
+        try { chart.removeSeries(luxSmartTrailSeries); } catch (e) {}
+        luxSmartTrailSeries = null;
+      }
+      if (luxRzUpperSeries) {
+        try { chart.removeSeries(luxRzUpperSeries); } catch (e) {}
+        luxRzUpperSeries = null;
+      }
+      if (luxRzLowerSeries) {
+        try { chart.removeSeries(luxRzLowerSeries); } catch (e) {}
+        luxRzLowerSeries = null;
+      }
+      luxPriceLines.forEach(pl => {
+        try { candleSeries.removePriceLine(pl); } catch (e) {}
+      });
+      luxPriceLines = [];
+    }
+
+    function updateLuxAlgoOverlays(candles) {
+      clearLuxAlgoLines();
+      if (!luxalgoEnabled || !candles || candles.length < 20) return;
+
+      try {
+        // 1. Calculate Smart Trail (ATR 10, Factor 4.0, Smoothing 8)
+        const trArr = [];
+        trArr.push(candles[0].high - candles[0].low);
+        for (let i = 1; i < candles.length; i++) {
+          const hl = candles[i].high - candles[i].low;
+          const hc = Math.abs(candles[i].high - candles[i - 1].close);
+          const lc = Math.abs(candles[i].low - candles[i - 1].close);
+          trArr.push(Math.max(hl, hc, lc));
+        }
+
+        // Wilder MA
+        const atrPeriod = 10;
+        const atr = new Array(candles.length).fill(0);
+        let trSum = 0;
+        for (let i = 0; i < Math.min(atrPeriod, candles.length); i++) trSum += trArr[i];
+        atr[Math.min(atrPeriod - 1, candles.length - 1)] = trSum / atrPeriod;
+        for (let i = atrPeriod; i < candles.length; i++) {
+          atr[i] = (atr[i - 1] * (atrPeriod - 1) + trArr[i]) / atrPeriod;
+        }
+
+        // Smoothed closes
+        const kSm = 2 / (8 + 1);
+        const smCloses = new Array(candles.length).fill(candles[0].close);
+        for (let i = 1; i < candles.length; i++) {
+          smCloses[i] = candles[i].close * kSm + smCloses[i - 1] * (1 - kSm);
+        }
+
+        let curTrail = smCloses[0];
+        let curDir = 1; // 1 = Bull, -1 = Bear
+        const trailData = [];
+        const trailFactor = luxAtrFactor || 4.0;
+
+        for (let i = 0; i < candles.length; i++) {
+          const loss = trailFactor * (atr[i] || (candles[i].high - candles[i].low));
+          const src = smCloses[i];
+          if (curDir === 1) {
+            curTrail = Math.max(curTrail, src - loss);
+            if (candles[i].close < curTrail) {
+              curDir = -1;
+              curTrail = src + loss;
+            }
+          } else {
+            curTrail = Math.min(curTrail, src + loss);
+            if (candles[i].close > curTrail) {
+              curDir = 1;
+              curTrail = src - loss;
+            }
+          }
+
+          trailData.push({
+            time: candles[i].time,
+            value: parseFloat(curTrail.toFixed(4)),
+            color: curDir === 1 ? '#2157f9' : '#ef5350',
+          });
+        }
+
+        luxSmartTrailSeries = chart.addLineSeries({
+          color: curDir === 1 ? '#2157f9' : '#ef5350',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          title: 'Lux Smart Trail',
+          crosshairMarkerVisible: true,
+        });
+        luxSmartTrailSeries.setData(trailData);
+
+        // 2. Reversal Zones (SuperSmoother + Envelopes)
+        if (luxRzEnabled) {
+          const hlc3 = candles.map(c => (c.high + c.low + c.close) / 3);
+          const len = 100;
+          const pi = Math.PI;
+          const a1 = Math.exp(-Math.SQRT2 * pi / len);
+          const b1 = 2 * a1 * Math.cos(Math.SQRT2 * pi / len);
+          const c2 = b1;
+          const c3 = -a1 * a1;
+          const c1 = 1 - c2 - c3;
+
+          const ss = new Array(hlc3.length).fill(hlc3[0]);
+          if (hlc3.length > 1) ss[1] = hlc3[1];
+          for (let i = 2; i < hlc3.length; i++) {
+            ss[i] = c1 * hlc3[i] + c2 * ss[i - 1] + c3 * ss[i - 2];
+          }
+
+          const rzUpperData = [];
+          const rzLowerData = [];
+          for (let i = 0; i < candles.length; i++) {
+            const start = Math.max(0, i - 40);
+            let variance = 0;
+            for (let j = start; j <= i; j++) {
+              const diff = hlc3[j] - ss[j];
+              variance += diff * diff;
+            }
+            const sd = Math.sqrt(variance / (i - start + 1)) || (ss[i] * 0.015);
+            rzUpperData.push({ time: candles[i].time, value: parseFloat((ss[i] + sd * 2.415).toFixed(4)) });
+            rzLowerData.push({ time: candles[i].time, value: parseFloat((ss[i] - sd * 2.415).toFixed(4)) });
+          }
+
+          luxRzUpperSeries = chart.addLineSeries({
+            color: 'rgba(239, 83, 80, 0.45)',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            title: 'Lux Reversal Upper',
+          });
+          luxRzUpperSeries.setData(rzUpperData);
+
+          luxRzLowerSeries = chart.addLineSeries({
+            color: 'rgba(38, 166, 154, 0.45)',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            title: 'Lux Reversal Lower',
+          });
+          luxRzLowerSeries.setData(rzLowerData);
+        }
+
+        // Add Active Trail Price Line
+        const lastTrailVal = trailData[trailData.length - 1].value;
+        const trailLine = candleSeries.createPriceLine({
+          price: lastTrailVal,
+          color: curDir === 1 ? '#2157f9' : '#ef5350',
+          lineWidth: 1,
+          lineStyle: LightweightCharts.LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'Smart Trail (' + (curDir === 1 ? 'BUY' : 'SELL') + ')',
+        });
+        luxPriceLines.push(trailLine);
+
+      } catch (err) {
+        console.error('Error drawing LuxAlgo overlays:', err);
+      }
+    }
+
     function clearAllIndicatorLines() {
       clearFiboLines();
       clearGaltonLines();
       clearFootprintLines();
       clearRlmLines();
+      clearLuxAlgoLines();
     }
 
     function updateActiveIndicators(candles) {
@@ -3723,6 +3911,7 @@ const htmlContent = `<!DOCTYPE html>
       updateGaltonProfile(candles);
       updateVolumeFootprint(candles);
       updateReactionLevelMatrix(candles);
+      updateLuxAlgoOverlays(candles);
     }
 
     function updateFiboRadar(candles) {
@@ -4679,6 +4868,38 @@ const htmlContent = `<!DOCTYPE html>
       selectRlmPreset.addEventListener('change', () => {
         rlmRiskPreset = selectRlmPreset.value || 'BALANCED';
         updateReactionLevelMatrix(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    // LuxAlgo Signals & Overlays [v6.1] Controls
+    const btnToggleLux = document.getElementById('btn-toggle-luxalgo');
+    if (btnToggleLux) {
+      btnToggleLux.addEventListener('click', () => {
+        luxalgoEnabled = !luxalgoEnabled;
+        btnToggleLux.textContent = luxalgoEnabled ? 'ON' : 'OFF';
+        btnToggleLux.style.background = luxalgoEnabled ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleLux.style.color = luxalgoEnabled ? '#38bdf8' : 'var(--text-secondary)';
+        btnToggleLux.style.borderColor = luxalgoEnabled ? '#38bdf8' : 'transparent';
+        updateLuxAlgoOverlays(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectLuxFactor = document.getElementById('select-lux-factor');
+    if (selectLuxFactor) {
+      selectLuxFactor.addEventListener('change', () => {
+        luxAtrFactor = parseFloat(selectLuxFactor.value) || 4.0;
+        updateLuxAlgoOverlays(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectLuxRz = document.getElementById('select-lux-rz');
+    if (selectLuxRz) {
+      selectLuxRz.addEventListener('change', () => {
+        luxRzEnabled = selectLuxRz.value === 'ON';
+        updateLuxAlgoOverlays(currentCandlesCache);
         if (typeof triggerAutoSave === 'function') triggerAutoSave();
       });
     }
@@ -6082,7 +6303,7 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById('btn-toggle-watchlist')?.addEventListener('click', triggerAutoSave);
     document.getElementById('btn-toggle-dock')?.addEventListener('click', triggerAutoSave);
     document.querySelectorAll('.dock-seg-btn').forEach(b => b.addEventListener('click', triggerAutoSave));
-    ['btn-toggle-fibo', 'btn-toggle-galton', 'btn-toggle-footprint', 'select-fibo-period', 'select-galton-engine', 'select-galton-period', 'select-footprint-window', 'select-footprint-imbalance'].forEach(id => {
+    ['btn-toggle-fibo', 'btn-toggle-galton', 'btn-toggle-footprint', 'btn-toggle-rlm', 'btn-toggle-luxalgo', 'select-fibo-period', 'select-galton-engine', 'select-galton-period', 'select-footprint-window', 'select-footprint-imbalance', 'select-rlm-swing', 'select-rlm-score', 'select-rlm-preset', 'select-lux-factor', 'select-lux-rz'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', triggerAutoSave);
       document.getElementById(id)?.addEventListener('click', triggerAutoSave);
     });

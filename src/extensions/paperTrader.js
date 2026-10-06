@@ -604,6 +604,7 @@ class PaperTradingEngine {
         const hasBullishAbsorptionBottom = ltf.footprint ? ltf.footprint.hasBullishAbsorptionBottom : false;
         const isChoppy = ltf.footprint?.marketStructure === 'CHOPPY_ROTATION';
         const rlmSignal = ltf.rlm?.signal || null;
+        const lux = ltf.luxalgo || null; // LuxAlgo Signals & Overlays (Smart Trail + Reversal Zones)
 
         // =========================================================================
         // HTF DIRECTION 1: LONG SETUP
@@ -614,24 +615,33 @@ class PaperTradingEngine {
         //  4. No heavy 1H Resistance ceiling right above (< 1.5%)
         //  5. 15M Entry is a PULLBACK / RETEST (RSI 36-56), never buy an overbought pump
         //  6. Orderflow clean: buyFlow >= 0.48, no bearish absorption top
+        //  7. LuxAlgo Smart Trail Filter: Must be in BULL trail or not deep in Overbought Reversal Zone
         // =========================================================================
         const canLong = !hasActiveShort &&
                         btcRegime !== 'BEAR_REGIME' &&
                         htf.bias === 'BULL' &&
-                        (!htf.nearestRes || htf.nearestRes.distancePct >= 1.5);
+                        (!htf.nearestRes || htf.nearestRes.distancePct >= 1.5) &&
+                        (!lux || lux.trailDirection !== 'BEAR') &&
+                        (!lux || lux.inReversalZone !== 'OVERBOUGHT');
 
         if (canLong && buyFlow >= 0.48 && !hasBearishAbsorptionTop && rsi <= 56) {
           let triggerType = null;
           let strategyName = '';
           let lev = 1;
 
-          // Trigger A: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
-          if (rlmSignal && rlmSignal.type === 'LONG' && rlmSignal.levelScore >= 50) {
+          // Trigger A: LuxAlgo Smart Trail Bull Flip / Confirmation Buy Signal
+          if (lux?.lastSignal?.type === 'BUY' && lux?.trailDirection === 'BULL') {
+            triggerType = 'LUXALGO_CONFIRMATION';
+            strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Buy (+) Smart Trail' : 'LuxAlgo Confirmation Buy';
+            lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
+          }
+          // Trigger B: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
+          else if (rlmSignal && rlmSignal.type === 'LONG' && rlmSignal.levelScore >= 50) {
             triggerType = 'RLM_REJECTION';
             strategyName = 'HTF Bull + RLM Sniper Long';
             lev = isDefensive ? 1 : 2;
           }
-          // Trigger B: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
+          // Trigger C: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
           else if (ltf.supertrend === 'BUY' && ltf.macdTrend === 'BULLISH' && buyVotes >= 14 && sellVotes <= 6 && !isChoppy && rsi >= 36) {
             triggerType = 'PULLBACK_MOMENTUM';
             strategyName = 'HTF Trend + 15M Pullback Long';
@@ -646,7 +656,8 @@ class PaperTradingEngine {
 
           if (triggerType) {
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${ltf.galton.pocPrice}]` : '';
-            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}.`;
+            const luxStr = lux ? ` [LuxTrail: ${lux.trailDirection}]` : '';
+            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}${luxStr}.`;
             this.log(`🚀 HTF-Aligned Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
             await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
@@ -663,24 +674,33 @@ class PaperTradingEngine {
         //  4. No heavy 1H Support floor right below (< 1.5%)
         //  5. 15M Entry is a RETRACEMENT BOUNCE (RSI 44-64), never short an oversold dump
         //  6. Orderflow clean: sellFlow >= 0.48, no bullish absorption bottom
+        //  7. LuxAlgo Smart Trail Filter: Must be in BEAR trail or not deep in Oversold Reversal Zone
         // =========================================================================
         const canShort = !hasActiveLong &&
                          btcRegime !== 'BULL_REGIME' &&
                          htf.bias === 'BEAR' &&
-                         (!htf.nearestSup || htf.nearestSup.distancePct >= 1.5);
+                         (!htf.nearestSup || htf.nearestSup.distancePct >= 1.5) &&
+                         (!lux || lux.trailDirection !== 'BULL') &&
+                         (!lux || lux.inReversalZone !== 'OVERSOLD');
 
         if (canShort && sellFlow >= 0.48 && !hasBullishAbsorptionBottom && rsi >= 44) {
           let triggerType = null;
           let strategyName = '';
           let lev = 1;
 
-          // Trigger A: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
-          if (rlmSignal && rlmSignal.type === 'SHORT' && rlmSignal.levelScore >= 50) {
+          // Trigger A: LuxAlgo Smart Trail Bear Flip / Confirmation Sell Signal
+          if (lux?.lastSignal?.type === 'SELL' && lux?.trailDirection === 'BEAR') {
+            triggerType = 'LUXALGO_CONFIRMATION';
+            strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Sell (+) Smart Trail' : 'LuxAlgo Confirmation Sell';
+            lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
+          }
+          // Trigger B: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
+          else if (rlmSignal && rlmSignal.type === 'SHORT' && rlmSignal.levelScore >= 50) {
             triggerType = 'RLM_REJECTION';
             strategyName = 'HTF Bear + RLM Sniper Short';
             lev = isDefensive ? 1 : 2;
           }
-          // Trigger B: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
+          // Trigger C: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
           else if (ltf.supertrend === 'SELL' && ltf.macdTrend === 'BEARISH' && sellVotes >= 14 && buyVotes <= 6 && !isChoppy && rsi <= 64) {
             triggerType = 'RETRACEMENT_BREAKDOWN';
             strategyName = 'HTF Trend + 15M Retrace Short';

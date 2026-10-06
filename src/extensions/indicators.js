@@ -321,6 +321,14 @@ async function computeAllIndicators(symbol, timeframe = '60', requestedIndicator
     }
   }
 
+  if (reqSet.has('LUXALGO') || reqSet.has('SIGNALS_OVERLAYS') || reqSet.has('SMART_TRAIL')) {
+    const { evaluateLuxAlgoOverlays } = require('./luxalgoOverlays');
+    const lux = evaluateLuxAlgoOverlays(candles);
+    if (lux) {
+      results.indicators.LuxAlgoOverlays = lux;
+    }
+  }
+
   return results;
 }
 
@@ -885,6 +893,8 @@ async function getMultiTimeframeAnalysis(symbol) {
   const galton = calcGaltonVolumeProfile(candles15m, 40);
   const footprint = calcVolumeFootprint(candles15m, 5, 3.0);
   const rlm15m = calcReactionLevelMatrix(candles15m);
+  const { evaluateLuxAlgoOverlays } = require('./luxalgoOverlays');
+  const lux15m = evaluateLuxAlgoOverlays(candles15m);
 
   return {
     symbol,
@@ -897,6 +907,7 @@ async function getMultiTimeframeAnalysis(symbol) {
       galton,
       footprint,
       rlm: rlm15m,
+      luxalgo: lux15m?.latestState || null,
     }
   };
 }
