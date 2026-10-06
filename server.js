@@ -1196,6 +1196,71 @@ const htmlContent = `<!DOCTYPE html>
 
               <div class="hl-vdiv"></div>
 
+              <!-- Drawing Tools Dropdown (Compact Top Bar Tool) -->
+              <div style="position: relative; display: inline-block;">
+                <button class="hl-tool-btn" id="btn-draw-menu" title="Drawing Tools & Long/Short Position">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 2 4 4-12 12H6v-4L18 2z"/><path d="m14 6 4 4"/></svg>
+                  <span>Draw Tools</span>
+                  <span style="font-size: 8px; color: #8c93a3;">⌄</span>
+                </button>
+                <div id="draw-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; width: 230px; padding: 10px 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);">
+                  <div style="font-size: 10.5px; font-weight: 800; color: #fff; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; display: flex; justify-content: space-between;">
+                    <span>DRAWING TOOLS</span>
+                    <span id="active-draw-tool-label" style="font-size: 9.5px; color: #38bdf8; font-weight: 700;">Crosshair</span>
+                  </div>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 3px;">
+                    <div class="draw-dropdown-item draw-tool-btn active" data-tool="cursor" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                      <span>Crosshair / Cursor</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="trendline" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
+                      <span>Trendline (2 Points)</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="ray" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
+                      <span>Ray Line (Infinite Right)</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="horizontal" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+                      <span>Horizontal Line (S/R)</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="box" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+                      <span>Support / Resistance Box</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="fib" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
+                      <span>Fibonacci Retracement</span>
+                    </div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="long_pos" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #4ade80; font-size: 11px; font-weight: 700;">
+                      <span style="font-size: 12px;">▲R</span>
+                      <span>Long Position (Target R:R)</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" data-tool="short_pos" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #f87171; font-size: 11px; font-weight: 700;">
+                      <span style="font-size: 12px;">▼R</span>
+                      <span>Short Position (Target R:R)</span>
+                    </div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
+                    <div class="draw-dropdown-item draw-tool-btn" id="draw-tool-magnet" data-tool="magnet" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 11px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
+                        <span>Magnet Mode (Snap OHLC)</span>
+                      </div>
+                      <span id="magnet-mode-badge" style="font-size: 9px; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.08); color: #94a3b8;">OFF</span>
+                    </div>
+                    <div class="draw-dropdown-item draw-tool-btn" id="draw-tool-trash" data-tool="trash" style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: #ef4444; font-size: 11px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      <span>Clear All Drawings</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hl-vdiv"></div>
+
               <!-- Indicators Dropdown Button -->
               <div style="position: relative; display: inline-block;">
                 <button class="hl-tool-btn" id="btn-indicators-menu">
@@ -1380,65 +1445,8 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Chart Workspace: Left Drawing Toolbar + Main Chart Container -->
+          <!-- Chart Workspace: Main Chart Container -->
           <div style="flex: 1; display: flex; width: 100%; position: relative; overflow: hidden; height: calc(100% - 74px);">
-            <!-- Left: Drawing Toolbar (Vela & TradingView Architecture) -->
-            <div id="chart-drawing-toolbar" style="width: 38px; display: flex; flex-direction: column; align-items: center; padding: 6px 2px; gap: 4px; z-index: 20; border-right: 1px solid rgba(255,255,255,0.06); background: rgba(12, 16, 26, 0.75); backdrop-filter: blur(16px); flex-shrink: 0; user-select: none;">
-              <!-- 1. Cursor / Crosshair -->
-              <button class="draw-tool-btn active" data-tool="cursor" title="Crosshair / Cursor (Esc)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-              </button>
-              <div class="draw-sep"></div>
-
-              <!-- 2. Trendline -->
-              <button class="draw-tool-btn" data-tool="trendline" title="Trendline (Click 2 points)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
-              </button>
-
-              <!-- 3. Ray Line -->
-              <button class="draw-tool-btn" data-tool="ray" title="Ray Line (Infinite Right)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="18" x2="21" y2="6"/><polyline points="15 6 21 6 21 12"/><circle cx="4" cy="18" r="2" fill="currentColor"/></svg>
-              </button>
-
-              <!-- 4. Horizontal Line -->
-              <button class="draw-tool-btn" data-tool="horizontal" title="Horizontal Support/Resistance Line">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-              </button>
-              <div class="draw-sep"></div>
-
-              <!-- 5. Support / Resistance Box -->
-              <button class="draw-tool-btn" data-tool="box" title="Support/Resistance Zone Box">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
-              </button>
-
-              <!-- 6. Fibonacci Retracement -->
-              <button class="draw-tool-btn" data-tool="fib" title="Fibonacci Retracement (Golden Pocket)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
-              </button>
-              <div class="draw-sep"></div>
-
-              <!-- 7. Long Position Tool -->
-              <button class="draw-tool-btn" data-tool="long_pos" title="Long Position (Risk/Reward Box)">
-                <span style="font-size: 11px; font-weight: 800; color: #10b981;">▲R</span>
-              </button>
-
-              <!-- 8. Short Position Tool -->
-              <button class="draw-tool-btn" data-tool="short_pos" title="Short Position (Risk/Reward Box)">
-                <span style="font-size: 11px; font-weight: 800; color: #ef4444;">▼R</span>
-              </button>
-              <div class="draw-sep"></div>
-
-              <!-- 9. Magnet Mode -->
-              <button class="draw-tool-btn" id="draw-tool-magnet" data-tool="magnet" title="Magnet Mode (Snap to Candle OHLC)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v6a6 6 0 0 0 12 0V3"/><line x1="4" y1="3" x2="8" y2="3"/><line x1="16" y1="3" x2="20" y2="3"/></svg>
-              </button>
-
-              <!-- 10. Clear All Drawings -->
-              <button class="draw-tool-btn" id="draw-tool-trash" data-tool="trash" title="Clear All Drawings on Symbol">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-            </div>
-
             <!-- Charts Grid Container (Supports 1, 2V, 2H, 4 - Vela Architecture) -->
             <div id="charts-grid-wrapper" style="flex: 1; display: flex; width: 100%; height: 100%; position: relative; overflow: hidden;">
               <!-- Cell 1 (Main Chart) -->
@@ -6333,18 +6341,68 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    // Drawing Toolbar button event handlers (Phase 2 - Vela Architecture)
+    // Drawing Tools Dropdown toggle
+    const btnDrawMenu = document.getElementById('btn-draw-menu');
+    const drawDropdown = document.getElementById('draw-dropdown');
+
+    btnDrawMenu?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isHidden = drawDropdown.style.display === 'none' || !drawDropdown.style.display;
+      drawDropdown.style.display = isHidden ? 'block' : 'none';
+      btnDrawMenu.classList.toggle('active', isHidden);
+    });
+
+    drawDropdown?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (drawDropdown && drawDropdown.style.display === 'block' && !e.target.closest('#draw-dropdown') && !e.target.closest('#btn-draw-menu')) {
+        drawDropdown.style.display = 'none';
+        btnDrawMenu?.classList.remove('active');
+      }
+    });
+
+    // Drawing Tools item event handlers
+    const toolNamesMap = {
+      'cursor': 'Crosshair',
+      'trendline': 'Trendline',
+      'ray': 'Ray Line',
+      'horizontal': 'Horizontal',
+      'box': 'S/R Box',
+      'fib': 'Fibonacci',
+      'long_pos': 'Long Pos ▲R',
+      'short_pos': 'Short Pos ▼R',
+    };
+
     document.querySelectorAll('.draw-tool-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const tool = btn.dataset.tool;
         if (tool === 'magnet') {
-          window.drawingEngineInstance?.toggleMagnet();
+          const isMag = window.drawingEngineInstance?.toggleMagnet();
+          const badge = document.getElementById('magnet-mode-badge');
+          if (badge) {
+            badge.textContent = isMag ? 'ON' : 'OFF';
+            badge.style.background = isMag ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)';
+            badge.style.color = isMag ? '#38bdf8' : '#94a3b8';
+          }
         } else if (tool === 'trash') {
           window.drawingEngineInstance?.clearAllDrawings();
+          if (drawDropdown) drawDropdown.style.display = 'none';
+          btnDrawMenu?.classList.remove('active');
         } else if (tool) {
+          document.querySelectorAll('.draw-dropdown-item').forEach(el => el.classList.remove('active'));
+          btn.classList.add('active');
           window.drawingEngineInstance?.setActiveTool(tool);
+
+          const lbl = document.getElementById('active-draw-tool-label');
+          if (lbl && toolNamesMap[tool]) lbl.textContent = toolNamesMap[tool];
+
+          if (drawDropdown) drawDropdown.style.display = 'none';
+          btnDrawMenu?.classList.remove('active');
         }
       });
     });
