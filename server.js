@@ -7019,17 +7019,18 @@ const htmlContent = `<!DOCTYPE html>
 
         // Calculate stats for all trades in this active month
         for (const dObj of Object.values(daysMap)) {
-          totalPnl += (dObj.pnl || 0);
           (dObj.trades || []).forEach(t => {
-            if (t.pnl > 0) {
+            const pVal = typeof t.pnl === 'number' ? t.pnl : (typeof t.pnlDollar === 'number' ? t.pnlDollar : 0);
+            if (pVal > 0) {
               winCount++;
-              winSum += t.pnl;
-            } else {
+              winSum += pVal;
+            } else if (pVal < 0) {
               lossCount++;
-              lossSum += Math.abs(t.pnl);
+              lossSum += Math.abs(pVal);
             }
-            if (t.side === "LONG") longPnl += t.pnl;
-            else shortPnl += t.pnl;
+            if (t.side === "LONG") longPnl += pVal;
+            else shortPnl += pVal;
+            totalPnl += pVal;
           });
         }
       } else if (currentJournalMode === "march2026") {

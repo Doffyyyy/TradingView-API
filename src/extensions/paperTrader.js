@@ -29,14 +29,14 @@ const DEFAULT_PORTFOLIO = {
   equity: 10000.0,
   dailyTargetMin: 100.0, // 1% of equity ($100 at $10k)
   dailyTargetMax: 300.0, // 3% of equity ($300 at $10k - Profit Lock)
-  dailyStopLossMax: 180.0, // 1.8% of equity ($180 at $10k - Circuit Breaker)
+  dailyStopLossMax: 200.0, // 2.0% of equity ($200 at $10k - Strategy V2 Circuit Breaker)
   dailyRealizedPnl: 0.0,
   lastResetDate: new Date().toISOString().slice(0, 10),
   autoTradeEnabled: true,
-  riskPerTradePercent: 1.5, // 1.5% max capital risk per trade ($150)
-  maxPositionMargin: 1800.0, // Max margin collateral per trade
-  maxLeverage: 3, // Max 3x leverage when conditions are pristine
-  maxOpenPositions: 2,
+  riskPerTradePercent: 0.5, // Strategy V2: 0.5% risk per trade ($50 on $10k)
+  maxPositionMargin: 2500.0,
+  maxLeverage: 2, // Strategy V2: Max 2x leverage
+  maxOpenPositions: 3, // Strategy V2: Max 3 positions
   positions: [], // { id, symbol, side, entryPrice, size, margin, notional, leverage, stopLoss, takeProfit, entryTime, strategy, highestPrice, lowestPrice }
   trades: [],
   logs: [],
@@ -226,6 +226,16 @@ class PaperTradingEngine {
         }
       }
 
+      // Strategy V2 Time Exit (Section 26: 48 bars = 12h maximum holding period)
+      if (!shouldClose && pos.entryTime) {
+        const holdingHours = (Date.now() - new Date(pos.entryTime).getTime()) / (1000 * 60 * 60);
+        if (holdingHours >= 12.0) {
+          shouldClose = true;
+          const pnlPct = pos.side === 'LONG' ? ((curr - pos.entryPrice) / pos.entryPrice) * 100 : ((pos.entryPrice - curr) / pos.entryPrice) * 100;
+          reason = `Strategy V2 Time Exit: 12h max holding limit reached (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+        }
+      }
+
       if (shouldClose) {
         await this.closePosition(pos.id, curr, reason);
       }
@@ -334,86 +344,57 @@ class PaperTradingEngine {
     const currPrice = this.latestPrices[symbol]?.price;
     if (!currPrice || currPrice <= 0) return null;
 
-    const lev = Math.min(3, Math.max(1, parseInt(leverage, 10) || 1));
-    const maxMargin = this.portfolio.maxPositionMargin || 1800.0;
-    const targetMargin = Math.min(this.portfolio.cash * 0.35, maxMargin);
-    if (targetMargin < 100) {
-      this.log(`Insufficient cash ($${this.portfolio.cash.toFixed(2)}) to open position margin`);
-      return null;
-    }
+    const lev = Math.min(2, Math.max(1, parseInt(leverage, 10) || 1));
 
-    const margin = Math.round(targetMargin * 100) / 100;
-    const notional = Math.round(margin * lev * 100) / 100;
-    const size = notional / currPrice;
-    this.portfolio.cash -= margin;
-
-    // Adaptive targets tailored to leverage (Composite Edge R:R 2.4:1):
-    // 1x: Base TP 2.4%, SL 1.0% (RR 2.4:1)
-    // 2x: Base TP 2.0%, SL 0.8% (RR 2.5:1)
-    // 3x: Base TP 1.8%, SL 0.75% (RR 2.4:1)
-    let slPercent = 0.010;
-    let tpPercent = 0.024;
-    if (lev === 2) {
-      slPercent = 0.008;
-      tpPercent = 0.020;
-    } else if (lev === 3) {
-      slPercent = 0.0075;
-      tpPercent = 0.018;
-    }
-
-    // Hard Minimum Take Profit Distance (at least 1.4% to safely out-earn fees by 15x-20x)
-    const minTpDistancePct = 0.014;
-
+    // Strategy V2 Stop Loss & Target Calculation (Fixed R:R 2.2:1)
     let stopLoss = 0;
     let takeProfit = 0;
+    const baseStopPct = 0.012; // 1.2% base
 
     if (side === 'LONG') {
-      let initialSl = currPrice * (1 - slPercent);
-      // RLM Wick-Anchored SL: use if within sensible risk bounds (0.5% - 1.3%)
+      let initialSl = currPrice * (1 - baseStopPct);
       if (rlmData?.signal?.type === 'LONG' && rlmData.signal.sl > 0 && rlmData.signal.sl < currPrice) {
         const rlmRiskPct = (currPrice - rlmData.signal.sl) / currPrice;
-        if (rlmRiskPct >= 0.005 && rlmRiskPct <= 0.013) {
+        if (rlmRiskPct >= 0.008 && rlmRiskPct <= 0.035) {
           initialSl = rlmData.signal.sl;
         }
       } else if (orderFlow?.valPrice && orderFlow.valPrice < currPrice && orderFlow.valPrice >= currPrice * 0.985) {
         initialSl = Math.max(initialSl, orderFlow.valPrice * 0.998);
       }
       stopLoss = roundPriceForCoin(initialSl);
-
-      // Enforce Minimum Risk:Reward Ratio >= 1:1.6 (Never squeeze TP below safe threshold)
-      const riskDistance = Math.max(currPrice * 0.006, currPrice - stopLoss);
-      const minRewardDistance = Math.max(riskDistance * 1.6, currPrice * minTpDistancePct);
-      let targetTp = currPrice + minRewardDistance;
-
-      if (rlmData?.signal?.tp2 && rlmData.signal.tp2 > targetTp) {
-        targetTp = rlmData.signal.tp2;
-      } else if (orderFlow?.vahPrice && orderFlow.vahPrice > targetTp && orderFlow.vahPrice <= currPrice * 1.05) {
-        targetTp = orderFlow.vahPrice;
-      }
-      takeProfit = roundPriceForCoin(targetTp);
+      const stopDistance = Math.max(currPrice * 0.008, currPrice - stopLoss);
+      takeProfit = roundPriceForCoin(currPrice + stopDistance * 2.2); // Strategy V2 2.2R Target
     } else {
-      let initialSl = currPrice * (1 + slPercent);
-      if (rlmData?.signal?.type === 'SHORT' && rlmData.signal.sl > currPrice) {
+      let initialSl = currPrice * (1 + baseStopPct);
+      if (rlmData?.signal?.type === 'SHORT' && rlmData.signal.sl > 0 && rlmData.signal.sl > currPrice) {
         const rlmRiskPct = (rlmData.signal.sl - currPrice) / currPrice;
-        if (rlmRiskPct >= 0.005 && rlmRiskPct <= 0.013) {
+        if (rlmRiskPct >= 0.008 && rlmRiskPct <= 0.035) {
           initialSl = rlmData.signal.sl;
         }
       } else if (orderFlow?.vahPrice && orderFlow.vahPrice > currPrice && orderFlow.vahPrice <= currPrice * 1.015) {
         initialSl = Math.min(initialSl, orderFlow.vahPrice * 1.002);
       }
       stopLoss = roundPriceForCoin(initialSl);
-
-      const riskDistance = Math.max(currPrice * 0.006, stopLoss - currPrice);
-      const minRewardDistance = Math.max(riskDistance * 1.6, currPrice * minTpDistancePct);
-      let targetTp = currPrice - minRewardDistance;
-
-      if (rlmData?.signal?.tp2 && rlmData.signal.tp2 < targetTp) {
-        targetTp = rlmData.signal.tp2;
-      } else if (orderFlow?.valPrice && orderFlow.valPrice < targetTp && orderFlow.valPrice >= currPrice * 0.95) {
-        targetTp = orderFlow.valPrice;
-      }
-      takeProfit = roundPriceForCoin(targetTp);
+      const stopDistance = Math.max(currPrice * 0.008, stopLoss - currPrice);
+      takeProfit = roundPriceForCoin(currPrice - stopDistance * 2.2);
     }
+
+    // Strategy V2 Risk-based Position Sizing (Section 15, 16)
+    // Risk = 0.5% equity ($50 on $10k), Size = Risk / Distance, capped at 2x leverage
+    const riskDollar = this.portfolio.equity * ((this.portfolio.riskPerTradePercent || 0.5) / 100);
+    const stopDistancePct = Math.abs(currPrice - stopLoss) / currPrice;
+    let notional = riskDollar / Math.max(0.008, stopDistancePct);
+    const maxNotional = this.portfolio.equity * (this.portfolio.maxLeverage || 2.0);
+    if (notional > maxNotional) notional = maxNotional;
+
+    const margin = Math.round((notional / lev) * 100) / 100;
+    if (this.portfolio.cash < margin) {
+      this.log(`Insufficient cash ($${this.portfolio.cash.toFixed(2)}) for position margin $${margin.toFixed(2)}`);
+      return null;
+    }
+
+    const size = notional / currPrice;
+    this.portfolio.cash -= margin;
 
     // Critical sanity check: prevent 0 or negative SL/TP
     if (stopLoss <= 0 || takeProfit <= 0 || isNaN(stopLoss) || isNaN(takeProfit)) {
@@ -629,8 +610,25 @@ class PaperTradingEngine {
           let strategyName = '';
           let lev = 1;
 
+          // Strategy V2 Entry Quality Scoring (Section 10)
+          let v2Score = 0;
+          if (htf.bias === 'BULL') v2Score += 2;
+          if (btcRegime === 'BULL_REGIME') v2Score += 2;
+          else if (btcRegime !== 'BEAR_REGIME') v2Score += 1;
+          if (rsi >= 34 && rsi <= 50) v2Score += 1;
+          if (buyFlow >= 0.50) v2Score += 1;
+          if (buyVotes >= 14) v2Score += 1;
+          if (lux?.trailDirection === 'BULL') v2Score += 1;
+          if (!hasBearishAbsorptionTop && !isChoppy) v2Score += 1;
+
+          // Trigger 1 (Primary): Strategy V2 Trend Pullback Setup (Score 7+)
+          if (v2Score >= 7) {
+            triggerType = 'STRATEGY_V2_PULLBACK';
+            strategyName = `Strategy V2 Trend Pullback (Score ${v2Score}/10)`;
+            lev = isDefensive ? 1 : 2;
+          }
           // Trigger A: LuxAlgo Smart Trail Bull Flip / Confirmation Buy Signal
-          if (lux?.lastSignal?.type === 'BUY' && lux?.trailDirection === 'BULL') {
+          else if (lux?.lastSignal?.type === 'BUY' && lux?.trailDirection === 'BULL') {
             triggerType = 'LUXALGO_CONFIRMATION';
             strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Buy (+) Smart Trail' : 'LuxAlgo Confirmation Buy';
             lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
@@ -657,7 +655,7 @@ class PaperTradingEngine {
           if (triggerType) {
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${ltf.galton.pocPrice}]` : '';
             const luxStr = lux ? ` [LuxTrail: ${lux.trailDirection}]` : '';
-            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}${luxStr}.`;
+            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}${luxStr} (V2Score: ${v2Score}/10).`;
             this.log(`🚀 HTF-Aligned Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
             await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
