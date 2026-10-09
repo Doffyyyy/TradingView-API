@@ -173,6 +173,9 @@
       this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
       this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
       this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+      this.canvas.addEventListener('mouseleave', () => {
+        window.resetLegendOHLC?.();
+      });
 
       // Key listener for Delete
       window.addEventListener('keydown', (e) => {

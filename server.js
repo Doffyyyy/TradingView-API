@@ -1520,6 +1520,7 @@ const htmlContent = `<!DOCTYPE html>
               <span class="legend-item"><span class="legend-label">H:</span><span id="leg-high">--</span></span>
               <span class="legend-item"><span class="legend-label">L:</span><span id="leg-low">--</span></span>
               <span class="legend-item"><span class="legend-label">C:</span><span id="leg-close">--</span></span>
+              <span class="legend-item" id="leg-chg-wrap" style="display: none;"><span id="leg-chg">--</span></span>
               <span class="legend-item"><span class="legend-label">Vol:</span><span id="leg-vol">--</span></span>
             </div>
             <!-- Indicators Floating HUD Container -->
@@ -4074,20 +4075,46 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+    function getActiveLatestCandle() {
+      if (lastLoadedCandle && typeof lastLoadedCandle.close === 'number') {
+        return lastLoadedCandle;
+      }
+      if (typeof currentCandlesCache !== 'undefined' && currentCandlesCache && currentCandlesCache.length > 0) {
+        return currentCandlesCache[currentCandlesCache.length - 1];
+      }
+      return null;
+    }
+
     function setLegendOHLC(c) {
+      if (!c) c = getActiveLatestCandle();
       if (!c) return;
       const oEl = document.getElementById('leg-open');
       const hEl = document.getElementById('leg-high');
       const lEl = document.getElementById('leg-low');
       const cEl = document.getElementById('leg-close');
+      const chgWrap = document.getElementById('leg-chg-wrap');
+      const chgEl = document.getElementById('leg-chg');
       const vEl = document.getElementById('leg-vol');
+
       if (oEl && typeof c.open === 'number') oEl.textContent = formatTokenPrice(c.open);
       if (hEl && typeof c.high === 'number') hEl.textContent = formatTokenPrice(c.high);
       if (lEl && typeof c.low === 'number') lEl.textContent = formatTokenPrice(c.low);
+
       if (cEl && typeof c.close === 'number') {
         cEl.textContent = formatTokenPrice(c.close);
-        cEl.className = c.close >= c.open ? 'val-green' : 'val-red';
+        const isUp = c.close >= (typeof c.open === 'number' ? c.open : c.close);
+        cEl.className = isUp ? 'val-green' : 'val-red';
+
+        if (chgEl && typeof c.open === 'number' && c.open > 0) {
+          const diff = c.close - c.open;
+          const diffPct = (diff / c.open) * 100;
+          const sign = diff >= 0 ? '+' : '';
+          chgEl.textContent = sign + formatTokenPrice(diff) + ' (' + sign + diffPct.toFixed(2) + '%)';
+          chgEl.className = isUp ? 'val-green' : 'val-red';
+          if (chgWrap) chgWrap.style.display = 'inline-block';
+        }
       }
+
       if (vEl && typeof c.volume === 'number') {
         const v = c.volume;
         if (v >= 1e6) vEl.textContent = (v / 1e6).toFixed(2) + 'M';
@@ -4095,6 +4122,13 @@ const htmlContent = `<!DOCTYPE html>
         else vEl.textContent = v.toFixed(1);
       }
     }
+
+    let isCrosshairHovering = false;
+
+    window.resetLegendOHLC = function() {
+      isCrosshairHovering = false;
+      setLegendOHLC(getActiveLatestCandle());
+    };
 
     const chartContainer = document.getElementById('chart-container');
     const chart = LightweightCharts.createChart(chartContainer, {
@@ -4176,7 +4210,9 @@ const htmlContent = `<!DOCTYPE html>
         candleSeries.update(updatedCandle);
       } catch (e) {}
 
-      setLegendOHLC(updatedCandle);
+      if (!isCrosshairHovering) {
+        setLegendOHLC(updatedCandle);
+      }
       if (typeof currentCandlesCache !== 'undefined' && currentCandlesCache && currentCandlesCache.length > 0) {
         currentCandlesCache[currentCandlesCache.length - 1] = updatedCandle;
       }
@@ -4192,18 +4228,43 @@ const htmlContent = `<!DOCTYPE html>
     resizeChart();
 
     chart.subscribeCrosshairMove((param) => {
-      if (!param || !param.time) {
-        setLegendOHLC(lastLoadedCandle);
+      // 1. Mouse left chart or on invalid coordinates -> immediately reset to latest active candle
+      if (!param || !param.time || !param.point) {
+        isCrosshairHovering = false;
+        window.resetLegendOHLC();
         return;
       }
+      // 2. Try to get candle data at the crosshair time
       const candle = param.seriesData.get(candleSeries);
-      if (candle) {
+      if (candle && typeof candle.open === 'number' && typeof candle.close === 'number') {
+        isCrosshairHovering = true;
         const vol = param.seriesData.get(volumeSeries);
         setLegendOHLC({
           ...candle,
           volume: vol ? vol.value : (candle.volume || 0),
         });
+      } else {
+        // 3. User cursor is in right margin (future whitespace / empty space) where no candle exists
+        // Immediately reset to active latest candle!
+        isCrosshairHovering = false;
+        window.resetLegendOHLC();
       }
+    });
+
+    // Explicit listeners when cursor leaves chart container or loses focus
+    chartContainer.addEventListener('mouseleave', () => {
+      window.resetLegendOHLC();
+    });
+
+    const gridWrapper = document.getElementById('charts-grid-wrapper');
+    if (gridWrapper) {
+      gridWrapper.addEventListener('mouseleave', () => {
+        window.resetLegendOHLC();
+      });
+    }
+
+    window.addEventListener('blur', () => {
+      window.resetLegendOHLC();
     });
 
     // --- Proliquid Watchlist Logic ---
@@ -4533,7 +4594,9 @@ const htmlContent = `<!DOCTYPE html>
               value: d.candle.volume || 0,
               color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
             });
-            setLegendOHLC(d.candle);
+            if (!isCrosshairHovering) {
+              setLegendOHLC(d.candle);
+            }
             if (typeof syncLivePriceToWatchlist === 'function') {
               syncLivePriceToWatchlist(currentSymbol, d.candle.close);
             }
