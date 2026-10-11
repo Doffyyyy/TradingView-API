@@ -1459,6 +1459,37 @@ const htmlContent = `<!DOCTYPE html>
                       </select>
                     </div>
                   </div>
+
+                  <!-- 6. EMA30 Band Breakout [EL COBER Enhanced] -->
+                  <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222634;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; font-weight: 700; color: #10b981;">📊 EMA30 Band Breakout</span>
+                      <button class="btn active" id="btn-toggle-ema30" style="padding: 2px 8px; font-size: 9.5px; background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e;">ON</button>
+                    </div>
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">EL COBER • High/Low Band + Swing Breakout [Enhanced]</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Band Length:</span>
+                      <select id="select-ema30-period" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="30" selected>EMA 30 (Default)</option>
+                        <option value="20">EMA 20 (Fast)</option>
+                        <option value="50">EMA 50 (Smooth)</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>Volume Filter:</span>
+                      <select id="select-ema30-vol" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="ON" selected>Spike ≥ 1.15x (Anti-Fakeout)</option>
+                        <option value="OFF">Disabled</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
+                      <span>Trend Guard:</span>
+                      <select id="select-ema30-trend" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
+                        <option value="ON" selected>EMA 200 Slope Guard</option>
+                        <option value="OFF">Disabled</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1650,6 +1681,32 @@ const htmlContent = `<!DOCTYPE html>
                 <!-- Active Level Matrix Mini-list -->
                 <div style="font-size: 9px; color: #94a3b8; margin-bottom: 3px; font-weight: 700; letter-spacing: 0.2px;">ACTIVE MATRIX LEVELS (SCORE · TOUCHES):</div>
                 <div id="rlm-levels-list" style="display: flex; flex-direction: column; gap: 2px; max-height: 85px; overflow-y: auto;"></div>
+              </div>
+
+              <!-- 5. EMA30 Band Breakout HUD -->
+              <div id="ema30-hud" class="ios-glass-panel" style="display: none; border: 1px solid rgba(34, 197, 94, 0.35) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 18px rgba(34, 197, 94, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; padding: 10px 14px; font-size: 11px; width: 270px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 800; color: #4ade80; letter-spacing: 0.3px;">📊 EMA30 Breakout [EL COBER]</span>
+                  <span id="ema30-zone-badge" class="ios-glass-pill" style="font-size: 9px; font-weight: 700; padding: 1px 7px; background: rgba(34, 197, 94, 0.18); color: #4ade80;">BULL</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px; font-size: 9.5px;">
+                  <div class="ios-glass-card" style="padding: 4px 6px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">EMA30 BAND</div>
+                    <div style="font-size: 10px; font-weight: 700; color: #e2e8f0;"><span style="color:#4ade80;" id="ema30-h-val">--</span> / <span style="color:#f87171;" id="ema30-l-val">--</span></div>
+                  </div>
+                  <div class="ios-glass-card" style="padding: 4px 6px;">
+                    <div style="color: #94a3b8; font-size: 8.5px;">EMA200 TREND</div>
+                    <div id="ema30-200-val" style="font-size: 10px; font-weight: 700; color: #fbbf24;">--</div>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                  <span>Swing Peak/Trough:</span>
+                  <span style="font-weight: 700;"><span style="color:#4ade80;" id="ema30-prev-peak">--</span> · <span style="color:#f87171;" id="ema30-prev-trough">--</span></span>
+                </div>
+                <div id="ema30-signal-box" class="ios-glass-card" style="padding: 5px 8px; font-size: 9.5px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #94a3b8; font-weight: 600;">Latest Signal:</span>
+                  <span id="ema30-signal-status" style="font-weight: 700; color: #cbd5e1;">Waiting for Breakout</span>
+                </div>
               </div>
 
             </div>
@@ -3971,12 +4028,294 @@ const htmlContent = `<!DOCTYPE html>
       }
     }
 
+    // 6. EMA30 Band Breakout [EL COBER Enhanced]
+    let ema30BandEnabled = true; // default ON
+    let ema30BandPeriod = 30;
+    let ema30UseVol = true;
+    let ema30UseTrend = true;
+    let ema30HSeries = null;
+    let ema30LSeries = null;
+    let ema30_200Series = null;
+    let ema30PriceLines = [];
+
+    function clearEma30Lines() {
+      if (ema30HSeries) {
+        try { chart.removeSeries(ema30HSeries); } catch (e) {}
+        ema30HSeries = null;
+      }
+      if (ema30LSeries) {
+        try { chart.removeSeries(ema30LSeries); } catch (e) {}
+        ema30LSeries = null;
+      }
+      if (ema30_200Series) {
+        try { chart.removeSeries(ema30_200Series); } catch (e) {}
+        ema30_200Series = null;
+      }
+      ema30PriceLines.forEach(pl => {
+        try { candleSeries.removePriceLine(pl); } catch (e) {}
+      });
+      ema30PriceLines = [];
+      try { candleSeries.setMarkers([]); } catch (e) {}
+      const hud = document.getElementById('ema30-hud');
+      if (hud) hud.style.display = 'none';
+    }
+
+    function updateEma30BandBreakout(candles) {
+      clearEma30Lines();
+      const hud = document.getElementById('ema30-hud');
+      if (!ema30BandEnabled || !candles || candles.length < 35) {
+        if (hud) hud.style.display = 'none';
+        return;
+      }
+      if (hud) hud.style.display = 'block';
+
+      try {
+        const lenBand = ema30BandPeriod || 30;
+        const len200 = 200;
+        const n = candles.length;
+
+        // Calc EMA(high, lenBand) and EMA(low, lenBand)
+        const kBand = 2 / (lenBand + 1);
+        const emaH = new Float64Array(n);
+        const emaL = new Float64Array(n);
+        let sumH = 0, sumL = 0;
+        const initB = Math.min(lenBand, n);
+        for (let i = 0; i < initB; i++) {
+          sumH += candles[i].high;
+          sumL += candles[i].low;
+        }
+        emaH[initB - 1] = sumH / initB;
+        emaL[initB - 1] = sumL / initB;
+        for (let i = initB; i < n; i++) {
+          emaH[i] = candles[i].high * kBand + emaH[i - 1] * (1 - kBand);
+          emaL[i] = candles[i].low * kBand + emaL[i - 1] * (1 - kBand);
+        }
+
+        // Calc EMA(close, 200)
+        const k200 = 2 / (len200 + 1);
+        const ema200 = new Float64Array(n);
+        let sum200 = 0;
+        const init200 = Math.min(len200, n);
+        for (let i = 0; i < init200; i++) sum200 += candles[i].close;
+        ema200[init200 - 1] = sum200 / init200;
+        for (let i = init200; i < n; i++) {
+          ema200[i] = candles[i].close * k200 + ema200[i - 1] * (1 - k200);
+        }
+
+        // Volume SMA 20
+        const volSma = new Float64Array(n);
+        let vSum = 0;
+        for (let i = 0; i < n; i++) {
+          vSum += (candles[i].volume || 0);
+          if (i >= 20) {
+            vSum -= (candles[i - 20].volume || 0);
+            volSma[i] = vSum / 20;
+          } else if (i === 19) {
+            volSma[i] = vSum / 20;
+          } else {
+            volSma[i] = vSum / (i + 1);
+          }
+        }
+
+        const hData = [];
+        const lData = [];
+        const t200Data = [];
+        let curPeak = null;
+        let prevPeak = null;
+        let curTrough = null;
+        let prevTrough = null;
+        let lastDir = 0;
+        const signals = [];
+
+        for (let i = 0; i < n; i++) {
+          const c = candles[i];
+          const eH = emaH[i];
+          const eL = emaL[i];
+          const e200 = ema200[i];
+          const volRatio = volSma[i] > 0 ? (c.volume || 0) / volSma[i] : 1.0;
+
+          hData.push({ time: c.time, value: parseFloat(eH.toFixed(4)) });
+          lData.push({ time: c.time, value: parseFloat(eL.toFixed(4)) });
+          if (i >= len200 - 1) {
+            t200Data.push({ time: c.time, value: parseFloat(e200.toFixed(4)) });
+          }
+
+          const aboveBand = c.close > eH;
+          const belowBand = c.close < eL;
+
+          if (aboveBand) {
+            curPeak = curPeak === null ? c.high : Math.max(curPeak, c.high);
+          } else if (curPeak !== null) {
+            prevPeak = curPeak;
+            curPeak = null;
+          }
+
+          if (belowBand) {
+            curTrough = curTrough === null ? c.low : Math.min(curTrough, c.low);
+          } else if (curTrough !== null) {
+            prevTrough = curTrough;
+            curTrough = null;
+          }
+
+          const brkUp = prevPeak !== null && c.close > prevPeak;
+          const brkDown = prevTrough !== null && c.close < prevTrough;
+
+          const trendUp = !ema30UseTrend || c.close > e200;
+          const trendDown = !ema30UseTrend || c.close < e200;
+
+          // Reversal
+          let belowCnt = 0;
+          let aboveCnt = 0;
+          for (let k = 0; k < 2; k++) {
+            const idx = i - k;
+            if (idx >= 0) {
+              if (candles[idx].close < emaL[idx]) belowCnt++;
+              if (candles[idx].close > emaH[idx]) aboveCnt++;
+            }
+          }
+          const revShort = lastDir === 1 && belowCnt === 2 && trendDown;
+          const revLong = lastDir === -1 && aboveCnt === 2 && trendUp;
+
+          const isVolOk = !ema30UseVol || volRatio >= 1.15;
+
+          const longSig = (aboveBand && prevPeak !== null && brkUp && trendUp && lastDir <= 0 && isVolOk) || revLong;
+          const shortSig = (belowBand && prevTrough !== null && brkDown && trendDown && lastDir >= 0 && isVolOk) || revShort;
+
+          if (longSig) {
+            lastDir = 1;
+            signals.push({
+              time: c.time,
+              type: 'LONG',
+              price: c.close,
+              isReversal: revLong,
+              isVolOk,
+            });
+          } else if (shortSig) {
+            lastDir = -1;
+            signals.push({
+              time: c.time,
+              type: 'SHORT',
+              price: c.close,
+              isReversal: revShort,
+              isVolOk,
+            });
+          }
+        }
+
+        // Create Chart Series
+        ema30HSeries = chart.addLineSeries({
+          color: '#22c55e',
+          lineWidth: 1.5,
+          title: 'EMA30 High',
+        });
+        ema30HSeries.setData(hData);
+
+        ema30LSeries = chart.addLineSeries({
+          color: '#ef4444',
+          lineWidth: 1.5,
+          title: 'EMA30 Low',
+        });
+        ema30LSeries.setData(lData);
+
+        if (t200Data.length > 0 && ema30UseTrend) {
+          ema30_200Series = chart.addLineSeries({
+            color: '#f59e0b',
+            lineWidth: 2,
+            title: 'EMA200 Trend',
+          });
+          ema30_200Series.setData(t200Data);
+        }
+
+        // Add reference price lines for prevPeak and prevTrough
+        if (prevPeak !== null) {
+          const pl = candleSeries.createPriceLine({
+            price: prevPeak,
+            color: '#10b981',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: true,
+            title: 'Prev Peak',
+          });
+          ema30PriceLines.push(pl);
+        }
+        if (prevTrough !== null) {
+          const tl = candleSeries.createPriceLine({
+            price: prevTrough,
+            color: '#f87171',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: true,
+            title: 'Prev Trough',
+          });
+          ema30PriceLines.push(tl);
+        }
+
+        // Set markers on candle series
+        const markers = signals.slice(-15).map(s => ({
+          time: s.time,
+          position: s.type === 'LONG' ? 'belowBar' : 'aboveBar',
+          color: s.type === 'LONG' ? '#22c55e' : '#ef4444',
+          shape: s.type === 'LONG' ? 'arrowUp' : 'arrowDown',
+          text: s.type + (s.isReversal ? ' [REV]' : (s.isVolOk ? ' [VOL]' : '')),
+        }));
+        candleSeries.setMarkers(markers);
+
+        // Update HUD
+        const lastBar = candles[n - 1];
+        const lastH = emaH[n - 1];
+        const lastL = emaL[n - 1];
+        const last200 = ema200[n - 1];
+
+        const elBadge = document.getElementById('ema30-zone-badge');
+        if (elBadge) {
+          if (lastBar.close > lastH) {
+            elBadge.textContent = 'BULL (ABOVE)';
+            elBadge.style.color = '#4ade80';
+            elBadge.style.background = 'rgba(34, 197, 94, 0.18)';
+          } else if (lastBar.close < lastL) {
+            elBadge.textContent = 'BEAR (BELOW)';
+            elBadge.style.color = '#f87171';
+            elBadge.style.background = 'rgba(239, 83, 80, 0.18)';
+          } else {
+            elBadge.textContent = 'IN BAND (CHOP)';
+            elBadge.style.color = '#fbbf24';
+            elBadge.style.background = 'rgba(245, 158, 11, 0.18)';
+          }
+        }
+
+        const elH = document.getElementById('ema30-h-val');
+        const elL = document.getElementById('ema30-l-val');
+        const el200 = document.getElementById('ema30-200-val');
+        const elPeak = document.getElementById('ema30-prev-peak');
+        const elTrough = document.getElementById('ema30-prev-trough');
+        const elStatus = document.getElementById('ema30-signal-status');
+
+        if (elH) elH.textContent = formatTokenPrice(lastH);
+        if (elL) elL.textContent = formatTokenPrice(lastL);
+        if (el200) el200.textContent = formatTokenPrice(last200);
+        if (elPeak) elPeak.textContent = prevPeak !== null ? formatTokenPrice(prevPeak) : '--';
+        if (elTrough) elTrough.textContent = prevTrough !== null ? formatTokenPrice(prevTrough) : '--';
+
+        if (elStatus && signals.length > 0) {
+          const lastSig = signals[signals.length - 1];
+          const isL = lastSig.type === 'LONG';
+          elStatus.innerHTML = '<strong style="color: ' + (isL ? '#4ade80' : '#f87171') + ';">' + lastSig.type + (lastSig.isReversal ? ' [REV]' : '') + '</strong> @ $' + formatTokenPrice(lastSig.price);
+        } else if (elStatus) {
+          elStatus.textContent = 'Waiting for Breakout';
+        }
+
+      } catch (e) {
+        console.error('Error drawing EMA30 Band:', e);
+      }
+    }
+
     function clearAllIndicatorLines() {
       clearFiboLines();
       clearGaltonLines();
       clearFootprintLines();
       clearRlmLines();
       clearLuxAlgoLines();
+      clearEma30Lines();
     }
 
     function updateActiveIndicators(candles) {
@@ -3985,6 +4324,7 @@ const htmlContent = `<!DOCTYPE html>
       updateVolumeFootprint(candles);
       updateReactionLevelMatrix(candles);
       updateLuxAlgoOverlays(candles);
+      updateEma30BandBreakout(candles);
     }
 
     function updateFiboRadar(candles) {
@@ -5035,6 +5375,47 @@ const htmlContent = `<!DOCTYPE html>
       selectLuxRz.addEventListener('change', () => {
         luxRzEnabled = selectLuxRz.value === 'ON';
         updateLuxAlgoOverlays(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    // EMA30 Band Breakout [EL COBER Enhanced] Controls
+    const btnToggleEma30 = document.getElementById('btn-toggle-ema30');
+    if (btnToggleEma30) {
+      btnToggleEma30.addEventListener('click', () => {
+        ema30BandEnabled = !ema30BandEnabled;
+        btnToggleEma30.textContent = ema30BandEnabled ? 'ON' : 'OFF';
+        btnToggleEma30.style.background = ema30BandEnabled ? 'rgba(34, 197, 94, 0.2)' : 'var(--bg-tertiary)';
+        btnToggleEma30.style.color = ema30BandEnabled ? '#4ade80' : 'var(--text-secondary)';
+        btnToggleEma30.style.borderColor = ema30BandEnabled ? '#22c55e' : 'transparent';
+        updateEma30BandBreakout(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectEma30Period = document.getElementById('select-ema30-period');
+    if (selectEma30Period) {
+      selectEma30Period.addEventListener('change', () => {
+        ema30BandPeriod = parseInt(selectEma30Period.value, 10) || 30;
+        updateEma30BandBreakout(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectEma30Vol = document.getElementById('select-ema30-vol');
+    if (selectEma30Vol) {
+      selectEma30Vol.addEventListener('change', () => {
+        ema30UseVol = selectEma30Vol.value === 'ON';
+        updateEma30BandBreakout(currentCandlesCache);
+        if (typeof triggerAutoSave === 'function') triggerAutoSave();
+      });
+    }
+
+    const selectEma30Trend = document.getElementById('select-ema30-trend');
+    if (selectEma30Trend) {
+      selectEma30Trend.addEventListener('change', () => {
+        ema30UseTrend = selectEma30Trend.value === 'ON';
+        updateEma30BandBreakout(currentCandlesCache);
         if (typeof triggerAutoSave === 'function') triggerAutoSave();
       });
     }
@@ -6438,7 +6819,7 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById('btn-toggle-watchlist')?.addEventListener('click', triggerAutoSave);
     document.getElementById('btn-toggle-dock')?.addEventListener('click', triggerAutoSave);
     document.querySelectorAll('.dock-seg-btn').forEach(b => b.addEventListener('click', triggerAutoSave));
-    ['btn-toggle-fibo', 'btn-toggle-galton', 'btn-toggle-footprint', 'btn-toggle-rlm', 'btn-toggle-luxalgo', 'select-fibo-period', 'select-galton-engine', 'select-galton-period', 'select-footprint-window', 'select-footprint-imbalance', 'select-rlm-swing', 'select-rlm-score', 'select-rlm-preset', 'select-lux-factor', 'select-lux-rz'].forEach(id => {
+    ['btn-toggle-fibo', 'btn-toggle-galton', 'btn-toggle-footprint', 'btn-toggle-rlm', 'btn-toggle-luxalgo', 'btn-toggle-ema30', 'select-fibo-period', 'select-galton-engine', 'select-galton-period', 'select-footprint-window', 'select-footprint-imbalance', 'select-rlm-swing', 'select-rlm-score', 'select-rlm-preset', 'select-lux-factor', 'select-lux-rz', 'select-ema30-period', 'select-ema30-vol', 'select-ema30-trend'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', triggerAutoSave);
       document.getElementById(id)?.addEventListener('click', triggerAutoSave);
     });

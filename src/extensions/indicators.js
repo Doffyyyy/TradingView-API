@@ -329,6 +329,14 @@ async function computeAllIndicators(symbol, timeframe = '60', requestedIndicator
     }
   }
 
+  if (reqSet.has('EMA30_BAND') || reqSet.has('EMA30_BREAKOUT') || reqSet.has('BAND_BREAKOUT')) {
+    const { evaluateEma30BandBreakout } = require('./ema30BandBreakout');
+    const ema30 = evaluateEma30BandBreakout(candles);
+    if (ema30) {
+      results.indicators.Ema30BandBreakout = ema30;
+    }
+  }
+
   return results;
 }
 
@@ -895,6 +903,8 @@ async function getMultiTimeframeAnalysis(symbol) {
   const rlm15m = calcReactionLevelMatrix(candles15m);
   const { evaluateLuxAlgoOverlays } = require('./luxalgoOverlays');
   const lux15m = evaluateLuxAlgoOverlays(candles15m);
+  const { evaluateEma30BandBreakout } = require('./ema30BandBreakout');
+  const ema30_15m = evaluateEma30BandBreakout(candles15m);
 
   return {
     symbol,
@@ -908,6 +918,7 @@ async function getMultiTimeframeAnalysis(symbol) {
       footprint,
       rlm: rlm15m,
       luxalgo: lux15m?.latestState || null,
+      ema30Band: ema30_15m?.latestState || null,
     }
   };
 }
@@ -939,4 +950,5 @@ module.exports = {
   getMultiTimeframeAnalysis,
   getBtcMarketRegime,
   getPineIndicatorMetadata,
+  evaluateEma30BandBreakout: require('./ema30BandBreakout').evaluateEma30BandBreakout,
 };

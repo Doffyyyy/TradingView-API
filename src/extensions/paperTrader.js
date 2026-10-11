@@ -84,6 +84,14 @@ class PaperTradingEngine {
     try {
       if (fs.existsSync(PORTFOLIO_PATH)) {
         const data = JSON.parse(fs.readFileSync(PORTFOLIO_PATH, 'utf8'));
+
+        // Always sync Strategy V2 safety constraints into existing portfolio data
+        data.riskPerTradePercent = DEFAULT_PORTFOLIO.riskPerTradePercent;
+        data.maxPositionMargin = DEFAULT_PORTFOLIO.maxPositionMargin;
+        data.maxLeverage = DEFAULT_PORTFOLIO.maxLeverage;
+        data.maxOpenPositions = DEFAULT_PORTFOLIO.maxOpenPositions;
+        data.dailyStopLossMax = DEFAULT_PORTFOLIO.dailyStopLossMax;
+
         // Check daily reset according to Vietnam Time (UTC+7)
         const today = this.getTodayDateString();
         if (data.lastResetDate !== today) {
@@ -380,11 +388,16 @@ class PaperTradingEngine {
     }
 
     // Strategy V2 Risk-based Position Sizing (Section 15, 16)
-    // Risk = 0.5% equity ($50 on $10k), Size = Risk / Distance, capped at 2x leverage
+    // Risk = 0.5% equity ($50 on $10k), Size = Risk / Distance
+    // Position sizing constraints: Max position margin ($2,500), Max leverage (2x)
     const riskDollar = this.portfolio.equity * ((this.portfolio.riskPerTradePercent || 0.5) / 100);
     const stopDistancePct = Math.abs(currPrice - stopLoss) / currPrice;
     let notional = riskDollar / Math.max(0.008, stopDistancePct);
-    const maxNotional = this.portfolio.equity * (this.portfolio.maxLeverage || 2.0);
+
+    // Hard position limits to protect capital
+    const maxMarginLimit = this.portfolio.maxPositionMargin || 2500.0;
+    const maxLeverageLimit = this.portfolio.maxLeverage || 2.0;
+    const maxNotional = Math.min(this.portfolio.equity * maxLeverageLimit, maxMarginLimit * lev);
     if (notional > maxNotional) notional = maxNotional;
 
     const margin = Math.round((notional / lev) * 100) / 100;
@@ -430,7 +443,9 @@ class PaperTradingEngine {
     this.updateEquity();
     this.savePortfolio();
 
-    const openLog = `OPENED ${side} on ${symbol} @ $${formatTokenPrice(currPrice)} [${lev}x Lev | Margin: $${margin.toFixed(0)}, Notional: $${notional.toFixed(0)}]. Target TP: $${formatTokenPrice(takeProfit)} (+${(tpPercent * 100).toFixed(1)}%), SL: $${formatTokenPrice(stopLoss)} (-${(slPercent * 100).toFixed(1)}%) [Strategy: ${strategy}]`;
+    const stopPctDisplay = Math.abs(currPrice - stopLoss) / currPrice;
+    const tpPctDisplay = Math.abs(takeProfit - currPrice) / currPrice;
+    const openLog = `OPENED ${side} on ${symbol} @ $${formatTokenPrice(currPrice)} [${lev}x Lev | Margin: $${margin.toFixed(0)}, Notional: $${notional.toFixed(0)}]. Target TP: $${formatTokenPrice(takeProfit)} (+${(tpPctDisplay * 100).toFixed(1)}%), SL: $${formatTokenPrice(stopLoss)} (-${(stopPctDisplay * 100).toFixed(1)}%) [Strategy: ${strategy}]`;
     this.log(openLog);
 
     // Notify Telegram
@@ -586,6 +601,7 @@ class PaperTradingEngine {
         const isChoppy = ltf.footprint?.marketStructure === 'CHOPPY_ROTATION';
         const rlmSignal = ltf.rlm?.signal || null;
         const lux = ltf.luxalgo || null; // LuxAlgo Signals & Overlays (Smart Trail + Reversal Zones)
+        const ema30 = ltf.ema30Band || null; // EMA30 Band Breakout [EL COBER Enhanced]
 
         // =========================================================================
         // HTF DIRECTION 1: LONG SETUP
@@ -619,6 +635,7 @@ class PaperTradingEngine {
           if (buyFlow >= 0.50) v2Score += 1;
           if (buyVotes >= 14) v2Score += 1;
           if (lux?.trailDirection === 'BULL') v2Score += 1;
+          if (ema30?.currentZone === 'ABOVE_BAND') v2Score += 1;
           if (!hasBearishAbsorptionTop && !isChoppy) v2Score += 1;
 
           // Trigger 1 (Primary): Strategy V2 Trend Pullback Setup (Score 7+)
@@ -633,13 +650,19 @@ class PaperTradingEngine {
             strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Buy (+) Smart Trail' : 'LuxAlgo Confirmation Buy';
             lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
           }
-          // Trigger B: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
+          // Trigger B: EMA30 Band Breakout [EL COBER Enhanced] with Volume Confirmation
+          else if (ema30?.lastSignal?.type === 'LONG' && ema30?.lastSignal?.isVolumeConfirmed) {
+            triggerType = 'EMA30_BAND_BREAKOUT';
+            strategyName = 'EMA30 Band Breakout [EL COBER]';
+            lev = isDefensive ? 1 : 2;
+          }
+          // Trigger C: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
           else if (rlmSignal && rlmSignal.type === 'LONG' && rlmSignal.levelScore >= 50) {
             triggerType = 'RLM_REJECTION';
             strategyName = 'HTF Bull + RLM Sniper Long';
             lev = isDefensive ? 1 : 2;
           }
-          // Trigger C: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
+          // Trigger D: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
           else if (ltf.supertrend === 'BUY' && ltf.macdTrend === 'BULLISH' && buyVotes >= 14 && sellVotes <= 6 && !isChoppy && rsi >= 36) {
             triggerType = 'PULLBACK_MOMENTUM';
             strategyName = 'HTF Trend + 15M Pullback Long';
@@ -692,13 +715,19 @@ class PaperTradingEngine {
             strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Sell (+) Smart Trail' : 'LuxAlgo Confirmation Sell';
             lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
           }
-          // Trigger B: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
+          // Trigger B: EMA30 Band Breakdown [EL COBER Enhanced] with Volume Confirmation
+          else if (ema30?.lastSignal?.type === 'SHORT' && ema30?.lastSignal?.isVolumeConfirmed) {
+            triggerType = 'EMA30_BAND_BREAKDOWN';
+            strategyName = 'EMA30 Band Breakdown [EL COBER]';
+            lev = isDefensive ? 1 : 2;
+          }
+          // Trigger C: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
           else if (rlmSignal && rlmSignal.type === 'SHORT' && rlmSignal.levelScore >= 50) {
             triggerType = 'RLM_REJECTION';
             strategyName = 'HTF Bear + RLM Sniper Short';
             lev = isDefensive ? 1 : 2;
           }
-          // Trigger C: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
+          // Trigger D: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
           else if (ltf.supertrend === 'SELL' && ltf.macdTrend === 'BEARISH' && sellVotes >= 14 && buyVotes <= 6 && !isChoppy && rsi <= 64) {
             triggerType = 'RETRACEMENT_BREAKDOWN';
             strategyName = 'HTF Trend + 15M Retrace Short';
