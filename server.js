@@ -7688,12 +7688,21 @@ const htmlContent = `<!DOCTYPE html>
 
         let tRows = "";
         dayData.trades.forEach(t => {
+          const ep = t.entryPrice !== undefined ? t.entryPrice : t.entry;
+          const xp = t.exitPrice !== undefined ? t.exitPrice : t.exit;
+          const formatPrice = (val) => {
+            if (val === undefined || val === null || isNaN(val)) return "--";
+            const num = Number(val);
+            if (num >= 1000) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+            if (num >= 1) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+          };
           tRows += '<tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">' +
             '<td style="padding: 8px 4px; color: #8c93a3;">' + (t.time || "--") + '</td>' +
             '<td style="padding: 8px 4px; font-weight: 700; color: #fff;">' + t.symbol + '</td>' +
             '<td style="padding: 8px 4px;"><span class="action-badge ' + (t.side === "LONG" ? "action-buy" : "action-sell") + '">' + t.side + '</span></td>' +
-            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">$' + (t.entryPrice ? t.entryPrice.toLocaleString() : "--") + '</td>' +
-            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">$' + (t.exitPrice ? t.exitPrice.toLocaleString() : "--") + '</td>' +
+            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">' + formatPrice(ep) + '</td>' +
+            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">' + formatPrice(xp) + '</td>' +
             '<td style="padding: 8px 4px; text-align: right; font-weight: 700; font-family: monospace;" class="' + (t.pnl >= 0 ? "val-green" : "val-red") + '">' +
               (t.pnl >= 0 ? "+" : "") + "$" + (t.pnl ? t.pnl.toFixed(2) : "0.00") + ' (' + (t.pnlPercent || 0) + '%)' +
             '</td>' +
