@@ -65,6 +65,7 @@ class PaperTradingEngine {
     this.loopTimer = null;
     this.latestPrices = {};
     this.symbolCooldowns = {}; // { 'BINANCE:SOLUSDT': timestamp }
+    this.pendingPivotOrders = {}; // { 'BINANCE:SOLUSDT': { triggerPrice, stopLoss, strategyName, reason, expiryTime } }
     this.hasLoggedDailyMin = false;
     this.hasLoggedDailyMax = false;
     this.hasLoggedDailyStopLoss = false;
@@ -213,6 +214,27 @@ class PaperTradingEngine {
         }
       }
 
+      // Oliver Kell Hybrid Exit Architecture:
+      // Stage 1: At +2.2R, take profit on 50% position and lock runner SL to Breakeven
+      if (pos.side === 'LONG') {
+        const stopDist = Math.max(pos.entryPrice * 0.008, pos.entryPrice - pos.stopLoss);
+        const stage1Price = pos.entryPrice + stopDist * 2.2;
+        if (!pos.stage1Taken && curr >= stage1Price) {
+          pos.stage1Taken = true;
+          this.log(`🏆 Oliver Kell Stage 1 TP hit (+2.2R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to Breakeven.`);
+          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) Locked', 0.5);
+          pos.stopLoss = roundPriceForCoin(pos.entryPrice * 1.002);
+          continue;
+        }
+
+        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R)
+        const climaxPrice = pos.entryPrice + stopDist * 4.5;
+        if (pos.stage1Taken && curr >= climaxPrice) {
+          shouldClose = true;
+          reason = `Oliver Kell: Climax Extension Exit (+4.5R) hit at $${formatTokenPrice(curr)}`;
+        }
+      }
+
       let shouldClose = false;
       let reason = '';
 
@@ -250,26 +272,30 @@ class PaperTradingEngine {
     }
   }
 
-  async closePosition(positionId, exitPrice, reason) {
+  async closePosition(positionId, exitPrice, reason, partialFraction = 1.0) {
     const idx = this.portfolio.positions.findIndex(p => p.id === positionId);
     if (idx === -1) return;
 
     const pos = this.portfolio.positions[idx];
-    const margin = pos.margin !== undefined ? pos.margin : pos.notional;
+    const frac = Math.min(1.0, Math.max(0.1, partialFraction));
+    const fullMargin = pos.margin !== undefined ? pos.margin : pos.notional;
+    const margin = Math.round(fullMargin * frac * 100) / 100;
+    const size = pos.size * frac;
+    const notional = pos.notional * frac;
 
     // Hyperliquid Real Fee Schedule:
     // Maker: 0.010% (0.00010) on Limit Take Profit exits
     // Taker: 0.035% (0.00035) on Market entry, Stop Loss, Trailing Stop, Manual exits
     const entryFeeRate = 0.00035; // 0.035% HL Taker
-    const isLimitExit = Boolean(reason && reason.includes('Take Profit'));
+    const isLimitExit = Boolean(reason && (reason.includes('Take Profit') || reason.includes('TP')));
     const exitFeeRate = isLimitExit ? 0.00010 : 0.00035; // 0.010% HL Maker if TP, else 0.035% Taker
-    const fee = (pos.entryPrice * pos.size * entryFeeRate) + (exitPrice * pos.size * exitFeeRate);
+    const fee = (pos.entryPrice * size * entryFeeRate) + (exitPrice * size * exitFeeRate);
 
     let grossPnl = 0;
     if (pos.side === 'LONG') {
-      grossPnl = (exitPrice - pos.entryPrice) * pos.size;
+      grossPnl = (exitPrice - pos.entryPrice) * size;
     } else {
-      grossPnl = (pos.entryPrice - exitPrice) * pos.size;
+      grossPnl = (pos.entryPrice - exitPrice) * size;
     }
 
     const netPnl = grossPnl - fee;
@@ -277,14 +303,14 @@ class PaperTradingEngine {
     this.portfolio.dailyRealizedPnl += netPnl;
 
     const closedTrade = {
-      id: pos.id,
+      id: pos.id + (frac < 1.0 ? '_p1' : ''),
       symbol: pos.symbol,
       side: pos.side,
       entryPrice: pos.entryPrice,
       exitPrice,
-      size: pos.size,
+      size,
       margin,
-      notional: pos.notional,
+      notional,
       leverage: pos.leverage || 1,
       pnl: Math.round(netPnl * 100) / 100,
       pnlPercent: Math.round((netPnl / margin) * 10000) / 100,
@@ -296,7 +322,17 @@ class PaperTradingEngine {
     };
 
     this.portfolio.trades.unshift(closedTrade);
-    this.portfolio.positions.splice(idx, 1);
+
+    if (frac >= 0.99) {
+      this.portfolio.positions.splice(idx, 1);
+    } else {
+      // Partial close: reduce remaining size on position
+      pos.size -= size;
+      pos.margin -= margin;
+      pos.notional -= notional;
+      pos.stage1Taken = true;
+    }
+
     this.updateEquity();
     this.savePortfolio();
 
@@ -307,12 +343,12 @@ class PaperTradingEngine {
       this.log(`⏳ Cooldown active for ${pos.symbol} (30 mins until ${new Date(cooldownUntil).toLocaleTimeString('vi-VN')}) after loss.`);
     }
 
-    this.log(`CLOSED ${pos.side} ${pos.symbol} [${pos.leverage || 1}x]: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}`);
+    this.log(`CLOSED ${frac < 1.0 ? '50% PARTIAL ' : ''}${pos.side} ${pos.symbol} [${pos.leverage || 1}x]: Net PnL $${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}`);
 
     // Telegram notification
     try {
       const levBadge = pos.leverage && pos.leverage > 1 ? `[${pos.leverage}x] ` : '';
-      const closeLog = `CLOSED ${pos.side} on ${pos.symbol} ${levBadge}@ $${formatTokenPrice(exitPrice)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
+      const closeLog = `CLOSED ${frac < 1.0 ? '50% PARTIAL ' : ''}${pos.side} on ${pos.symbol} ${levBadge}@ $${formatTokenPrice(exitPrice)}: Net PnL ${closedTrade.pnl >= 0 ? '+' : ''}$${closedTrade.pnl} (${closedTrade.pnlPercent}% ROE). ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`;
       sendTelegramAlert({
         instrument: pos.symbol,
         strategy: `AutoPaper: ${pos.strategy}`,
@@ -638,8 +674,21 @@ class PaperTradingEngine {
           if (ema30?.currentZone === 'ABOVE_BAND') v2Score += 1;
           if (!hasBearishAbsorptionTop && !isChoppy) v2Score += 1;
 
+          // Trigger 0 (Champion Priority): Strategy V2 Oliver Kell Price Cycle (EMA Crossback Setup)
+          const e10 = htf.ema10 || htf.curPrice;
+          const e20 = htf.ema20 || htf.ema50;
+          const e50 = htf.ema50;
+          const e200 = htf.ema200;
+          const isKellTrend = (e10 > e20 && e20 > e50) || (htf.curPrice > e50 && e50 > e200);
+          const isKellCrossback = (currentPrice <= e20 * 1.006 && currentPrice >= e50 * 0.992);
+
+          if (isKellTrend && isKellCrossback && v2Score >= 6) {
+            triggerType = 'OLIVER_KELL_PRICE_CYCLE';
+            strategyName = 'Strategy V2: Oliver Kell Price Cycle (EMA Crossback)';
+            lev = isDefensive ? 1 : 2;
+          }
           // Trigger 1 (Primary): Strategy V2 Trend Pullback Setup (Score 7+)
-          if (v2Score >= 7) {
+          else if (v2Score >= 7) {
             triggerType = 'STRATEGY_V2_PULLBACK';
             strategyName = `Strategy V2 Trend Pullback (Score ${v2Score}/10)`;
             lev = isDefensive ? 1 : 2;

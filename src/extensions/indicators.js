@@ -859,8 +859,12 @@ async function getMultiTimeframeAnalysis(symbol) {
       const candles1h = await fetchCandles(symbol, '60', 150);
       const closes1h = candles1h.map(c => c.close);
       const cur1h = closes1h[closes1h.length - 1];
+      const ema10Arr = calcEMA(closes1h, 10);
+      const ema20Arr = calcEMA(closes1h, 20);
       const ema50Arr = calcEMA(closes1h, 50);
       const ema200Arr = calcEMA(closes1h, Math.min(150, closes1h.length));
+      const e10 = ema10Arr.length ? ema10Arr[ema10Arr.length - 1] : cur1h;
+      const e20 = ema20Arr.length ? ema20Arr[ema20Arr.length - 1] : cur1h;
       const e50 = ema50Arr.length ? ema50Arr[ema50Arr.length - 1] : cur1h;
       const e200 = ema200Arr.length ? ema200Arr[ema200Arr.length - 1] : e50;
 
@@ -874,6 +878,8 @@ async function getMultiTimeframeAnalysis(symbol) {
 
       htfData = {
         curPrice: cur1h,
+        ema10: e10,
+        ema20: e20,
         ema50: e50,
         ema200: e200,
         bias,
