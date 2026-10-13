@@ -1,15 +1,16 @@
 {
   "summary": {
     "initialBalance": 10000,
-    "endingBalance": 11371.12,
-    "netProfit": 1371.12,
-    "totalTrades": 246,
-    "winCount": 93,
-    "lossCount": 153,
-    "winRate": 37.8,
-    "profitFactor": 1.17,
+    "endingBalance": 11158.94,
+    "netProfit": 1158.94,
+    "totalTrades": 259,
+    "winCount": 96,
+    "lossCount": 163,
+    "winRate": 37.1,
+    "profitFactor": 1.13,
     "maxDrawdown": 15.09,
-    "strategy": "Strategy V2 (Oliver Kell Price Cycle Edition)"
+    "strategy": "Strategy V2 (Oliver Kell Price Cycle Edition - Live Auto-Synced)",
+    "lastSyncedAt": "2026-10-13T05:23:42.939Z"
   },
   "daysMap": {
     "2026-03-01": {
@@ -5422,14 +5423,290 @@
       ]
     },
     "2026-10-02": {
-      "pnl": 0,
-      "trades": []
+      "pnl": -47.39,
+      "trades": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: Climax Extension (+5R~8R)",
+          "entry": 84124.62534075599,
+          "entryPrice": 84124.62534075599,
+          "exit": 86545.64622061363,
+          "exitPrice": 86545.64622061363,
+          "pnl": 128.51,
+          "pnlDollar": 128.51,
+          "pnlPercent": 2.88,
+          "isWin": true,
+          "reason": "EXHAUSTION_CLIMAX",
+          "time": "04:00",
+          "date": "2026-10-02",
+          "month": "2026-10",
+          "balanceAfter": 11499.63
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 122.02628037599999,
+          "entryPrice": 122.02628037599999,
+          "exit": 120.33451754076927,
+          "exitPrice": 120.33451754076927,
+          "pnl": -61.21,
+          "pnlDollar": -61.21,
+          "pnlPercent": -1.39,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "14:00",
+          "date": "2026-10-02",
+          "month": "2026-10",
+          "balanceAfter": 11438.42
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 2699.616195276,
+          "entryPrice": 2699.616195276,
+          "exit": 2662.1598022347825,
+          "exitPrice": 2662.1598022347825,
+          "pnl": -60.52,
+          "pnlDollar": -60.52,
+          "pnlPercent": -1.39,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "18:00",
+          "date": "2026-10-02",
+          "month": "2026-10",
+          "balanceAfter": 11377.9
+        },
+        {
+          "symbol": "BNBUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 769.2721736699999,
+          "entryPrice": 769.2721736699999,
+          "exit": 761.6271915581335,
+          "exitPrice": 761.6271915581335,
+          "pnl": -54.17,
+          "pnlDollar": -54.17,
+          "pnlPercent": -0.99,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "18:00",
+          "date": "2026-10-02",
+          "month": "2026-10",
+          "balanceAfter": 11323.73
+        }
+      ]
     },
     "2026-10-03": {
       "pnl": 0,
       "trades": []
     },
     "2026-10-04": {
+      "pnl": 0,
+      "trades": []
+    },
+    "2026-10-05": {
+      "pnl": -26.63,
+      "trades": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 86469.115825092,
+          "entryPrice": 86469.115825092,
+          "exit": 85551.1682412685,
+          "exitPrice": 85551.1682412685,
+          "pnl": -57.56,
+          "pnlDollar": -57.56,
+          "pnlPercent": -1.06,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "14:00",
+          "date": "2026-10-05",
+          "month": "2026-10",
+          "balanceAfter": 11266.17
+        },
+        {
+          "symbol": "NEARUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: Stage 1 TP (+2.2R) + Runner",
+          "entry": 4.901876179199999,
+          "entryPrice": 4.901876179199999,
+          "exit": 4.969,
+          "exitPrice": 4.969,
+          "pnl": 80.6,
+          "pnlDollar": 80.6,
+          "pnlPercent": 1.37,
+          "isWin": true,
+          "reason": "RUNNER_EMA20_EXIT",
+          "time": "14:00",
+          "date": "2026-10-05",
+          "month": "2026-10",
+          "balanceAfter": 11346.77
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 120.36428804399999,
+          "entryPrice": 120.36428804399999,
+          "exit": 119.27650201515664,
+          "exitPrice": 119.27650201515664,
+          "pnl": -49.67,
+          "pnlDollar": -49.67,
+          "pnlPercent": -0.9,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "14:00",
+          "date": "2026-10-05",
+          "month": "2026-10",
+          "balanceAfter": 11297.1
+        }
+      ]
+    },
+    "2026-10-06": {
+      "pnl": -52.6,
+      "trades": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 86591.80289759999,
+          "entryPrice": 86591.80289759999,
+          "exit": 85758.53388358472,
+          "exitPrice": 85758.53388358472,
+          "pnl": -52.6,
+          "pnlDollar": -52.6,
+          "pnlPercent": -0.96,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "15:00",
+          "date": "2026-10-06",
+          "month": "2026-10",
+          "balanceAfter": 11244.5
+        }
+      ]
+    },
+    "2026-10-07": {
+      "pnl": -118.45,
+      "trades": [
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 121.01506817399998,
+          "entryPrice": 121.01506817399998,
+          "exit": 119.63886495354764,
+          "exitPrice": 119.63886495354764,
+          "pnl": -60.65,
+          "pnlDollar": -60.65,
+          "pnlPercent": -1.14,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "01:00",
+          "date": "2026-10-07",
+          "month": "2026-10",
+          "balanceAfter": 11183.85
+        },
+        {
+          "symbol": "NEARUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 5.097110218199999,
+          "entryPrice": 5.097110218199999,
+          "exit": 4.903303680072158,
+          "exitPrice": 4.903303680072158,
+          "pnl": -57.8,
+          "pnlDollar": -57.8,
+          "pnlPercent": -3.8,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "02:00",
+          "date": "2026-10-07",
+          "month": "2026-10",
+          "balanceAfter": 11126.05
+        }
+      ]
+    },
+    "2026-10-08": {
+      "pnl": 0,
+      "trades": []
+    },
+    "2026-10-09": {
+      "pnl": 0,
+      "trades": []
+    },
+    "2026-10-10": {
+      "pnl": 0,
+      "trades": []
+    },
+    "2026-10-11": {
+      "pnl": 92.84,
+      "trades": [
+        {
+          "symbol": "NEARUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 5.356421069999999,
+          "entryPrice": 5.356421069999999,
+          "exit": 5.223013326302279,
+          "exitPrice": 5.223013326302279,
+          "pnl": -57.62,
+          "pnlDollar": -57.62,
+          "pnlPercent": -2.49,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "03:00",
+          "date": "2026-10-11",
+          "month": "2026-10",
+          "balanceAfter": 11068.43
+        },
+        {
+          "symbol": "NEARUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: Climax Extension (+5R~8R)",
+          "entry": 5.3103658608,
+          "entryPrice": 5.3103658608,
+          "exit": 5.729020687019086,
+          "exitPrice": 5.729020687019086,
+          "pnl": 150.46,
+          "pnlDollar": 150.46,
+          "pnlPercent": 7.88,
+          "isWin": true,
+          "reason": "EXHAUSTION_CLIMAX",
+          "time": "15:00",
+          "date": "2026-10-11",
+          "month": "2026-10",
+          "balanceAfter": 11218.89
+        }
+      ]
+    },
+    "2026-10-12": {
+      "pnl": -59.94,
+      "trades": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "strategy": "Oliver Kell: EMA Crossback Setup",
+          "entry": 84100.81679999999,
+          "entryPrice": 84100.81679999999,
+          "exit": 83001.68971975255,
+          "exitPrice": 83001.68971975255,
+          "pnl": -59.94,
+          "pnlDollar": -59.94,
+          "pnlPercent": -1.31,
+          "isWin": false,
+          "reason": "STOP_LOSS",
+          "time": "12:00",
+          "date": "2026-10-12",
+          "month": "2026-10",
+          "balanceAfter": 11158.95
+        }
+      ]
+    },
+    "2026-10-13": {
       "pnl": 0,
       "trades": []
     }

@@ -13,6 +13,7 @@ const { hubInstance } = require('./src/extensions/agentHub');
 const { paperTraderInstance } = require('./src/extensions/paperTrader');
 const { hyperliquidInstance, normalizeCoin } = require('./src/extensions/hyperliquid');
 const { computeEdgeStats } = require('./src/extensions/statsEngine');
+const { startDailyScheduler, syncDailySimulation } = require('./src/extensions/dailySimulationScheduler');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -8748,6 +8749,17 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (pathname === '/api/paper/sync-simulation') {
+    try {
+      const ok = await syncDailySimulation();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: ok, message: 'Daily simulation synchronized successfully' }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
   if (pathname === '/api/paper/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(paperTraderInstance.getStatus()));
@@ -8875,4 +8887,6 @@ server.listen(PORT, () => {
   console.log('TradingView Pro Suite server listening on http://localhost:' + PORT);
   // Auto-start paper trading engine
   paperTraderInstance.start();
+  // Auto-start daily simulation catch-up scheduler
+  startDailyScheduler();
 });

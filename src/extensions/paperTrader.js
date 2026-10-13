@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { computeAllIndicators, getMultiTimeframeAnalysis, getBtcMarketRegime } = require('./indicators');
+const { computeAllIndicators, getMultiTimeframeAnalysis, getBtcMarketRegime, fetchCandles } = require('./indicators');
 const { validateSymbol } = require('./validation');
 const { sendTelegramAlert } = require('./alert');
 const axios = require('axios');
@@ -804,9 +804,84 @@ class PaperTradingEngine {
     }
   }
 
+  async simulateOfflinePeriod() {
+    if (!this.portfolio.positions || this.portfolio.positions.length === 0) return;
+    const now = Date.now();
+    const lastHeartbeat = this.portfolio.lastHeartbeatTime || (now - 60000);
+    const offlineDurationMs = now - lastHeartbeat;
+
+    // If offline for more than 2 minutes while holding open positions
+    if (offlineDurationMs > 120000) {
+      const offlineMins = Math.round(offlineDurationMs / 60000);
+      this.log(`🔍 [Offline Catch-Up] Machine startup detected after ${offlineMins}m shutdown. Simulating historical candles for ${this.portfolio.positions.length} active position(s)...`);
+
+      for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
+        const pos = this.portfolio.positions[i];
+        try {
+          const fetchBars = Math.min(300, Math.ceil(offlineMins / 15) + 8);
+          const candles = await fetchCandles(pos.symbol, '15', fetchBars);
+          if (!candles || candles.length === 0) continue;
+
+          const checkTime = Math.min(lastHeartbeat, new Date(pos.entryTime).getTime());
+          const relevantCandles = candles.filter(c => (c.time > 1e11 ? c.time : c.time * 1000) >= checkTime);
+          relevantCandles.sort((a, b) => a.time - b.time);
+
+          for (const bar of relevantCandles) {
+            const barTs = bar.time > 1e11 ? bar.time : bar.time * 1000;
+            const barTimeStr = new Date(barTs).toLocaleTimeString('vi-VN');
+            const hoursHeld = (barTs - new Date(pos.entryTime).getTime()) / (1000 * 60 * 60);
+
+            let triggered = false;
+            let triggerPrice = 0;
+            let triggerReason = '';
+
+            if (pos.side === 'LONG') {
+              if (pos.takeProfit > 0 && bar.high >= pos.takeProfit) {
+                triggered = true;
+                triggerPrice = pos.takeProfit;
+                triggerReason = `Take Profit hit at $${formatTokenPrice(pos.takeProfit)} (Simulated during shutdown at ${barTimeStr})`;
+              } else if (pos.stopLoss > 0 && bar.low <= pos.stopLoss) {
+                triggered = true;
+                triggerPrice = pos.stopLoss;
+                triggerReason = `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+              } else if (hoursHeld >= 12.0) {
+                triggered = true;
+                triggerPrice = bar.close;
+                triggerReason = `12h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
+              }
+            } else { // SHORT
+              if (pos.takeProfit > 0 && bar.low <= pos.takeProfit) {
+                triggered = true;
+                triggerPrice = pos.takeProfit;
+                triggerReason = `Take Profit hit at $${formatTokenPrice(pos.takeProfit)} (Simulated during shutdown at ${barTimeStr})`;
+              } else if (pos.stopLoss > 0 && bar.high >= pos.stopLoss) {
+                triggered = true;
+                triggerPrice = pos.stopLoss;
+                triggerReason = `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+              } else if (hoursHeld >= 12.0) {
+                triggered = true;
+                triggerPrice = bar.close;
+                triggerReason = `12h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
+              }
+            }
+
+            if (triggered) {
+              this.log(`🛡️ [Offline Catch-Up] Executed ${pos.side} on ${pos.symbol} at planned exit $${formatTokenPrice(triggerPrice)}: ${triggerReason}`);
+              await this.closePosition(pos.id, triggerPrice, triggerReason);
+              break;
+            }
+          }
+        } catch (err) {
+          console.error(`[Offline Catch-Up] Error checking ${pos.symbol}:`, err.message);
+        }
+      }
+    }
+  }
+
   async tick() {
     if (!this.portfolio.autoTradeEnabled) return;
     try {
+      this.portfolio.lastHeartbeatTime = Date.now();
       this.checkDailyRollover();
       await this.fetchPrices();
       this.updateEquity();
@@ -821,9 +896,13 @@ class PaperTradingEngine {
     if (this.isRunning) return;
     this.isRunning = true;
     this.log(`Engine started. Initial Fund: $${this.portfolio.initialBalance.toFixed(2)}, Target: $50-$100/day.`);
-    // Run immediately then every 8 seconds
-    this.tick();
-    this.loopTimer = setInterval(() => this.tick(), 8000);
+    // Run offline catch-up simulation first, then start loop
+    this.simulateOfflinePeriod().catch(err => {
+      console.error('[PaperTrader] Error during initial offline simulation:', err.message);
+    }).finally(() => {
+      this.tick();
+      this.loopTimer = setInterval(() => this.tick(), 8000);
+    });
   }
 
   stop() {
