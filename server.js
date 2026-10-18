@@ -2378,7 +2378,7 @@ const htmlContent = `<!DOCTYPE html>
                 <polygon points="50,15 85,75 15,75" fill="none" stroke="#262a38" stroke-width="1.2" />
                 <polygon points="50,30 72,70 28,70" fill="none" stroke="#1f2330" stroke-width="1" />
                 <line x1="50" y1="15" x2="50" y2="75" stroke="#262a38" stroke-width="0.8" stroke-dasharray="2,2" />
-                <polygon points="50,22 75,68 30,72" fill="rgba(56, 189, 248, 0.25)" stroke="#38bdf8" stroke-width="1.8" />
+                <polygon id="ts-radar-polygon" points="50,22 75,68 30,72" fill="rgba(56, 189, 248, 0.25)" stroke="#38bdf8" stroke-width="1.8" />
                 <text x="50" y="10" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="middle">R/W</text>
                 <text x="94" y="80" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="end">Win %</text>
                 <text x="6" y="80" fill="#8c93a3" font-size="7.5" font-weight="700">P.F.</text>
@@ -2386,58 +2386,26 @@ const htmlContent = `<!DOCTYPE html>
               <div style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; gap: 6px;">
                 <div>
                   <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>BIAS</span><span style="color: #fff;">73</span>
+                    <span>BIAS</span><span style="color: #fff;" id="ts-score-bias-val">73</span>
                   </div>
                   <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div style="width: 73%; height: 100%; background: #38bdf8;"></div>
+                    <div id="ts-score-bias-bar" style="width: 73%; height: 100%; background: #38bdf8;"></div>
                   </div>
                 </div>
                 <div>
                   <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>R/R</span><span style="color: #fff;">45</span>
+                    <span>R/R</span><span style="color: #fff;" id="ts-score-rr-val">45</span>
                   </div>
                   <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div style="width: 45%; height: 100%; background: #a855f7;"></div>
+                    <div id="ts-score-rr-bar" style="width: 45%; height: 100%; background: #a855f7;"></div>
                   </div>
                 </div>
                 <div>
                   <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>P.F.</span><span style="color: #fff;">34</span>
+                    <span>P.F.</span><span style="color: #fff;" id="ts-score-pf-val">34</span>
                   </div>
                   <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div style="width: 34%; height: 100%; background: #10b981;"></div>
-                  </div>
-                  <!-- 4. Reaction Level Matrix -->
-                  <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222634;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span style="font-size: 11px; font-weight: 700; color: #f59e0b;">🎯 Reaction Level Matrix</span>
-                      <button class="btn" id="btn-toggle-rlm" style="padding: 2px 8px; font-size: 9.5px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid transparent;">OFF</button>
-                    </div>
-                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">WillyAlgoTrader • Reaction Scoring & Rejections</div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
-                      <span>Swing Length:</span>
-                      <select id="select-rlm-swing" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
-                        <option value="6" selected>6 bars (Balanced)</option>
-                        <option value="4">4 bars (Sensitive)</option>
-                        <option value="10">10 bars (Major)</option>
-                      </select>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
-                      <span>Min Level Score:</span>
-                      <select id="select-rlm-score" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
-                        <option value="50" selected>Score ≥ 50</option>
-                        <option value="60">Score ≥ 60</option>
-                        <option value="40">Score ≥ 40</option>
-                      </select>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text-secondary);">
-                      <span>Risk Preset:</span>
-                      <select id="select-rlm-preset" class="btn" style="outline: none; padding: 2px 4px; font-size: 10px;">
-                        <option value="BALANCED" selected>Balanced (1R/2R/3R)</option>
-                        <option value="CONSERVATIVE">Conservative (1R/2R/4R)</option>
-                        <option value="AGGRESSIVE">Aggressive (1.5R/2.5R/4R)</option>
-                      </select>
-                    </div>
+                    <div id="ts-score-pf-bar" style="width: 34%; height: 100%; background: #10b981;"></div>
                   </div>
                 </div>
               </div>
@@ -7581,9 +7549,100 @@ const htmlContent = `<!DOCTYPE html>
       if (elLongVal) elLongVal.textContent = (longPnl >= 0 ? "+$" : "-$") + Math.abs(longPnl).toLocaleString("en-US") + " >";
       if (elShortVal) elShortVal.textContent = (shortPnl >= 0 ? "+$" : "-$") + Math.abs(shortPnl).toLocaleString("en-US") + " >";
 
-      // 2. Performance Sparkline Cards
+      // 2. Performance Sparkline Cards & Dynamic Tradesyncer Score
       const elCumPnlVal = document.getElementById("ts-cum-pnl-val");
-      if (elCumPnlVal) elCumPnlVal.textContent = (totalPnl >= 0 ? "+$" : "-$") + Math.abs(totalPnl).toLocaleString("en-US");
+      if (elCumPnlVal) {
+        elCumPnlVal.textContent = (totalPnl >= 0 ? "+$" : "-$") + Math.abs(totalPnl).toLocaleString("en-US");
+        elCumPnlVal.className = "ts-perf-val " + (totalPnl >= 0 ? "val-green" : "val-red");
+      }
+
+      const elTodayPnlVal = document.getElementById("ts-today-pnl-val");
+      if (elTodayPnlVal) {
+        elTodayPnlVal.textContent = (totalPnl >= 0 ? "+$" : "-$") + Math.abs(totalPnl).toLocaleString("en-US");
+        elTodayPnlVal.className = "ts-perf-val " + (totalPnl >= 0 ? "val-green" : "val-red");
+      }
+
+      // Calculate Month Max Drawdown for Card 3
+      let monthPeak = 0;
+      let monthMaxDD = 0;
+      let runningPnl = 0;
+      for (const dObj of Object.values(daysMap)) {
+        runningPnl += (dObj.pnl || 0);
+        if (runningPnl > monthPeak) monthPeak = runningPnl;
+        const dd = monthPeak - runningPnl;
+        if (dd > monthMaxDD) monthMaxDD = dd;
+      }
+      const elDdVal = document.getElementById("ts-dd-val");
+      if (elDdVal) {
+        elDdVal.innerHTML = (monthMaxDD > 0 ? "-$" + monthMaxDD.toFixed(2) : "$0.00") + ' <span style="font-size: 11px; font-weight: 500; color: #8c93a3;">max</span>';
+      }
+
+      // Dynamic Tradesyncer Score calculation:
+      const totalTradesForScore = winCount + lossCount;
+      let biasScore = 50;
+      let rrScore = 50;
+      let pfScore = 50;
+      let overallScore = 50;
+
+      if (totalTradesForScore > 0) {
+        const pf = lossSum > 0 ? (winSum / lossSum) : (winSum > 0 ? 3.0 : 1.0);
+        const avgW = winCount > 0 ? (winSum / winCount) : 0;
+        const avgL = lossCount > 0 ? (lossSum / lossCount) : 1;
+        const payoff = avgL > 0 ? (avgW / avgL) : 1.0;
+
+        // P.F. Score (0 - 100): 1.0 PF = 50, 1.5 PF = 70, 2.0+ PF = 85-100
+        pfScore = Math.min(100, Math.max(10, Math.round(Math.min(pf, 2.5) * 38 + 5)));
+
+        // R/R Score (0 - 100): 1.0 Payoff = 45, 1.8 Payoff = 75, 2.5+ = 95
+        rrScore = Math.min(100, Math.max(10, Math.round(Math.min(payoff, 2.8) * 32 + 10)));
+
+        // BIAS Score (0 - 100): Trend quality and win accuracy
+        biasScore = Math.min(100, Math.max(10, Math.round(winRatePct * 0.75 + (totalPnl >= 0 ? 25 : 5))));
+
+        // Overall Score (0 - 100)
+        overallScore = Math.min(100, Math.max(10, Math.round(biasScore * 0.3 + rrScore * 0.35 + pfScore * 0.35)));
+      }
+
+      const elScoreBadge = document.getElementById("ts-score-badge-val");
+      if (elScoreBadge) {
+        elScoreBadge.textContent = overallScore + " / 100";
+        if (overallScore >= 60) {
+          elScoreBadge.style.color = "#10b981";
+          elScoreBadge.style.background = "rgba(16, 185, 129, 0.15)";
+        } else if (overallScore >= 45) {
+          elScoreBadge.style.color = "#38bdf8";
+          elScoreBadge.style.background = "rgba(56, 189, 248, 0.15)";
+        } else {
+          elScoreBadge.style.color = "#ef4444";
+          elScoreBadge.style.background = "rgba(239, 68, 68, 0.15)";
+        }
+      }
+
+      const elBiasVal = document.getElementById("ts-score-bias-val");
+      const elBiasBar = document.getElementById("ts-score-bias-bar");
+      if (elBiasVal) elBiasVal.textContent = biasScore;
+      if (elBiasBar) elBiasBar.style.width = biasScore + "%";
+
+      const elRrVal = document.getElementById("ts-score-rr-val");
+      const elRrBar = document.getElementById("ts-score-rr-bar");
+      if (elRrVal) elRrVal.textContent = rrScore;
+      if (elRrBar) elRrBar.style.width = rrScore + "%";
+
+      const elPfVal = document.getElementById("ts-score-pf-val");
+      const elPfBar = document.getElementById("ts-score-pf-bar");
+      if (elPfVal) elPfVal.textContent = pfScore;
+      if (elPfBar) elPfBar.style.width = pfScore + "%";
+
+      // Dynamically morph radar triangle polygon
+      const elRadarPoly = document.getElementById("ts-radar-polygon");
+      if (elRadarPoly) {
+        const topY = Math.round(52 - 36 * (rrScore / 100));
+        const rightX = Math.round(50 + 35 * (winRatePct / 100));
+        const rightY = Math.round(52 + 23 * (winRatePct / 100));
+        const leftX = Math.round(50 - 35 * (pfScore / 100));
+        const leftY = Math.round(52 + 23 * (pfScore / 100));
+        elRadarPoly.setAttribute("points", "50," + topY + " " + rightX + "," + rightY + " " + leftX + "," + leftY);
+      }
 
       // 3. Build 8-Column Calendar Grid
       let html = "";
