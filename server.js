@@ -14,6 +14,7 @@ const { paperTraderInstance } = require('./src/extensions/paperTrader');
 const { hyperliquidInstance, normalizeCoin } = require('./src/extensions/hyperliquid');
 const { computeEdgeStats } = require('./src/extensions/statsEngine');
 const { startDailyScheduler, syncDailySimulation } = require('./src/extensions/dailySimulationScheduler');
+const { generateFullJournalCSV } = require('./src/extensions/journalExporter');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -7838,38 +7839,9 @@ const htmlContent = `<!DOCTYPE html>
       openDayJournalModal(currentSelectedDate, currentJournalDaysMap[currentSelectedDate]);
     });
 
-    // Export CSV
+    // Export Full Comprehensive Journal CSV (All Months + Breakdowns + PnL Totals)
     document.getElementById("btn-ts-export")?.addEventListener("click", () => {
-      const tradesToExport = currentJournalMode === "march2026"
-        ? Object.entries(MARCH_2026_DEMO_DAYS).flatMap(([d, v]) => v.trades.map(t => ({ date: d, ...t })))
-        : ((cachedPaperStatus && cachedPaperStatus.allTrades) || []);
-
-      if (tradesToExport.length === 0) {
-        alert("No trades available to export.");
-        return;
-      }
-
-      const csvRows = ["Date,Symbol,Side,EntryPrice,ExitPrice,PnL,PnLPercent,Strategy,Reason"];
-      tradesToExport.forEach(t => {
-        csvRows.push([
-          '"' + (t.date || t.exitTime || "") + '"',
-          '"' + t.symbol + '"',
-          '"' + t.side + '"',
-          t.entryPrice,
-          t.exitPrice,
-          t.pnl,
-          '"' + t.pnlPercent + '%"',
-          '"' + (t.strategy || "") + '"',
-          '"' + (t.reason || "").replace(/"/g, "") + '"'
-        ].join(","));
-      });
-      const csv = csvRows.join(String.fromCharCode(10));
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "tradesync_journal_" + currentJournalMode + "_" + Date.now() + ".csv";
-      a.click();
+      window.location.href = '/api/paper/export-journal-csv';
     });
 
     // Sync button
@@ -8813,6 +8785,20 @@ const server = http.createServer(async (req, res) => {
       const ok = await syncDailySimulation();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: ok, message: 'Daily simulation synchronized successfully' }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/paper/export-journal-csv') {
+    try {
+      const csvData = generateFullJournalCSV();
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="Hyperview_Full_Trading_Journal_2026.csv"',
+      });
+      return res.end(csvData);
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
