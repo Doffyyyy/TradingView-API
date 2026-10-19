@@ -2712,7 +2712,10 @@ const htmlContent = `<!DOCTYPE html>
             <button class="ts-pill-btn active" data-mc-cat="ALL">All Categories</button>
             <button class="ts-pill-btn" data-mc-cat="FED & Central Bank">🏛️ FED & Rates</button>
             <button class="ts-pill-btn" data-mc-cat="Inflation (CPI/PPI)">📊 CPI & PPI</button>
+            <button class="ts-pill-btn" data-mc-cat="Corporate Earnings">🏢 US Earnings (Tesla/Meta)</button>
             <button class="ts-pill-btn" data-mc-cat="Employment & NFP">💼 NFP & Jobs</button>
+            <button class="ts-pill-btn" data-mc-cat="Housing & Real Estate">🏡 Nhà đất & Xây dựng</button>
+            <button class="ts-pill-btn" data-mc-cat="Growth & GDP">📈 PMI & GDP</button>
           </div>
 
           <!-- Search Input -->
@@ -8380,7 +8383,7 @@ const htmlContent = `<!DOCTYPE html>
         // Find Next FOMC
         const nextFomc = data.events.find(e => {
           const t = new Date(e.date).getTime();
-          return t >= Date.now() && (e.title.includes('FOMC') || e.title.includes('Fed '));
+          return t >= Date.now() && e.country === 'USD' && (e.title.includes('FOMC') || e.title.includes('Fed '));
         });
         const statFomcDate = document.getElementById("mc-stat-fomc-date");
         if (statFomcDate && nextFomc) {
@@ -8388,15 +8391,21 @@ const htmlContent = `<!DOCTYPE html>
           statFomcDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
-        // Find Next CPI
+        // Find Next US CPI / PCE Inflation (Strictly USD only)
         const nextCpi = data.events.find(e => {
           const t = new Date(e.date).getTime();
-          return t >= Date.now() && e.title.includes('CPI');
+          return t >= Date.now() && e.country === 'USD' && (e.title.includes('CPI') || e.title.includes('PCE'));
         });
         const statCpiDate = document.getElementById("mc-stat-cpi-date");
         if (statCpiDate && nextCpi) {
           const d = new Date(nextCpi.date);
           statCpiDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const subText = statCpiDate.nextElementSibling;
+          if (subText) {
+            subText.textContent = nextCpi.title.includes('PCE')
+              ? 'Core PCE Lạm phát (Dự báo ' + (nextCpi.forecast || '0.2%') + ') | CPI tiếp theo: Nov 12'
+              : 'Báo cáo CPI m/m & y/y (Dự báo ' + (nextCpi.forecast || '2.5%') + ')';
+          }
         }
 
         // 3. Render Events Table

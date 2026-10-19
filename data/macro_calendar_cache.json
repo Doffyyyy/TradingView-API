@@ -1,6 +1,6 @@
 {
-  "lastFetched": 1792386967776,
-  "count": 96,
+  "lastFetched": 1792450210304,
+  "count": 100,
   "events": [
     {
       "id": "fomc_2026_09_16",
@@ -115,7 +115,7 @@
       "forecast": "",
       "previous": "-0.17%",
       "actual": "",
-      "category": "Other",
+      "category": "Housing & Real Estate",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
@@ -211,20 +211,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-19T02:02:00-04:00_CNY_13",
-      "title": "Foreign Direct Investment ytd/y",
-      "country": "CNY",
-      "date": "2026-10-19T02:02:00-04:00",
-      "impact": "Low",
-      "forecast": "",
-      "previous": "-5.3%",
-      "actual": "",
-      "category": "Other",
-      "volatilityRisk": "Low",
-      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
-    },
-    {
-      "id": "ff_2026-10-19T08:30:00-04:00_CAD_14",
+      "id": "ff_2026-10-19T08:30:00-04:00_CAD_13",
       "title": "CPI m/m",
       "country": "CAD",
       "date": "2026-10-19T08:30:00-04:00",
@@ -237,7 +224,7 @@
       "cryptoImpact": "TIN BÃO VĨ MÔ: Thước đo lạm phát trực tiếp. CPI hạ nhiệt (< Dự báo) = DXY giảm sốc, BTC bật tăng mạnh mẽ. CPI nóng (> Dự báo) = Bán tháo tức thì."
     },
     {
-      "id": "ff_2026-10-19T08:30:00-04:00_CAD_15",
+      "id": "ff_2026-10-19T08:30:00-04:00_CAD_14",
       "title": "Median CPI y/y",
       "country": "CAD",
       "date": "2026-10-19T08:30:00-04:00",
@@ -250,7 +237,7 @@
       "cryptoImpact": "TIN BÃO VĨ MÔ: Thước đo lạm phát trực tiếp. CPI hạ nhiệt (< Dự báo) = DXY giảm sốc, BTC bật tăng mạnh mẽ. CPI nóng (> Dự báo) = Bán tháo tức thì."
     },
     {
-      "id": "ff_2026-10-19T08:30:00-04:00_CAD_16",
+      "id": "ff_2026-10-19T08:30:00-04:00_CAD_15",
       "title": "Trimmed CPI y/y",
       "country": "CAD",
       "date": "2026-10-19T08:30:00-04:00",
@@ -263,7 +250,7 @@
       "cryptoImpact": "TIN BÃO VĨ MÔ: Thước đo lạm phát trực tiếp. CPI hạ nhiệt (< Dự báo) = DXY giảm sốc, BTC bật tăng mạnh mẽ. CPI nóng (> Dự báo) = Bán tháo tức thì."
     },
     {
-      "id": "ff_2026-10-19T08:30:00-04:00_CAD_17",
+      "id": "ff_2026-10-19T08:30:00-04:00_CAD_16",
       "title": "Common CPI y/y",
       "country": "CAD",
       "date": "2026-10-19T08:30:00-04:00",
@@ -276,7 +263,7 @@
       "cryptoImpact": "TIN BÃO VĨ MÔ: Thước đo lạm phát trực tiếp. CPI hạ nhiệt (< Dự báo) = DXY giảm sốc, BTC bật tăng mạnh mẽ. CPI nóng (> Dự báo) = Bán tháo tức thì."
     },
     {
-      "id": "ff_2026-10-19T08:30:00-04:00_CAD_18",
+      "id": "ff_2026-10-19T08:30:00-04:00_CAD_17",
       "title": "Core CPI m/m",
       "country": "CAD",
       "date": "2026-10-19T08:30:00-04:00",
@@ -289,7 +276,7 @@
       "cryptoImpact": "TIN BÃO VĨ MÔ: Thước đo lạm phát trực tiếp. CPI hạ nhiệt (< Dự báo) = DXY giảm sốc, BTC bật tăng mạnh mẽ. CPI nóng (> Dự báo) = Bán tháo tức thì."
     },
     {
-      "id": "ff_2026-10-19T10:00:00-04:00_USD_19",
+      "id": "ff_2026-10-19T10:00:00-04:00_USD_18",
       "title": "NAHB Housing Market Index",
       "country": "USD",
       "date": "2026-10-19T10:00:00-04:00",
@@ -297,12 +284,12 @@
       "forecast": "31",
       "previous": "32",
       "actual": "",
-      "category": "Other",
+      "category": "Housing & Real Estate",
       "volatilityRisk": "Low",
-      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+      "cryptoImpact": "Sức khỏe thị trường bất động sản Mỹ. Đo lường tác động của mặt bằng lãi suất cao lên nhu cầu vay thế chấp."
     },
     {
-      "id": "ff_2026-10-19T11:30:00-04:00_CAD_20",
+      "id": "ff_2026-10-19T11:30:00-04:00_CAD_19",
       "title": "BOC Business Outlook Survey",
       "country": "CAD",
       "date": "2026-10-19T11:30:00-04:00",
@@ -315,7 +302,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-19T21:00:00-04:00_CNY_21",
+      "id": "ff_2026-10-19T21:00:00-04:00_CNY_20",
       "title": "1-y Loan Prime Rate",
       "country": "CNY",
       "date": "2026-10-19T21:00:00-04:00",
@@ -328,7 +315,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-19T21:00:00-04:00_CNY_22",
+      "id": "ff_2026-10-19T21:00:00-04:00_CNY_21",
       "title": "5-y Loan Prime Rate",
       "country": "CNY",
       "date": "2026-10-19T21:00:00-04:00",
@@ -341,7 +328,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-20T02:00:00-04:00_EUR_23",
+      "id": "ff_2026-10-20T02:00:00-04:00_EUR_22",
       "title": "German PPI m/m",
       "country": "EUR",
       "date": "2026-10-20T02:00:00-04:00",
@@ -354,7 +341,7 @@
       "cryptoImpact": "Chỉ số dẫn dắt (Leading indicator) của CPI. Báo hiệu áp lực chi phí của doanh nghiệp trước khi truyền sang giá tiêu dùng."
     },
     {
-      "id": "ff_2026-10-20T02:00:00-04:00_GBP_24",
+      "id": "ff_2026-10-20T02:00:00-04:00_GBP_23",
       "title": "Average Earnings Index 3m/y",
       "country": "GBP",
       "date": "2026-10-20T02:00:00-04:00",
@@ -362,12 +349,12 @@
       "forecast": "3.8%",
       "previous": "3.9%",
       "actual": "",
-      "category": "Other",
+      "category": "Employment & NFP",
       "volatilityRisk": "High",
-      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+      "cryptoImpact": "Báo cáo tài chính doanh nghiệp công nghệ Mỹ (Earnings). Tác động trực tiếp lên chỉ số Nasdaq và khẩu vị chấp nhận rủi ro trên thị trường Crypto."
     },
     {
-      "id": "ff_2026-10-20T02:00:00-04:00_GBP_25",
+      "id": "ff_2026-10-20T02:00:00-04:00_GBP_24",
       "title": "Claimant Count Change",
       "country": "GBP",
       "date": "2026-10-20T02:00:00-04:00",
@@ -380,7 +367,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-20T02:00:00-04:00_GBP_26",
+      "id": "ff_2026-10-20T02:00:00-04:00_GBP_25",
       "title": "Unemployment Rate",
       "country": "GBP",
       "date": "2026-10-20T02:00:00-04:00",
@@ -393,7 +380,7 @@
       "cryptoImpact": "Đo lường sức khỏe việc làm Mỹ. NFP hạ nhiệt kết hợp thất nghiệp tăng là tín hiệu kinh tế cần kích thích tiền tệ -> Tích cực cho tài sản rủi ro BTC/ETH."
     },
     {
-      "id": "ff_2026-10-20T04:00:00-04:00_EUR_27",
+      "id": "ff_2026-10-20T04:00:00-04:00_EUR_26",
       "title": "Current Account",
       "country": "EUR",
       "date": "2026-10-20T04:00:00-04:00",
@@ -406,7 +393,7 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
-      "id": "ff_2026-10-20T05:00:00-04:00_EUR_28",
+      "id": "ff_2026-10-20T05:00:00-04:00_EUR_27",
       "title": "ZEW Economic Sentiment",
       "country": "EUR",
       "date": "2026-10-20T05:00:00-04:00",
@@ -415,6 +402,19 @@
       "previous": "25.8",
       "actual": "",
       "category": "Growth & GDP",
+      "volatilityRisk": "Low",
+      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+    },
+    {
+      "id": "ff_2026-10-20T05:10:00-04:00_CNY_29",
+      "title": "Foreign Direct Investment ytd/y",
+      "country": "CNY",
+      "date": "2026-10-20T05:10:00-04:00",
+      "impact": "Low",
+      "forecast": "",
+      "previous": "-5.3%",
+      "actual": "",
+      "category": "Other",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
@@ -453,7 +453,7 @@
       "forecast": "1.39M",
       "previous": "1.39M",
       "actual": "",
-      "category": "Other",
+      "category": "Housing & Real Estate",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
@@ -466,9 +466,9 @@
       "forecast": "1.30M",
       "previous": "1.28M",
       "actual": "",
-      "category": "Other",
+      "category": "Housing & Real Estate",
       "volatilityRisk": "Low",
-      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+      "cryptoImpact": "Sức khỏe thị trường bất động sản Mỹ. Đo lường tác động của mặt bằng lãi suất cao lên nhu cầu vay thế chấp."
     },
     {
       "id": "ff_2026-10-20T10:00:00-04:00_USD_34",
@@ -476,12 +476,12 @@
       "country": "USD",
       "date": "2026-10-20T10:00:00-04:00",
       "impact": "Low",
-      "forecast": "-0.4%",
+      "forecast": "-0.7%",
       "previous": "0.3%",
       "actual": "",
-      "category": "Growth & GDP",
+      "category": "Housing & Real Estate",
       "volatilityRisk": "Low",
-      "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+      "cryptoImpact": "Sức khỏe thị trường bất động sản Mỹ. Đo lường tác động của mặt bằng lãi suất cao lên nhu cầu vay thế chấp."
     },
     {
       "id": "ff_2026-10-20T10:50:00-04:00_NZD_35",
@@ -508,6 +508,19 @@
       "category": "Other",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+    },
+    {
+      "id": "earnings_2026_10_20_gm_nflx",
+      "title": "US Corporate Earnings: General Motors (GM), GE Aerospace, Netflix (NFLX)",
+      "country": "USD",
+      "date": "2026-10-20T16:05:00-04:00",
+      "impact": "Medium",
+      "forecast": "NFLX EPS: $5.12 | GM EPS: $2.43",
+      "previous": "NFLX EPS: $4.88 | GM EPS: $2.28",
+      "actual": "",
+      "category": "Corporate Earnings",
+      "volatilityRisk": "Medium",
+      "cryptoImpact": "Báo cáo lợi nhuận quý 3 của Netflix và GM sau giờ đóng cửa Phố Wall. Tác động lan tỏa tới tâm lý rủi ro trên thị trường chứng khoán Mỹ và chỉ số rủi ro của Bitcoin."
     },
     {
       "id": "ff_2026-10-20T16:30:00-04:00_USD_37",
@@ -541,7 +554,7 @@
       "country": "JPY",
       "date": "2026-10-20T19:50:00-04:00",
       "impact": "Low",
-      "forecast": "-0.21T",
+      "forecast": "-0.26T",
       "previous": "-0.84T",
       "actual": "",
       "category": "Other",
@@ -705,6 +718,19 @@
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
     {
+      "id": "earnings_2026_10_21_tsla_meta",
+      "title": "US Mega-Tech Earnings: Tesla (TSLA), Meta (META), IBM, Texas Instruments",
+      "country": "USD",
+      "date": "2026-10-21T16:05:00-04:00",
+      "impact": "High",
+      "forecast": "TSLA EPS: $0.60 | META EPS: $5.28",
+      "previous": "TSLA EPS: $0.52 | META EPS: $4.39",
+      "actual": "",
+      "category": "Corporate Earnings",
+      "volatilityRisk": "High",
+      "cryptoImpact": "TIN TRỌNG TÂM CÔNG NGHỆ: Tesla (công ty nắm giữ dự trữ Bitcoin chiến lược trên bảng cân đối kế toán) và Meta công bố BCTC Q3. Kết quả vượt kỳ vọng sẽ kích hoạt sóng hồi mạnh cho nhóm công nghệ và Bitcoin/Ethereum."
+    },
+    {
       "id": "ff_2026-10-21T17:45:00-04:00_NZD_52",
       "title": "CPI q/q",
       "country": "NZD",
@@ -742,6 +768,19 @@
       "category": "Other",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
+    },
+    {
+      "id": "earnings_2026_10_22_intc_lmt",
+      "title": "US Corporate Earnings: Intel (INTC), Lockheed Martin (LMT), Procter & Gamble, American Airlines",
+      "country": "USD",
+      "date": "2026-10-22T07:00:00-04:00",
+      "impact": "Medium",
+      "forecast": "INTC EPS: -$0.24 | LMT EPS: $6.50",
+      "previous": "",
+      "actual": "",
+      "category": "Corporate Earnings",
+      "volatilityRisk": "Medium",
+      "cryptoImpact": "Báo cáo tài chính quý 3 của nhóm ngành công nghiệp, bán dẫn AI và hàng không trước giờ mở cửa Phố Wall."
     },
     {
       "id": "ff_2026-10-22T08:30:00-04:00_CAD_55",
@@ -817,7 +856,7 @@
       "forecast": "-0.2%",
       "previous": "-0.1%",
       "actual": "",
-      "category": "Other",
+      "category": "Growth & GDP",
       "volatilityRisk": "Low",
       "cryptoImpact": "Dữ liệu kinh tế vĩ mô có thể ảnh hưởng đến tỷ giá USD và khẩu vị rủi ro của dòng tiền Crypto."
     },
@@ -911,6 +950,19 @@
       "category": "Growth & GDP",
       "volatilityRisk": "High",
       "cryptoImpact": "Chỉ số nhà quản trị mua hàng PMI. Phản ánh tốc độ mở rộng hay thu hẹp của nền kinh tế."
+    },
+    {
+      "id": "earnings_2026_10_23_axp_slb",
+      "title": "US Corporate Earnings: American Express (AXP), SLB (Schlumberger)",
+      "country": "USD",
+      "date": "2026-10-23T07:00:00-04:00",
+      "impact": "Low",
+      "forecast": "AXP EPS: $3.28 | SLB EPS: $0.88",
+      "previous": "",
+      "actual": "",
+      "category": "Corporate Earnings",
+      "volatilityRisk": "Low",
+      "cryptoImpact": "Báo cáo tài chính ngành dịch vụ thanh toán tiêu dùng và dầu khí năng lượng trước phiên cuối tuần."
     },
     {
       "id": "ff_2026-10-23T02:00:00-04:00_GBP_67",

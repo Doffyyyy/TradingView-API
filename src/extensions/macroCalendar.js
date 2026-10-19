@@ -6,6 +6,60 @@ const CACHE_FILE = path.join(__dirname, '..', '..', 'data', 'macro_calendar_cach
 
 // Master 2026 High-Impact Macro Schedule (Tier 1 Market Movers)
 const MASTER_TIER1_EVENTS = [
+  // --- CURRENT WEEK OCTOBER 19-23, 2026 EARNINGS & KEY CATALYSTS ---
+  {
+    id: 'earnings_2026_10_20_gm_nflx',
+    title: 'US Corporate Earnings: General Motors (GM), GE Aerospace, Netflix (NFLX)',
+    country: 'USD',
+    date: '2026-10-20T16:05:00-04:00',
+    impact: 'Medium',
+    forecast: 'NFLX EPS: $5.12 | GM EPS: $2.43',
+    previous: 'NFLX EPS: $4.88 | GM EPS: $2.28',
+    actual: '',
+    category: 'Corporate Earnings',
+    volatilityRisk: 'Medium',
+    cryptoImpact: 'Báo cáo lợi nhuận quý 3 của Netflix và GM sau giờ đóng cửa Phố Wall. Tác động lan tỏa tới tâm lý rủi ro trên thị trường chứng khoán Mỹ và chỉ số rủi ro của Bitcoin.',
+  },
+  {
+    id: 'earnings_2026_10_21_tsla_meta',
+    title: 'US Mega-Tech Earnings: Tesla (TSLA), Meta (META), IBM, Texas Instruments',
+    country: 'USD',
+    date: '2026-10-21T16:05:00-04:00',
+    impact: 'High',
+    forecast: 'TSLA EPS: $0.60 | META EPS: $5.28',
+    previous: 'TSLA EPS: $0.52 | META EPS: $4.39',
+    actual: '',
+    category: 'Corporate Earnings',
+    volatilityRisk: 'High',
+    cryptoImpact: 'TIN TRỌNG TÂM CÔNG NGHỆ: Tesla (công ty nắm giữ dự trữ Bitcoin chiến lược trên bảng cân đối kế toán) và Meta công bố BCTC Q3. Kết quả vượt kỳ vọng sẽ kích hoạt sóng hồi mạnh cho nhóm công nghệ và Bitcoin/Ethereum.',
+  },
+  {
+    id: 'earnings_2026_10_22_intc_lmt',
+    title: 'US Corporate Earnings: Intel (INTC), Lockheed Martin (LMT), Procter & Gamble, American Airlines',
+    country: 'USD',
+    date: '2026-10-22T07:00:00-04:00',
+    impact: 'Medium',
+    forecast: 'INTC EPS: -$0.24 | LMT EPS: $6.50',
+    previous: '',
+    actual: '',
+    category: 'Corporate Earnings',
+    volatilityRisk: 'Medium',
+    cryptoImpact: 'Báo cáo tài chính quý 3 của nhóm ngành công nghiệp, bán dẫn AI và hàng không trước giờ mở cửa Phố Wall.',
+  },
+  {
+    id: 'earnings_2026_10_23_axp_slb',
+    title: 'US Corporate Earnings: American Express (AXP), SLB (Schlumberger)',
+    country: 'USD',
+    date: '2026-10-23T07:00:00-04:00',
+    impact: 'Low',
+    forecast: 'AXP EPS: $3.28 | SLB EPS: $0.88',
+    previous: '',
+    actual: '',
+    category: 'Corporate Earnings',
+    volatilityRisk: 'Low',
+    cryptoImpact: 'Báo cáo tài chính ngành dịch vụ thanh toán tiêu dùng và dầu khí năng lượng trước phiên cuối tuần.',
+  },
+
   // --- OCTOBER 2026 ---
   {
     id: 'fomc_2026_10_28',
@@ -353,6 +407,12 @@ class MacroCalendarEngine {
 
   categorizeEvent(title) {
     const t = (title || '').toLowerCase();
+    if (t.includes('average earnings')) {
+      return 'Employment & NFP';
+    }
+    if (t.includes('corporate earnings') || t.includes('mega-tech earnings') || t.includes('tesla') || t.includes('meta') || t.includes('netflix') || t.includes('intel') || t.includes('lockheed') || t.includes('general motors')) {
+      return 'Corporate Earnings';
+    }
     if (t.includes('fomc') || t.includes('fed ') || t.includes('powell') || t.includes('rate') || t.includes('central bank') || t.includes('ecb') || t.includes('boe') || t.includes('boj')) {
       return 'FED & Central Bank';
     }
@@ -362,7 +422,10 @@ class MacroCalendarEngine {
     if (t.includes('employment') || t.includes('payrolls') || t.includes('unemployment') || t.includes('adp') || t.includes('claims') || t.includes('nfp')) {
       return 'Employment & NFP';
     }
-    if (t.includes('gdp') || t.includes('sales') || t.includes('pmi') || t.includes('sentiment') || t.includes('consumer confidence')) {
+    if (t.includes('nahb') || t.includes('housing') || t.includes('home') || t.includes('building permits')) {
+      return 'Housing & Real Estate';
+    }
+    if (t.includes('gdp') || t.includes('sales') || t.includes('pmi') || t.includes('sentiment') || t.includes('consumer confidence') || t.includes('leading index')) {
       return 'Growth & GDP';
     }
     return 'Other';
@@ -370,6 +433,9 @@ class MacroCalendarEngine {
 
   getCryptoPlaybook(item) {
     const title = (item.title || '').toLowerCase();
+    if (title.includes('earnings') || title.includes('tesla') || title.includes('meta')) {
+      return 'Báo cáo tài chính doanh nghiệp công nghệ Mỹ (Earnings). Tác động trực tiếp lên chỉ số Nasdaq và khẩu vị chấp nhận rủi ro trên thị trường Crypto.';
+    }
     if (title.includes('fomc') || title.includes('fed interest rate') || title.includes('rate decision')) {
       return 'Tác động mạnh nhất thị trường. Nếu FED hạ lãi suất hoặc phát tín hiệu nới lỏng (Dovish), USD suy yếu -> BTC & Crypto pump mạnh. Nếu Hawkish, nguy cơ bão thanh lý Long.';
     }
@@ -390,6 +456,9 @@ class MacroCalendarEngine {
     }
     if (title.includes('pmi')) {
       return 'Chỉ số nhà quản trị mua hàng PMI. Phản ánh tốc độ mở rộng hay thu hẹp của nền kinh tế.';
+    }
+    if (title.includes('nahb') || title.includes('housing starts') || title.includes('home sales')) {
+      return 'Sức khỏe thị trường bất động sản Mỹ. Đo lường tác động của mặt bằng lãi suất cao lên nhu cầu vay thế chấp.';
     }
     if (title.includes('boj')) {
       return 'Quyết định lãi suất của Nhật Bản. Nếu BOJ bất ngờ tăng lãi suất -> Kích hoạt làn sóng tháo chạy Yen Carry Trade, gây bán tháo toàn cầu lên Bitcoin & chứng khoán.';
@@ -463,6 +532,17 @@ class MacroCalendarEngine {
 
   getNextHighImpactEvent() {
     const now = Date.now();
+    // 1. Prioritize upcoming USD High/Medium impact events (Primary Crypto Drivers: FED, Tech Earnings, Unemployment, PMI)
+    const upcomingUsdPriority = this.events.filter(e => {
+      const t = new Date(e.date).getTime();
+      return t >= now && e.country === 'USD' && (e.impact === 'High' || e.impact === 'Medium');
+    });
+
+    if (upcomingUsdPriority.length > 0) {
+      return upcomingUsdPriority[0];
+    }
+
+    // 2. Global High impact events (BOJ, ECB, GBP/NZD CPI)
     const upcomingHigh = this.events.filter(e => {
       const t = new Date(e.date).getTime();
       return t >= now && (e.impact === 'High' || e.impact === 'Medium');
@@ -471,6 +551,7 @@ class MacroCalendarEngine {
     if (upcomingHigh.length > 0) {
       return upcomingHigh[0];
     }
+
     // Fallback to closest future event
     const upcomingAny = this.events.filter(e => new Date(e.date).getTime() >= now);
     return upcomingAny.length > 0 ? upcomingAny[0] : this.events[this.events.length - 1];
