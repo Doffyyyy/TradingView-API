@@ -16,6 +16,7 @@ const { computeEdgeStats } = require('./src/extensions/statsEngine');
 const { startDailyScheduler, syncDailySimulation } = require('./src/extensions/dailySimulationScheduler');
 const { generateFullJournalCSV } = require('./src/extensions/journalExporter');
 const { generateFullJournalExcelBuffer } = require('./src/extensions/excelExporter');
+const { macroCalendarInstance } = require('./src/extensions/macroCalendar');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -1114,6 +1115,54 @@ const htmlContent = `<!DOCTYPE html>
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px;
       border-bottom: 1px solid #222634;
     }
+
+    /* ========================================================
+       MACRO CALENDAR (PROLIQUID CALENDAR ENGINE) STYLES
+       ======================================================== */
+    .mc-dashboard {
+      flex: 1; overflow-y: auto; background: #0b0d13; padding: 18px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "JetBrains Mono", sans-serif;
+      color: #e4e7eb; box-sizing: border-box;
+    }
+    .mc-dashboard::-webkit-scrollbar { width: 6px; }
+    .mc-dashboard::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
+    .mc-top-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .mc-title-left {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .mc-pill-badge {
+      font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.4px;
+    }
+    .mc-impact-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+    }
+    .mc-impact-high {
+      background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+    }
+    .mc-impact-med {
+      background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .mc-impact-low {
+      background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .mc-table-row {
+      border-bottom: 1px solid #1a1f2c; transition: background 0.15s;
+    }
+    .mc-table-row:hover {
+      background: #141824;
+    }
+    .mc-table-row.mc-row-high {
+      background: rgba(239, 68, 68, 0.03);
+    }
+    .mc-table-row.mc-row-high:hover {
+      background: rgba(239, 68, 68, 0.08) !important;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
   </style>
 </head>
 <body>
@@ -1129,6 +1178,7 @@ const htmlContent = `<!DOCTYPE html>
       <button class="tab-btn active" data-target="view-chart">📈 Live Chart</button>
       <button class="tab-btn" data-target="view-paper" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.32); font-weight: 700;">💼 Paper Trade ($10k)</button>
       <button class="tab-btn" data-target="view-journal" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700;">📅 Daily PnL Journal</button>
+      <button class="tab-btn" data-target="view-macro" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;">⚡ Macro Calendar</button>
       <button class="tab-btn" data-target="view-validation">🛡️ Validation Bot (26 TA)</button>
       <button class="tab-btn" data-target="view-backtest">🧪 Astra Backtest</button>
       <button class="tab-btn" data-target="view-replay">⏪ Replay Engine</button>
@@ -2518,6 +2568,196 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- VIEW: MACRO CALENDAR (PROLIQUID CALENDAR ENGINE) -->
+    <div class="view-panel" id="view-macro">
+      <div class="mc-dashboard">
+        <!-- Top App Bar & Live Countdown Banner -->
+        <div class="mc-top-header">
+          <div class="mc-title-left">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              ⚡
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h1 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Macro & High-Impact Economic Calendar</h1>
+                <span class="mc-pill-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">PROLIQUID EDITION</span>
+                <span class="mc-pill-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">TIER-1 VOLATILITY</span>
+              </div>
+              <div style="font-size: 11px; color: #8c93a3; margin-top: 2px;">
+                Sự kiện vĩ mô, Quyết định Lãi suất FED, Báo cáo Lạm phát CPI/PPI & Bảng lương NFP gây bão thanh lý Crypto
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="mc-next-countdown-box" style="display: flex; align-items: center; gap: 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 14px; border-radius: 8px;">
+              <span style="font-size: 15px; animation: pulse-dot 1.5s infinite;">🚨</span>
+              <div>
+                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: #f87171; letter-spacing: 0.5px;">NEXT HIGH IMPACT EVENT</div>
+                <div id="mc-next-event-title" style="font-size: 12px; font-weight: 700; color: #fff; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading next catalyst...</div>
+              </div>
+              <div id="mc-next-event-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #facc15; background: #161a24; padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3040;">
+                --:--:--
+              </div>
+            </div>
+
+            <button class="ts-btn-outline" id="btn-mc-refresh" title="Làm mới lịch vĩ mô từ ForexFactory Feed" style="padding: 7px 12px; display: flex; align-items: center; gap: 6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh Feed
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Macro KPI Stat Cards -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+          <!-- Card 1: High Impact Count -->
+          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">HIGH IMPACT CATALYSTS</span>
+              <span style="font-size: 14px;">🔥</span>
+            </div>
+            <div class="stat-value" id="mc-stat-high-count" style="font-size: 18px; font-weight: 800; color: #f87171;">-- Events</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">FED Decisions, CPI, PPI, NFP</div>
+          </div>
+
+          <!-- Card 2: Next FOMC -->
+          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">NEXT FOMC RATE DECISION</span>
+              <span style="font-size: 14px;">🏛️</span>
+            </div>
+            <div class="stat-value" id="mc-stat-fomc-date" style="font-size: 16px; font-weight: 800; color: #f59e0b;">Oct 28, 2026</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Dự báo hạ lãi suất 4.50% (-25 bps)</div>
+          </div>
+
+          <!-- Card 3: Next CPI / Inflation -->
+          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">NEXT US INFLATION PRINT</span>
+              <span style="font-size: 14px;">📊</span>
+            </div>
+            <div class="stat-value" id="mc-stat-cpi-date" style="font-size: 16px; font-weight: 800; color: #38bdf8;">Nov 12, 2026</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Báo cáo CPI m/m & y/y (Dự báo 2.5%)</div>
+          </div>
+
+          <!-- Card 4: Volatility Warning / Advisory -->
+          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">CRYPTO PERP RISK LEVEL</span>
+              <span style="font-size: 14px;">🛡️</span>
+            </div>
+            <div class="stat-value" style="font-size: 15px; font-weight: 800; color: #10b981;">ELEVATED VOLATILITY</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Tránh đòn bẩy cao 15p trước & sau tin đỏ</div>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="ts-toolbar" style="margin-bottom: 14px; gap: 10px; flex-wrap: wrap;">
+          <!-- Filter Impact -->
+          <div class="ts-pill-group" id="mc-filter-impact-group">
+            <button class="ts-pill-btn active" data-mc-impact="ALL">All Impacts</button>
+            <button class="ts-pill-btn" data-mc-impact="HIGH" style="color: #f87171; font-weight: 700;">🔥 High Impact Only</button>
+            <button class="ts-pill-btn" data-mc-impact="HIGH_MED">⚡ High & Medium</button>
+          </div>
+
+          <!-- Filter Currency -->
+          <div class="ts-pill-group" id="mc-filter-curr-group">
+            <button class="ts-pill-btn active" data-mc-curr="ALL">All Currencies</button>
+            <button class="ts-pill-btn" data-mc-curr="USD">🇺🇸 USD (Crypto Primary)</button>
+            <button class="ts-pill-btn" data-mc-curr="EUR">🇪🇺 EUR</button>
+            <button class="ts-pill-btn" data-mc-curr="GBP">🇬🇧 GBP</button>
+            <button class="ts-pill-btn" data-mc-curr="JPY">🇯🇵 JPY (Carry Trade)</button>
+          </div>
+
+          <!-- Filter Category -->
+          <div class="ts-pill-group" id="mc-filter-cat-group">
+            <button class="ts-pill-btn active" data-mc-cat="ALL">All Categories</button>
+            <button class="ts-pill-btn" data-mc-cat="FED & Central Bank">🏛️ FED & Rates</button>
+            <button class="ts-pill-btn" data-mc-cat="Inflation (CPI/PPI)">📊 CPI & PPI</button>
+            <button class="ts-pill-btn" data-mc-cat="Employment & NFP">💼 NFP & Jobs</button>
+          </div>
+
+          <!-- Search Input -->
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+            <input type="text" id="mc-search-input" class="search-input" placeholder="🔍 Search event (CPI, Powell, FOMC, PPI)..." style="width: 250px; font-size: 11.5px; padding: 5px 10px;">
+          </div>
+        </div>
+
+        <!-- Calendar Events Table Container -->
+        <div style="background: #10131b; border: 1px solid #1c2130; border-radius: 8px; overflow: hidden; margin-bottom: 18px;">
+          <div style="overflow-x: auto; max-height: 520px; scrollbar-width: thin;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+              <thead style="background: #161b26; color: #8c93a3; position: sticky; top: 0; z-index: 5;">
+                <tr style="border-bottom: 1px solid #22283a; height: 36px;">
+                  <th style="padding: 8px 12px; font-weight: 700; width: 140px;">TIME (UTC+7 / UTC)</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 90px; text-align: center;">CURRENCY</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 110px; text-align: center;">IMPACT</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 280px;">EVENT CATALYST</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">ACTUAL</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">FORECAST</th>
+                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">PREVIOUS</th>
+                  <th style="padding: 8px 12px; font-weight: 700;">CRYPTO VOLATILITY & PLAYBOOK ADVISORY</th>
+                </tr>
+              </thead>
+              <tbody id="mc-events-tbody">
+                <!-- Dynamically Rendered Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Proliquid-style Crypto Macro Cheat Sheet / Playbook Card -->
+        <div style="background: #121622; border: 1px solid #1e2638; border-radius: 8px; padding: 16px 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">💡</span>
+              <h3 style="font-size: 14px; font-weight: 700; color: #fff; margin: 0;">Crypto Volatility Playbook: Cách Giao Dịch Phái Sinh An Toàn Khi Có Tin Đỏ</h3>
+            </div>
+            <span style="font-size: 11px; color: #94a3b8;">Proliquid & Oliver Kell Risk Guidelines</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; font-size: 11.5px; color: #cbd5e1; line-height: 1.55;">
+            <!-- Box 1: FED / FOMC & Powell -->
+            <div style="background: #0d1017; border: 1px solid #1c2230; border-radius: 6px; padding: 12px 14px;">
+              <div style="font-weight: 700; color: #f59e0b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🏛️</span><span>1. FED / FOMC & Phát Biểu Powell</span>
+              </div>
+              <ul style="margin: 0; padding-left: 16px; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                <li><strong style="color: #e2e8f0;">Quyết định Lãi suất (01:00 / 02:00 sáng VN):</strong> Hạ lãi suất (Rate cut) = DXY giảm sốc, BTC & Risk assets pump mạnh.</li>
+                <li><strong style="color: #e2e8f0;">Họp báo Powell (sau 30 phút):</strong> Biến động 2 đầu quét thanh lý (Whipsaw). Chỉ cần 1 từ "Hawkish" hay "Cautious" là thị trường rút chân đảo chiều 1,000$ ngay lập tức.</li>
+                <li><strong style="color: #4ade80;">Chiến thuật:</strong> Không giữ lệnh quá 2x đòn bẩy hoặc đóng bớt 50% trước giờ công bố.</li>
+              </ul>
+            </div>
+
+            <!-- Box 2: CPI & PPI -->
+            <div style="background: #0d1017; border: 1px solid #1c2230; border-radius: 6px; padding: 12px 14px;">
+              <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>📊</span><span>2. Lạm Phát CPI & PPI (19:30 / 20:30 VN)</span>
+              </div>
+              <ul style="margin: 0; padding-left: 16px; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                <li><strong style="color: #e2e8f0;">CPI &lt; Dự báo:</strong> Lạm phát hạ nhiệt nhanh hơn kỳ vọng -> Kích hoạt đà tăng mạnh mẽ cho toàn thị trường Altcoin & BTC.</li>
+                <li><strong style="color: #e2e8f0;">CPI &gt; Dự báo (Nóng):</strong> Nỗi lo FED duy trì lãi suất cao kéo dài -> Bán tháo tức thì.</li>
+                <li><strong style="color: #4ade80;">Chiến thuật:</strong> Không FOMO Market Order vào giây đầu tiên (trượt giá có thể lên tới 0.2% - 0.5% trên Orderbook mỏng). Hãy đợi nến 15M đầu tiên đóng lại để trade theo sóng tiếp diễn.</li>
+              </ul>
+            </div>
+
+            <!-- Box 3: Yen Carry Trade & NFP -->
+            <div style="background: #0d1017; border: 1px solid #1c2230; border-radius: 6px; padding: 12px 14px;">
+              <div style="font-weight: 700; color: #ec4899; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>💴</span><span>3. BOJ (Yen Carry Trade) & NFP Việc Làm</span>
+              </div>
+              <ul style="margin: 0; padding-left: 16px; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                <li><strong style="color: #e2e8f0;">Quyết định lãi suất BOJ:</strong> Đồng Yên Nhật mạnh lên bất ngờ sẽ kích hoạt tháo đòn bẩy toàn cầu (như cú sập ngày 05/08/2024).</li>
+                <li><strong style="color: #e2e8f0;">Báo cáo NFP (Thứ Sáu đầu tháng):</strong> Việc làm giảm sút kết hợp tỷ lệ thất nghiệp tăng = Kỳ vọng nới lỏng tiền tệ tăng cao.</li>
+                <li><strong style="color: #4ade80;">Chiến thuật:</strong> Kiểm tra mức độ đông đúc của Open Interest (OI) và Funding Rate trước giờ ra tin để tránh bị Long/Short Squeeze.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- VIEW 2: VALIDATION BOT (26 TA) -->
     <div class="view-panel" id="view-validation">
       <div class="controls-bar">
@@ -2818,6 +3058,9 @@ const htmlContent = `<!DOCTYPE html>
         if (typeof triggerAutoSave === 'function') triggerAutoSave();
         if (btn.dataset.target === 'view-journal' && typeof renderJournalDashboard === 'function') {
           renderJournalDashboard();
+        }
+        if (btn.dataset.target === 'view-macro' && typeof renderMacroCalendar === 'function') {
+          renderMacroCalendar();
         }
         if (btn.dataset.target === 'view-replay') {
           if (window.replayStudioInstance) {
@@ -7870,7 +8113,267 @@ const htmlContent = `<!DOCTYPE html>
     });
 
     // Initial render
-    setTimeout(renderJournalDashboard, 100);
+    setTimeout(() => {
+      renderJournalDashboard();
+      renderMacroCalendar();
+    }, 120);
+
+    // --- Proliquid Macro Calendar Client Logic ---
+    let currentMacroFilters = {
+      impact: 'ALL',
+      currency: 'ALL',
+      category: 'ALL',
+      search: ''
+    };
+    let macroNextEventTargetTime = null;
+    let macroCountdownInterval = null;
+
+    const FLAG_MAP = {
+      USD: '🇺🇸',
+      EUR: '🇪🇺',
+      GBP: '🇬🇧',
+      JPY: '🇯🇵',
+      CAD: '🇨🇦',
+      AUD: '🇦🇺',
+      CNY: '🇨🇳',
+      CHF: '🇨🇭',
+      NZD: '🇳🇿',
+      ALL: '🌐',
+    };
+
+    function startMacroCountdown() {
+      if (macroCountdownInterval) clearInterval(macroCountdownInterval);
+      const timerEl = document.getElementById("mc-next-event-timer");
+      if (!timerEl) return;
+
+      function updateClock() {
+        if (!macroNextEventTargetTime) {
+          timerEl.textContent = "--:--:--";
+          return;
+        }
+        const now = Date.now();
+        const diff = macroNextEventTargetTime - now;
+        if (diff <= 0) {
+          timerEl.textContent = "HAPPENING NOW 🔴";
+          timerEl.style.color = "#ef4444";
+          return;
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (days > 0) {
+          timerEl.textContent = days + "d " + hours.toString().padStart(2, '0') + "h " + mins.toString().padStart(2, '0') + "m " + secs.toString().padStart(2, '0') + "s";
+        } else {
+          timerEl.textContent = hours.toString().padStart(2, '0') + "h " + mins.toString().padStart(2, '0') + "m " + secs.toString().padStart(2, '0') + "s";
+        }
+        timerEl.style.color = diff < (2 * 60 * 60 * 1000) ? "#ef4444" : "#facc15";
+      }
+
+      updateClock();
+      macroCountdownInterval = setInterval(updateClock, 1000);
+    }
+
+    async function renderMacroCalendar() {
+      try {
+        const params = new URLSearchParams({
+          impact: currentMacroFilters.impact,
+          currency: currentMacroFilters.currency,
+          category: currentMacroFilters.category,
+          search: currentMacroFilters.search,
+        });
+
+        const res = await fetch('/api/macro/events?' + params.toString());
+        const data = await res.json();
+        if (!data.success) return;
+
+        // 1. Update Next High Impact Event Banner
+        const nextEv = data.nextHighImpact;
+        if (nextEv) {
+          const nextTitle = document.getElementById("mc-next-event-title");
+          if (nextTitle) {
+            const flag = FLAG_MAP[nextEv.country] || '🌐';
+            nextTitle.textContent = flag + " " + nextEv.country + ": " + nextEv.title;
+          }
+          macroNextEventTargetTime = new Date(nextEv.date).getTime();
+          startMacroCountdown();
+        }
+
+        // 2. Update KPI Stats
+        const highEventsCount = data.events.filter(e => e.impact === 'High').length;
+        const statHighCount = document.getElementById("mc-stat-high-count");
+        if (statHighCount) statHighCount.textContent = highEventsCount + " Events";
+
+        // Find Next FOMC
+        const nextFomc = data.events.find(e => {
+          const t = new Date(e.date).getTime();
+          return t >= Date.now() && (e.title.includes('FOMC') || e.title.includes('Fed '));
+        });
+        const statFomcDate = document.getElementById("mc-stat-fomc-date");
+        if (statFomcDate && nextFomc) {
+          const d = new Date(nextFomc.date);
+          statFomcDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Find Next CPI
+        const nextCpi = data.events.find(e => {
+          const t = new Date(e.date).getTime();
+          return t >= Date.now() && e.title.includes('CPI');
+        });
+        const statCpiDate = document.getElementById("mc-stat-cpi-date");
+        if (statCpiDate && nextCpi) {
+          const d = new Date(nextCpi.date);
+          statCpiDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // 3. Render Events Table
+        const tbody = document.getElementById("mc-events-tbody");
+        if (!tbody) return;
+
+        if (data.events.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 32px; color: #8c93a3;">Không tìm thấy sự kiện nào khớp với bộ lọc hiện tại.</td></tr>';
+          return;
+        }
+
+        const now = Date.now();
+        let rowsHtml = '';
+
+        data.events.forEach((ev) => {
+          const evTime = new Date(ev.date).getTime();
+          const isPast = evTime < now;
+          const isHigh = ev.impact === 'High';
+          const isMed = ev.impact === 'Medium';
+          const flag = FLAG_MAP[ev.country] || '🌐';
+
+          // Format Time in UTC+7 (Vietnam)
+          const localTimeStr = new Date(ev.date).toLocaleString('vi-VN', {
+            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+          });
+
+          // Relative countdown string
+          let relativeStr = '';
+          if (isPast) {
+            relativeStr = '<span style="font-size: 10px; color: #64748b; font-weight: 600;">PAST</span>';
+          } else {
+            const diffHours = Math.round((evTime - now) / (1000 * 60 * 60));
+            if (diffHours < 24) {
+              relativeStr = '<span style="font-size: 10px; color: #facc15; font-weight: 700;">in ' + diffHours + 'h</span>';
+            } else {
+              const diffDays = Math.round(diffHours / 24);
+              relativeStr = '<span style="font-size: 10px; color: #38bdf8; font-weight: 600;">in ' + diffDays + 'd</span>';
+            }
+          }
+
+          // Impact badge
+          let impactBadgeHtml = '';
+          if (isHigh) {
+            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-high">🔥 HIGH</span>';
+          } else if (isMed) {
+            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-med">⚡ MED</span>';
+          } else {
+            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-low">LOW</span>';
+          }
+
+          // Highlight important keywords in title
+          let styledTitle = ev.title;
+          const keywords = ['FOMC', 'FED', 'Powell', 'CPI', 'PPI', 'NFP', 'Non-Farm', 'Unemployment', 'BOJ', 'ECB', 'Rate Decision'];
+          keywords.forEach(kw => {
+            const reg = new RegExp('(' + kw + ')', 'gi');
+            styledTitle = styledTitle.replace(reg, '<strong style="color: #facc15;">$1</strong>');
+          });
+
+          const rowClass = 'mc-table-row ' + (isHigh ? 'mc-row-high' : '');
+          const opacityStyle = isPast ? 'opacity: 0.65;' : '';
+
+          rowsHtml += '<tr class="' + rowClass + '" style="' + opacityStyle + '">' +
+            '<td style="padding: 10px 12px; font-family: monospace; font-size: 11px;">' +
+              '<div style="font-weight: 700; color: #fff;">' + localTimeStr + '</div>' +
+              '<div style="margin-top: 2px;">' + relativeStr + '</div>' +
+            '</td>' +
+            '<td style="padding: 10px 12px; text-align: center;">' +
+              '<div style="display: inline-flex; align-items: center; gap: 4px; background: #161c28; border: 1px solid #28324a; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px;">' +
+                '<span>' + flag + '</span><span>' + ev.country + '</span>' +
+              '</div>' +
+            '</td>' +
+            '<td style="padding: 10px 12px; text-align: center;">' +
+              impactBadgeHtml +
+            '</td>' +
+            '<td style="padding: 10px 12px;">' +
+              '<div style="font-weight: 600; color: #f1f5f9; font-size: 12px; line-height: 1.4;">' + styledTitle + '</div>' +
+              '<div style="font-size: 10px; color: #64748b; margin-top: 2px;">' + (ev.category || 'General') + '</div>' +
+            '</td>' +
+            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; font-weight: 700; color: #10b981;">' +
+              (ev.actual ? '<span style="background: rgba(16, 185, 129, 0.15); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(16, 185, 129, 0.3);">' + ev.actual + '</span>' : '<span style="color: #64748b;">--</span>') +
+            '</td>' +
+            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; color: #cbd5e1;">' +
+              (ev.forecast || '--') +
+            '</td>' +
+            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; color: #94a3b8;">' +
+              (ev.previous || '--') +
+            '</td>' +
+            '<td style="padding: 10px 12px; font-size: 11px; line-height: 1.45; color: #94a3b8;">' +
+              '<div style="display: flex; align-items: flex-start; gap: 6px;">' +
+                '<span style="color: ' + (isHigh ? '#f87171' : '#38bdf8') + '; font-size: 12px;">↳</span>' +
+                '<span style="color: ' + (isHigh ? '#e2e8f0' : '#94a3b8') + ';">' + (ev.cryptoImpact || 'Theo dõi tỷ giá USD và biến động nến 15M sau tin.') + '</span>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        });
+
+        tbody.innerHTML = rowsHtml;
+      } catch (err) {
+        console.error('Error rendering macro calendar:', err);
+      }
+    }
+
+    // Filter event listeners for Macro Calendar
+    document.querySelectorAll('#mc-filter-impact-group .ts-pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#mc-filter-impact-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMacroFilters.impact = btn.dataset.mcImpact;
+        renderMacroCalendar();
+      });
+    });
+
+    document.querySelectorAll('#mc-filter-curr-group .ts-pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#mc-filter-curr-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMacroFilters.currency = btn.dataset.mcCurr;
+        renderMacroCalendar();
+      });
+    });
+
+    document.querySelectorAll('#mc-filter-cat-group .ts-pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#mc-filter-cat-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMacroFilters.category = btn.dataset.mcCat;
+        renderMacroCalendar();
+      });
+    });
+
+    let mcSearchTimeout = null;
+    document.getElementById('mc-search-input')?.addEventListener('input', (e) => {
+      clearTimeout(mcSearchTimeout);
+      mcSearchTimeout = setTimeout(() => {
+        currentMacroFilters.search = e.target.value;
+        renderMacroCalendar();
+      }, 250);
+    });
+
+    document.getElementById('btn-mc-refresh')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-mc-refresh');
+      if (btn) btn.innerHTML = '🔄 Syncing...';
+      try {
+        await fetch('/api/macro/refresh', { method: 'POST' });
+        await renderMacroCalendar();
+      } finally {
+        if (btn) btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Refresh Feed';
+      }
+    });
 
 
     // --- Paper Trader Client Logic ---
@@ -8821,6 +9324,48 @@ const server = http.createServer(async (req, res) => {
         'Content-Disposition': 'attachment; filename="Hyperview_Full_Trading_Journal_2026.xlsx"',
       });
       return res.end(excelBuf);
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/macro/events') {
+    try {
+      const q = parsedUrl.query || {};
+      const events = macroCalendarInstance.getFilteredEvents({
+        currency: q.currency || 'ALL',
+        impact: q.impact || 'ALL',
+        category: q.category || 'ALL',
+        search: q.search || '',
+      });
+      const nextHigh = macroCalendarInstance.getNextHighImpactEvent();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        count: events.length,
+        totalAll: macroCalendarInstance.events.length,
+        lastFetched: macroCalendarInstance.lastFetched,
+        nextHighImpact: nextHigh,
+        events: events,
+      }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/macro/refresh') {
+    try {
+      await macroCalendarInstance.syncEvents(true);
+      const nextHigh = macroCalendarInstance.getNextHighImpactEvent();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        message: 'Macro Calendar synchronized successfully',
+        count: macroCalendarInstance.events.length,
+        nextHighImpact: nextHigh,
+      }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
