@@ -1163,6 +1163,46 @@ const htmlContent = `<!DOCTYPE html>
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.6; transform: scale(1.15); }
     }
+
+    /* ========================================================
+       AI INTELLIGENCE HUB (26-TA, ASTRA BACKTEST, 300-AGENTS)
+       ======================================================== */
+    .ai-hub-wrapper {
+      flex: 1; overflow-y: auto; background: #0b0d13; padding: 16px 20px;
+      display: flex; flex-direction: column; gap: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      box-sizing: border-box;
+    }
+    .ai-hub-wrapper::-webkit-scrollbar { width: 6px; }
+    .ai-hub-wrapper::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
+    .ai-hub-topbar {
+      display: flex; justify-content: space-between; align-items: center; background: #12151e;
+      border: 1px solid #1f2536; border-radius: 8px; padding: 12px 18px; flex-wrap: wrap; gap: 10px;
+    }
+    .ai-hub-grid-3col {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start;
+    }
+    .ai-hub-grid-3rows {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .ai-hub-col {
+      background: #10131c; border: 1px solid #1c2233; border-radius: 8px; padding: 14px;
+      display: flex; flex-direction: column; gap: 12px; min-width: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .ai-hub-col-head {
+      display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;
+      border-bottom: 1px solid #1e2436; margin-bottom: 2px;
+    }
+    .ai-hub-col-title {
+      font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 7px;
+    }
+    .ai-hub-btn-toggle {
+      background: #161a26; border: 1px solid #283045; color: #8c93a3; padding: 4px 10px;
+      border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    }
+    .ai-hub-btn-toggle.active {
+      background: #3b82f6; border-color: #3b82f6; color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -1179,10 +1219,8 @@ const htmlContent = `<!DOCTYPE html>
       <button class="tab-btn" data-target="view-paper" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.32); font-weight: 700;">💼 Paper Trade ($10k)</button>
       <button class="tab-btn" data-target="view-journal" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700;">📅 Daily PnL Journal</button>
       <button class="tab-btn" data-target="view-macro" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;">⚡ Macro Calendar</button>
-      <button class="tab-btn" data-target="view-validation">🛡️ Validation Bot (26 TA)</button>
-      <button class="tab-btn" data-target="view-backtest">🧪 Astra Backtest</button>
+      <button class="tab-btn" data-target="view-ai-hub" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-weight: 700;">🤖 AI Intelligence Hub</button>
       <button class="tab-btn" data-target="view-replay">⏪ Replay Engine</button>
-      <button class="tab-btn" data-target="view-hub">🤖 300-Agent Hub</button>
       <button class="tab-btn" data-target="view-alert">🔔 Telegram & Kelly</button>
     </div>
   </header>
@@ -2758,111 +2796,228 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- VIEW 2: VALIDATION BOT (26 TA) -->
-    <div class="view-panel" id="view-validation">
-      <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="val-sym-input" class="search-input" value="BINANCE:BTCUSDT">
-          <button class="btn active" id="btn-run-validation">Run 26-TA Evaluation</button>
-        </div>
-        <span id="val-status" style="font-size: 12px; color: var(--accent-green);">Ready</span>
-      </div>
-      <div class="panel-scroll" id="val-panel-body">
-        <div class="card">
-          <div class="card-title"><span>Consensus Gate Verdict</span><span id="val-verdict-badge" class="action-badge action-neutral">PENDING</span></div>
-          <div class="grid-4">
-            <div class="stat-box"><div class="stat-label">Trade Gate</div><div class="stat-value" id="val-gate">--</div></div>
-            <div class="stat-box"><div class="stat-label">Buy Votes</div><div class="stat-value val-green" id="val-buy">--</div></div>
-            <div class="stat-box"><div class="stat-label">Neutral Votes</div><div class="stat-value" id="val-neutral">--</div></div>
-            <div class="stat-box"><div class="stat-label">Sell Votes</div><div class="stat-value val-red" id="val-sell">--</div></div>
-          </div>
-          <p id="val-reason" style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);"></p>
-        </div>
+    <!-- VIEW: AI INTELLIGENCE HUB (COMBINED: 26-TA VALIDATION • ASTRA BACKTEST • 300-AGENT HUB) -->
+    <div class="view-panel" id="view-ai-hub">
+      <div class="ai-hub-wrapper">
 
-        <!-- Quantitative Edge Statistics Card (LuxAlgo edge-stats) -->
-        <div class="card" id="val-edge-stats-card" style="margin-bottom: 14px; border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(14, 18, 30, 0.65);">
-          <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="color: #38bdf8; font-weight: 800;">📐 Quantitative Edge Statistics</span>
-              <span class="ios-glass-pill" style="font-size: 9.5px; padding: 1px 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">LuxAlgo Wilson 95% CI</span>
+        <!-- Executive Topbar & Layout Switcher -->
+        <div class="ai-hub-topbar">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              🤖
             </div>
-            <span id="edge-eval-range" style="font-size: 11px; color: var(--text-secondary);">Sample History: --</span>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h1 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">AI Intelligence & Quantitative Backtest Hub</h1>
+                <span class="mc-pill-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">3-IN-1 UNIFIED</span>
+                <span class="mc-pill-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">MULTI-AGENT</span>
+              </div>
+              <div style="font-size: 10.5px; color: #8c93a3; margin-top: 2px;">
+                Hệ thống AI đa tầng: Đồng thuận 26 chỉ báo TA • Thử nghiệm chiến lược Astra • Giám sát 300 Sub-Agents song song
+              </div>
+            </div>
           </div>
 
-          <div class="grid-4" style="margin-top: 8px;">
-            <div class="stat-box">
-              <div class="stat-label">Touch Prior High (PDH)</div>
-              <div class="stat-value val-green" id="edge-pdh-rate">--</div>
-              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-pdh-ci">95% CI: --</div>
-              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-pdh-sub">Dist: --</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Touch Prior Low (PDL)</div>
-              <div class="stat-value val-red" id="edge-pdl-rate">--</div>
-              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-pdl-ci">95% CI: --</div>
-              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-pdl-sub">Dist: --</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Session Gap Fill Rate</div>
-              <div class="stat-value" style="color: #fbbf24;" id="edge-gap-rate">--</div>
-              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-gap-ci">95% CI: --</div>
-              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-gap-time">Time: --</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">ORB Trend Expansion</div>
-              <div class="stat-value" style="color: #a855f7;" id="edge-orb-rate">--</div>
-              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;" id="edge-orb-ci">95% CI: --</div>
-              <div style="font-size: 9.5px; color: #94a3b8;" id="edge-orb-false">False Break: --</div>
+          <!-- Section Filter Pills -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div class="ts-pill-group">
+              <button class="ts-pill-btn ai-hub-focus-btn active" data-ai-target="all">Toàn bộ (All 3)</button>
+              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-validation">🛡️ 1. Validation 26-TA</button>
+              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-backtest">🧪 2. Astra Backtest</button>
+              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-hub">🤖 3. 300-Agent Hub</button>
             </div>
           </div>
-          <div style="font-size: 10px; color: #64748b; margin-top: 8px; font-style: italic;" id="edge-disclaimer">
-            * Historical conditional frequencies with 95% Wilson confidence intervals. Sample size N attached to every number. Not predictions or advice.
+
+          <!-- Right Action & Layout Toggles -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 4px; background: #0c0e14; padding: 2px; border-radius: 6px; border: 1px solid #1c2233;">
+              <button class="ai-hub-btn-toggle active" id="btn-ai-layout-3col" title="Hiển thị song song 3 cột">▤ 3 Cột (Columns)</button>
+              <button class="ai-hub-btn-toggle" id="btn-ai-layout-3rows" title="Hiển thị xếp chồng 3 hàng">☰ 3 Hàng (Rows)</button>
+            </div>
+            <button class="btn active" id="btn-ai-run-all" style="background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700; padding: 5px 12px; font-size: 11px;">
+              ⚡ Run All AI Engines
+            </button>
           </div>
         </div>
 
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-title">Oscillators (11 Indicators)</div>
-            <table id="table-osc"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
-          </div>
-          <div class="card">
-            <div class="card-title">Moving Averages (15 Indicators)</div>
-            <table id="table-ma"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
-          </div>
-        </div>
-      </div>
-    </div>
+        <!-- Main 3-Column / 3-Row Unified Grid -->
+        <div id="ai-hub-main-container" class="ai-hub-grid-3col">
 
-    <!-- VIEW 3: ASTRA BACKTEST -->
-    <div class="view-panel" id="view-backtest">
-      <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="bt-sym-input" class="search-input" value="BINANCE:BTCUSDT">
-          <select id="bt-strat-select" class="btn" style="outline: none;">
-            <option value="supertrend">Supertrend (10, 3)</option>
-            <option value="emacross">EMA Cross (9 / 21)</option>
-            <option value="rsi">RSI Mean-Reversion (14)</option>
-          </select>
-          <button class="btn active" id="btn-run-backtest">Ship & Test Hypothesis</button>
-        </div>
-        <span id="bt-status" style="font-size: 12px; color: var(--text-secondary);">Ready</span>
-      </div>
-      <div class="panel-scroll">
-        <div class="card">
-          <div class="card-title">Strategy Performance Summary</div>
-          <div class="grid-4">
-            <div class="stat-box"><div class="stat-label">Net Profit</div><div class="stat-value" id="bt-profit">--</div></div>
-            <div class="stat-box"><div class="stat-label">Win Rate</div><div class="stat-value" id="bt-winrate">--</div></div>
-            <div class="stat-box"><div class="stat-label">Sharpe Ratio</div><div class="stat-value" id="bt-sharpe">--</div></div>
-            <div class="stat-box"><div class="stat-label">Max Drawdown</div><div class="stat-value" id="bt-drawdown">--</div></div>
+          <!-- ==============================================
+               MODULE 1: VALIDATION BOT (26 TA CONSENSUS GATE)
+               ============================================== -->
+          <div class="ai-hub-col" id="ai-sec-validation">
+            <div class="ai-hub-col-head">
+              <div class="ai-hub-col-title">
+                <span style="color: #38bdf8;">🛡️</span>
+                <span>1. Validation Bot (26 TA)</span>
+              </div>
+              <span id="val-status" style="font-size: 11px; color: var(--accent-green); font-weight: 600;">Ready</span>
+            </div>
+
+            <!-- Controls bar -->
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="text" id="val-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="flex: 1; padding: 4px 8px; font-size: 11px;">
+              <button class="btn active" id="btn-run-validation" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Evaluate 26 TA</button>
+            </div>
+
+            <!-- Consensus Gate Verdict Card -->
+            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">
+                <span>Consensus Gate Verdict</span>
+                <span id="val-verdict-badge" class="action-badge action-neutral">PENDING</span>
+              </div>
+              <div class="grid-4" style="gap: 6px;">
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Trade Gate</div><div class="stat-value" id="val-gate" style="font-size: 12px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Buy Votes</div><div class="stat-value val-green" id="val-buy" style="font-size: 12px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Neutral</div><div class="stat-value" id="val-neutral" style="font-size: 12px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Sell Votes</div><div class="stat-value val-red" id="val-sell" style="font-size: 12px;">--</div></div>
+              </div>
+              <p id="val-reason" style="margin-top: 8px; font-size: 11px; color: var(--text-secondary); line-height: 1.4;"></p>
+            </div>
+
+            <!-- Quantitative Edge Statistics Card (LuxAlgo edge-stats) -->
+            <div class="card" id="val-edge-stats-card" style="padding: 10px 12px; margin-bottom: 0; border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(14, 18, 30, 0.65);">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="color: #38bdf8; font-weight: 700;">📐 Edge Stats</span>
+                  <span class="ios-glass-pill" style="font-size: 8.5px; padding: 1px 5px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Wilson 95%</span>
+                </div>
+                <span id="edge-eval-range" style="font-size: 10px; color: var(--text-secondary);">History: --</span>
+              </div>
+
+              <div class="grid-4" style="gap: 6px; margin-top: 4px;">
+                <div class="stat-box" style="padding: 6px 8px;">
+                  <div class="stat-label" style="font-size: 8.5px;">Prior High (PDH)</div>
+                  <div class="stat-value val-green" id="edge-pdh-rate" style="font-size: 12px;">--</div>
+                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-pdh-ci">CI: --</div>
+                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-pdh-sub">Dist: --</div>
+                </div>
+                <div class="stat-box" style="padding: 6px 8px;">
+                  <div class="stat-label" style="font-size: 8.5px;">Prior Low (PDL)</div>
+                  <div class="stat-value val-red" id="edge-pdl-rate" style="font-size: 12px;">--</div>
+                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-pdl-ci">CI: --</div>
+                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-pdl-sub">Dist: --</div>
+                </div>
+                <div class="stat-box" style="padding: 6px 8px;">
+                  <div class="stat-label" style="font-size: 8.5px;">Gap Fill Rate</div>
+                  <div class="stat-value" style="color: #fbbf24; font-size: 12px;" id="edge-gap-rate">--</div>
+                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-gap-ci">CI: --</div>
+                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-gap-time">Time: --</div>
+                </div>
+                <div class="stat-box" style="padding: 6px 8px;">
+                  <div class="stat-label" style="font-size: 8.5px;">ORB Trend Exp</div>
+                  <div class="stat-value" style="color: #a855f7; font-size: 12px;" id="edge-orb-rate">--</div>
+                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-orb-ci">CI: --</div>
+                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-orb-false">False: --</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Oscillators & MAs Tables (collapsible/scrollable) -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="card" style="padding: 8px 10px; margin-bottom: 0;">
+                <div class="card-title" style="font-size: 11px; margin-bottom: 6px;">Oscillators (11 Indicators)</div>
+                <div style="max-height: 180px; overflow-y: auto; scrollbar-width: thin;">
+                  <table id="table-osc" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
+                </div>
+              </div>
+              <div class="card" style="padding: 8px 10px; margin-bottom: 0;">
+                <div class="card-title" style="font-size: 11px; margin-bottom: 6px;">Moving Averages (15 Indicators)</div>
+                <div style="max-height: 180px; overflow-y: auto; scrollbar-width: thin;">
+                  <table id="table-ma" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Recent Simulated Trades</div>
-          <table id="table-trades">
-            <thead><tr><th>Type</th><th>Entry Price</th><th>Exit Price</th><th>PnL %</th><th>PnL $</th><th>Capital After</th></tr></thead>
-            <tbody></tbody>
-          </table>
+
+          <!-- ==============================================
+               MODULE 2: ASTRA WALKFORWARD BACKTEST ENGINE
+               ============================================== -->
+          <div class="ai-hub-col" id="ai-sec-backtest">
+            <div class="ai-hub-col-head">
+              <div class="ai-hub-col-title">
+                <span style="color: #a855f7;">🧪</span>
+                <span>2. Astra Backtest Engine</span>
+              </div>
+              <span id="bt-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Ready</span>
+            </div>
+
+            <!-- Controls bar -->
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="bt-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 120px; padding: 4px 8px; font-size: 11px;">
+              <select id="bt-strat-select" class="btn" style="outline: none; padding: 4px 6px; font-size: 10.5px; flex: 1;">
+                <option value="supertrend">Supertrend (10, 3)</option>
+                <option value="emacross">EMA Cross (9 / 21)</option>
+                <option value="rsi">RSI Mean-Reversion (14)</option>
+              </select>
+              <button class="btn active" id="btn-run-backtest" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Test Hypothesis</button>
+            </div>
+
+            <!-- Performance Summary Card -->
+            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">Strategy Performance Summary</div>
+              <div class="grid-4" style="gap: 6px;">
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Net Profit</div><div class="stat-value" id="bt-profit" style="font-size: 13px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Win Rate</div><div class="stat-value" id="bt-winrate" style="font-size: 13px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Sharpe</div><div class="stat-value" id="bt-sharpe" style="font-size: 13px;">--</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Max DD</div><div class="stat-value" id="bt-drawdown" style="font-size: 13px;">--</div></div>
+              </div>
+            </div>
+
+            <!-- Recent Simulated Trades Table -->
+            <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Recent Simulated Trades</div>
+              <div style="flex: 1; max-height: 420px; overflow-y: auto; scrollbar-width: thin;">
+                <table id="table-trades" style="width: 100%; font-size: 11px;">
+                  <thead><tr><th>Type</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>PnL $</th><th>Capital</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==============================================
+               MODULE 3: 300-AGENT MULTI-TOKEN CLUSTER
+               ============================================== -->
+          <div class="ai-hub-col" id="ai-sec-hub">
+            <div class="ai-hub-col-head">
+              <div class="ai-hub-col-title">
+                <span style="color: #10b981;">🤖</span>
+                <span>3. 300-Agent Multi-Token Hub</span>
+              </div>
+              <span id="hub-status-text" style="font-size: 11px; color: var(--accent-green); font-weight: 600;">Hub Online</span>
+            </div>
+
+            <!-- Controls bar -->
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button class="btn active" id="btn-hub-simulate" style="padding: 4px 10px; font-size: 11px; flex: 1;">Simulate 300 Agents Feed</button>
+              <button class="btn" id="btn-hub-refresh" style="padding: 4px 10px; font-size: 11px;">Refresh Hub</button>
+            </div>
+
+            <!-- Multiplexer Overview Card -->
+            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">Multiplexer Connection Pool (10x Signal Coverage)</div>
+              <div class="grid-4" style="gap: 6px;">
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Active Agents</div><div class="stat-value" id="hub-agents-count" style="font-size: 13px;">0</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Symbols</div><div class="stat-value" id="hub-symbols-count" style="font-size: 13px;">0</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Feed Points</div><div class="stat-value" id="hub-cached-count" style="font-size: 13px;">0</div></div>
+                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Cost</div><div class="stat-value val-green" style="font-size: 13px;">$0 (Free)</div></div>
+              </div>
+            </div>
+
+            <!-- Sub-Agent Live Feeds Table -->
+            <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
+              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Sub-Agent Live Market Feeds</div>
+              <div style="flex: 1; max-height: 420px; overflow-y: auto; scrollbar-width: thin;">
+                <table id="table-hub-feeds" style="width: 100%; font-size: 11px;">
+                  <thead><tr><th>Symbol</th><th>Price</th><th>24h %</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -2951,35 +3106,6 @@ const htmlContent = `<!DOCTYPE html>
               <span id="rep-bar-time" style="color: #cbd5e1; font-size: 10px;">--</span>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW 5: 300-AGENT HUB -->
-    <div class="view-panel" id="view-hub">
-      <div class="controls-bar">
-        <div style="display: flex; gap: 8px;">
-          <button class="btn active" id="btn-hub-simulate">Simulate 300 Agents Feed</button>
-          <button class="btn" id="btn-hub-refresh">Refresh Hub Status</button>
-        </div>
-        <span id="hub-status-text" style="font-size: 12px; color: var(--accent-green);">Hub Online</span>
-      </div>
-      <div class="panel-scroll">
-        <div class="card">
-          <div class="card-title">Multiplexer Connection Pool (10x Signal Coverage)</div>
-          <div class="grid-4">
-            <div class="stat-box"><div class="stat-label">Active Monitoring Agents</div><div class="stat-value" id="hub-agents-count">0</div></div>
-            <div class="stat-box"><div class="stat-label">Tracked Symbols</div><div class="stat-value" id="hub-symbols-count">0</div></div>
-            <div class="stat-box"><div class="stat-label">Cached Feed Points</div><div class="stat-value" id="hub-cached-count">0</div></div>
-            <div class="stat-box"><div class="stat-label">Cost to Run</div><div class="stat-value val-green">$0.00 (Pooled)</div></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Sub-Agent Live Market Feeds</div>
-          <table id="table-hub-feeds">
-            <thead><tr><th>Symbol</th><th>Price</th><th>24h Change</th><th>RSI</th><th>MACD</th><th>Recommendation</th></tr></thead>
-            <tbody></tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -7481,6 +7607,52 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById('hub-status-text').textContent = 'Hub Online - 300 Agents Streaming';
     }
     document.getElementById('btn-hub-refresh').addEventListener('click', refreshHub);
+
+    // --- AI Intelligence Hub Layout & Focus Controls ---
+    document.getElementById('btn-ai-layout-3col')?.addEventListener('click', () => {
+      document.getElementById('btn-ai-layout-3col')?.classList.add('active');
+      document.getElementById('btn-ai-layout-3rows')?.classList.remove('active');
+      const c = document.getElementById('ai-hub-main-container');
+      if (c) c.className = 'ai-hub-grid-3col';
+    });
+
+    document.getElementById('btn-ai-layout-3rows')?.addEventListener('click', () => {
+      document.getElementById('btn-ai-layout-3rows')?.classList.add('active');
+      document.getElementById('btn-ai-layout-3col')?.classList.remove('active');
+      const c = document.getElementById('ai-hub-main-container');
+      if (c) c.className = 'ai-hub-grid-3rows';
+    });
+
+    document.querySelectorAll('.ai-hub-focus-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ai-hub-focus-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const targetSec = btn.dataset.aiTarget;
+        const col1 = document.getElementById('ai-sec-validation');
+        const col2 = document.getElementById('ai-sec-backtest');
+        const col3 = document.getElementById('ai-sec-hub');
+        const c = document.getElementById('ai-hub-main-container');
+        if (targetSec === 'all') {
+          if (col1) col1.style.display = 'flex';
+          if (col2) col2.style.display = 'flex';
+          if (col3) col3.style.display = 'flex';
+          if (c && !document.getElementById('btn-ai-layout-3rows')?.classList.contains('active')) {
+            c.className = 'ai-hub-grid-3col';
+          }
+        } else {
+          if (col1) col1.style.display = targetSec === 'ai-sec-validation' ? 'flex' : 'none';
+          if (col2) col2.style.display = targetSec === 'ai-sec-backtest' ? 'flex' : 'none';
+          if (col3) col3.style.display = targetSec === 'ai-sec-hub' ? 'flex' : 'none';
+          if (c) c.className = 'ai-hub-grid-3rows';
+        }
+      });
+    });
+
+    document.getElementById('btn-ai-run-all')?.addEventListener('click', () => {
+      document.getElementById('btn-run-validation')?.click();
+      document.getElementById('btn-run-backtest')?.click();
+      document.getElementById('btn-hub-simulate')?.click();
+    });
 
     // --- Tradesync Journaling Dashboard Client Logic ---
     const MARCH_2026_DEMO_DAYS = {
