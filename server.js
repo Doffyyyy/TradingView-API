@@ -1181,7 +1181,7 @@ const htmlContent = `<!DOCTYPE html>
       border: 1px solid #1f2536; border-radius: 8px; padding: 12px 18px; flex-wrap: wrap; gap: 10px;
     }
     .ai-hub-grid-3col {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: stretch;
     }
     .ai-hub-grid-3rows {
       display: flex; flex-direction: column; gap: 16px;
@@ -2836,19 +2836,18 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Right Action & Layout Toggles -->
+          <!-- Right Action: Clean 3-Column Standard Badge & Run All -->
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 4px; background: #0c0e14; padding: 2px; border-radius: 6px; border: 1px solid #1c2233;">
-              <button class="ai-hub-btn-toggle active" id="btn-ai-layout-3col" title="Hiển thị song song 3 cột">▤ 3 Cột (Columns)</button>
-              <button class="ai-hub-btn-toggle" id="btn-ai-layout-3rows" title="Hiển thị xếp chồng 3 hàng">☰ 3 Hàng (Rows)</button>
-            </div>
+            <span class="mc-pill-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-size: 10px; padding: 4px 10px; font-weight: 700;">
+              ▤ CHẾ ĐỘ 3 CỘT (COLUMNS)
+            </span>
             <button class="btn active" id="btn-ai-run-all" style="background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700; padding: 5px 12px; font-size: 11px;">
               ⚡ Run All AI Engines
             </button>
           </div>
         </div>
 
-        <!-- Main 3-Column / 3-Row Unified Grid -->
+        <!-- Main 3-Column Unified Grid -->
         <div id="ai-hub-main-container" class="ai-hub-grid-3col">
 
           <!-- ==============================================
@@ -2922,17 +2921,23 @@ const htmlContent = `<!DOCTYPE html>
               </div>
             </div>
 
-            <!-- Oscillators & MAs Tables (collapsible/scrollable) -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="card" style="padding: 8px 10px; margin-bottom: 0;">
-                <div class="card-title" style="font-size: 11px; margin-bottom: 6px;">Oscillators (11 Indicators)</div>
-                <div style="max-height: 180px; overflow-y: auto; scrollbar-width: thin;">
+            <!-- Oscillators & MAs Tables (expanded downwards to fit all 26 indicators without inner scrolling) -->
+            <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+              <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
+                <div class="card-title" style="font-size: 11px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: #e2e8f0;">Oscillators (11 Indicators)</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Động lượng & Đảo chiều</span>
+                </div>
+                <div style="max-height: 410px; overflow-y: auto; scrollbar-width: thin;">
                   <table id="table-osc" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
                 </div>
               </div>
-              <div class="card" style="padding: 8px 10px; margin-bottom: 0;">
-                <div class="card-title" style="font-size: 11px; margin-bottom: 6px;">Moving Averages (15 Indicators)</div>
-                <div style="max-height: 180px; overflow-y: auto; scrollbar-width: thin;">
+              <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
+                <div class="card-title" style="font-size: 11px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: #e2e8f0;">Moving Averages (15 Indicators)</span>
+                  <span style="font-size: 9.5px; color: #94a3b8;">Đường trung bình động</span>
+                </div>
+                <div style="max-height: 550px; overflow-y: auto; scrollbar-width: thin;">
                   <table id="table-ma" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
                 </div>
               </div>
@@ -2976,7 +2981,7 @@ const htmlContent = `<!DOCTYPE html>
             <!-- Recent Simulated Trades Table -->
             <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
               <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Recent Simulated Trades</div>
-              <div style="flex: 1; max-height: 420px; overflow-y: auto; scrollbar-width: thin;">
+              <div style="flex: 1; max-height: 650px; overflow-y: auto; scrollbar-width: thin;">
                 <table id="table-trades" style="width: 100%; font-size: 11px;">
                   <thead><tr><th>Type</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>PnL $</th><th>Capital</th></tr></thead>
                   <tbody></tbody>
@@ -3017,7 +3022,7 @@ const htmlContent = `<!DOCTYPE html>
             <!-- Sub-Agent Live Feeds Table -->
             <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
               <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Sub-Agent Live Market Feeds</div>
-              <div style="flex: 1; max-height: 420px; overflow-y: auto; scrollbar-width: thin;">
+              <div style="flex: 1; max-height: 650px; overflow-y: auto; scrollbar-width: thin;">
                 <table id="table-hub-feeds" style="width: 100%; font-size: 11px;">
                   <thead><tr><th>Symbol</th><th>Price</th><th>24h %</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
                   <tbody></tbody>
@@ -3195,6 +3200,9 @@ const htmlContent = `<!DOCTYPE html>
         }
         if (btn.dataset.target === 'view-macro' && typeof renderMacroCalendar === 'function') {
           renderMacroCalendar();
+        }
+        if (btn.dataset.target === 'view-ai-hub' && typeof refreshHub === 'function') {
+          refreshHub();
         }
         if (btn.dataset.target === 'view-replay') {
           if (window.replayStudioInstance) {
@@ -7581,15 +7589,17 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById('btn-hub-simulate').addEventListener('click', async () => {
       document.getElementById('hub-status-text').textContent = 'Registering 300 agents across crypto universe...';
       const symbols = ['BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:SOLUSDT', 'BYBIT:HYPEUSDT', 'BINANCE:DOGEUSDT', 'BINANCE:XRPUSDT', 'BINANCE:BNBUSDT', 'BINANCE:ADAUSDT', 'BINANCE:AVAXUSDT', 'BINANCE:LINKUSDT'];
+      const batchPromises = [];
       for (let i = 1; i <= 300; i++) {
         const sym = symbols[i % symbols.length];
-        await fetch('/api/hub/register', {
+        batchPromises.push(fetch('/api/hub/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agentId: 'sub-agent-' + i, symbols: [sym] })
-        });
+        }));
       }
-      setTimeout(refreshHub, 1000);
+      await Promise.all(batchPromises);
+      await refreshHub();
     });
 
     async function refreshHub() {
@@ -7599,7 +7609,7 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById('hub-symbols-count').textContent = data.trackedSymbols;
       document.getElementById('hub-cached-count').textContent = data.cachedSymbols;
 
-      const pullRes = await fetch('/api/hub/pull?agentId=sub-agent-1');
+      const pullRes = await fetch('/api/hub/pull?agentId=all');
       const pullData = await pullRes.json();
       const hubBody = document.querySelector('#table-hub-feeds tbody');
       hubBody.innerHTML = pullData.map(p => \`
@@ -9484,8 +9494,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/hub/pull') {
-    const agentId = parsedUrl.query.agentId || 'agent-default';
-    const data = hubInstance.getAgentData(agentId);
+    const agentId = parsedUrl.query.agentId;
+    let data;
+    if (!agentId || agentId === 'all') {
+      data = hubInstance.getAllFeeds();
+    } else {
+      data = hubInstance.getAgentData(agentId);
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(data));
   }

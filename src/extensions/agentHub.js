@@ -68,6 +68,25 @@ class AgentMonitoringHub extends EventEmitter {
     return results;
   }
 
+  getAllFeeds() {
+    const symbols = Array.from(this.symbolSubscriptions.keys());
+    if (symbols.length === 0) {
+      return Array.from(this.symbolCache.values());
+    }
+    return symbols.map(sym => {
+      const cached = this.symbolCache.get(sym);
+      if (cached) return cached;
+      return {
+        symbol: sym,
+        price: '--',
+        changePercent: 0,
+        rsi: '--',
+        macd: '--',
+        signal: 'WARMING_UP'
+      };
+    });
+  }
+
   async scanAllTrackedSymbols() {
     const symbols = Array.from(this.symbolSubscriptions.keys());
     if (symbols.length === 0) return;
@@ -133,6 +152,16 @@ class AgentMonitoringHub extends EventEmitter {
 }
 
 const hubInstance = new AgentMonitoringHub();
+
+// Pre-seed default multi-token cluster (10 top crypto symbols)
+const DEFAULT_HUB_SYMBOLS = [
+  'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:SOLUSDT', 'BYBIT:HYPEUSDT',
+  'BINANCE:DOGEUSDT', 'BINANCE:XRPUSDT', 'BINANCE:BNBUSDT', 'BINANCE:ADAUSDT',
+  'BINANCE:AVAXUSDT', 'BINANCE:LINKUSDT'
+];
+DEFAULT_HUB_SYMBOLS.forEach((sym, idx) => {
+  hubInstance.registerAgent(`agent-${idx + 1}`, [sym]);
+});
 
 module.exports = {
   hubInstance,
