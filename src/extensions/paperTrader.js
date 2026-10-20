@@ -214,45 +214,62 @@ class PaperTradingEngine {
         }
       }
 
-      // Oliver Kell Hybrid Exit Architecture:
-      // Stage 1: At +2.2R, take profit on 50% position and lock runner SL to Breakeven
+      // Oliver Kell Two-Stage Exit Architecture (50% TP at +2.2R, Runner Climax Extension at +5R)
+      let shouldClose = false;
+      let reason = '';
+
+      const stopDist = Math.max(pos.entryPrice * 0.008, Math.abs(pos.entryPrice - pos.stopLoss));
+
       if (pos.side === 'LONG') {
-        const stopDist = Math.max(pos.entryPrice * 0.008, pos.entryPrice - pos.stopLoss);
+        // Stage 1 Take Profit (+2.2R): Realize 50% profit and lock runner to Breakeven (+0.2% fee buffer)
         const stage1Price = pos.entryPrice + stopDist * 2.2;
         if (!pos.stage1Taken && curr >= stage1Price) {
           pos.stage1Taken = true;
           this.log(`🏆 Oliver Kell Stage 1 TP hit (+2.2R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to Breakeven.`);
-          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) Locked', 0.5);
+          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) + Runner', 0.5);
           pos.stopLoss = roundPriceForCoin(pos.entryPrice * 1.002);
           continue;
         }
 
-        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R)
+        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R ~ +5R)
         const climaxPrice = pos.entryPrice + stopDist * 4.5;
         if (pos.stage1Taken && curr >= climaxPrice) {
           shouldClose = true;
-          reason = `Oliver Kell: Climax Extension Exit (+4.5R) hit at $${formatTokenPrice(curr)}`;
-        }
-      }
-
-      let shouldClose = false;
-      let reason = '';
-
-      if (pos.side === 'LONG') {
-        if (curr >= pos.takeProfit && pos.takeProfit > 0) {
-          shouldClose = true;
-          reason = `Take Profit hit at $${formatTokenPrice(curr)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Oliver Kell: Climax Extension (+5R~8R) hit at $${formatTokenPrice(curr)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
         } else if (curr <= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
-          reason = `Stop Loss / Trailing Stop hit at $${formatTokenPrice(curr)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = pos.stage1Taken
+            ? `Oliver Kell: Runner Breakeven Exit at $${formatTokenPrice(curr)}`
+            : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+        } else if (curr >= pos.takeProfit && pos.takeProfit > 0) {
+          shouldClose = true;
+          reason = `Oliver Kell: Target Reached at $${formatTokenPrice(curr)}`;
         }
       } else {
-        if (curr <= pos.takeProfit && pos.takeProfit > 0) {
+        // SHORT SIDE
+        // Stage 1 Take Profit (-2.2R): Realize 50% profit and lock runner to Breakeven (-0.2% fee buffer)
+        const stage1Price = pos.entryPrice - stopDist * 2.2;
+        if (!pos.stage1Taken && curr <= stage1Price) {
+          pos.stage1Taken = true;
+          this.log(`🏆 Oliver Kell Stage 1 TP hit (-2.2R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to Breakeven.`);
+          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) + Runner', 0.5);
+          pos.stopLoss = roundPriceForCoin(pos.entryPrice * 0.998);
+          continue;
+        }
+
+        // Stage 2 (Runner): Climax Exhaustion Exit (-4.5R ~ -5R)
+        const climaxPrice = pos.entryPrice - stopDist * 4.5;
+        if (pos.stage1Taken && curr <= climaxPrice) {
           shouldClose = true;
-          reason = `Take Profit hit at $${formatTokenPrice(curr)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Oliver Kell: Climax Extension (+5R~8R) hit at $${formatTokenPrice(curr)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
         } else if (curr >= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
-          reason = `Stop Loss / Trailing Stop hit at $${formatTokenPrice(curr)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = pos.stage1Taken
+            ? `Oliver Kell: Runner Breakeven Exit at $${formatTokenPrice(curr)}`
+            : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+        } else if (curr <= pos.takeProfit && pos.takeProfit > 0) {
+          shouldClose = true;
+          reason = `Oliver Kell: Target Reached at $${formatTokenPrice(curr)}`;
         }
       }
 
@@ -262,7 +279,7 @@ class PaperTradingEngine {
         if (holdingHours >= 12.0) {
           shouldClose = true;
           const pnlPct = pos.side === 'LONG' ? ((curr - pos.entryPrice) / pos.entryPrice) * 100 : ((pos.entryPrice - curr) / pos.entryPrice) * 100;
-          reason = `Strategy V2 Time Exit: 12h max holding limit reached (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+          reason = `Oliver Kell Time Exit: 12h max holding limit reached (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
         }
       }
 
@@ -365,7 +382,7 @@ class PaperTradingEngine {
     } catch (e) {}
   }
 
-  async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null) {
+  async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null, customSl = null) {
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
       return null;
     }
@@ -390,12 +407,16 @@ class PaperTradingEngine {
 
     const lev = Math.min(2, Math.max(1, parseInt(leverage, 10) || 1));
 
-    // Strategy V2 Stop Loss & Target Calculation (Fixed R:R 2.2:1)
+    // Oliver Kell / Strategy V2 Stop Loss & Target Calculation (Fixed R:R 2.2:1 Stage 1)
     let stopLoss = 0;
     let takeProfit = 0;
     const baseStopPct = 0.012; // 1.2% base
 
-    if (side === 'LONG') {
+    if (customSl && customSl > 0) {
+      stopLoss = roundPriceForCoin(customSl);
+      const stopDistance = Math.max(currPrice * 0.008, Math.abs(currPrice - stopLoss));
+      takeProfit = side === 'LONG' ? roundPriceForCoin(currPrice + stopDistance * 2.2) : roundPriceForCoin(currPrice - stopDistance * 2.2);
+    } else if (side === 'LONG') {
       let initialSl = currPrice * (1 - baseStopPct);
       if (rlmData?.signal?.type === 'LONG' && rlmData.signal.sl > 0 && rlmData.signal.sl < currPrice) {
         const rlmRiskPct = (currPrice - rlmData.signal.sl) / currPrice;
@@ -640,160 +661,86 @@ class PaperTradingEngine {
         const ema30 = ltf.ema30Band || null; // EMA30 Band Breakout [EL COBER Enhanced]
 
         // =========================================================================
-        // HTF DIRECTION 1: LONG SETUP
+        // PURE OLIVER KELL ENGINE: DIRECTION 1 - BULL PRICE CYCLE (LONG)
         // Requirements:
         //  1. Portfolio is NOT holding any SHORT positions (Direction Consistency)
-        //  2. Macro Market is NOT in BEAR_REGIME
-        //  3. Symbol 1H Trend is BULL (Price > EMA50_1H)
-        //  4. No heavy 1H Resistance ceiling right above (< 1.5%)
-        //  5. 15M Entry is a PULLBACK / RETEST (RSI 36-56), never buy an overbought pump
-        //  6. Orderflow clean: buyFlow >= 0.48, no bearish absorption top
-        //  7. LuxAlgo Smart Trail Filter: Must be in BULL trail or not deep in Overbought Reversal Zone
+        //  2. Macro Market is NOT in BEAR_REGIME (BTC 1H > EMA50 or EMA200)
+        //  3. 1H Trend Alignment: EMA10 > EMA20 > EMA50, or Price > EMA50 > EMA200
+        //  4. Stage 3 EMA Crossback: Price pulls back to test 10 or 20 EMA
+        //  5. Orderflow clean: buyFlow >= 0.46, no bearish absorption top
+        //  6. Two-Stage Exit: 50% TP at +2.2R, Runner hunts for Climax Extension (+5R~8R)
         // =========================================================================
         const canLong = !hasActiveShort &&
                         btcRegime !== 'BEAR_REGIME' &&
-                        htf.bias === 'BULL' &&
-                        (!htf.nearestRes || htf.nearestRes.distancePct >= 1.5) &&
-                        (!lux || lux.trailDirection !== 'BEAR') &&
-                        (!lux || lux.inReversalZone !== 'OVERBOUGHT');
+                        htf.bias === 'BULL';
 
-        if (canLong && buyFlow >= 0.48 && !hasBearishAbsorptionTop && rsi <= 56) {
-          let triggerType = null;
-          let strategyName = '';
-          let lev = 1;
-
-          // Strategy V2 Entry Quality Scoring (Section 10)
-          let v2Score = 0;
-          if (htf.bias === 'BULL') v2Score += 2;
-          if (btcRegime === 'BULL_REGIME') v2Score += 2;
-          else if (btcRegime !== 'BEAR_REGIME') v2Score += 1;
-          if (rsi >= 34 && rsi <= 50) v2Score += 1;
-          if (buyFlow >= 0.50) v2Score += 1;
-          if (buyVotes >= 14) v2Score += 1;
-          if (lux?.trailDirection === 'BULL') v2Score += 1;
-          if (ema30?.currentZone === 'ABOVE_BAND') v2Score += 1;
-          if (!hasBearishAbsorptionTop && !isChoppy) v2Score += 1;
-
-          // Trigger 0 (Champion Priority): Strategy V2 Oliver Kell Price Cycle (EMA Crossback Setup)
+        if (canLong && buyFlow >= 0.46 && !hasBearishAbsorptionTop) {
           const e10 = htf.ema10 || htf.curPrice;
           const e20 = htf.ema20 || htf.ema50;
           const e50 = htf.ema50;
           const e200 = htf.ema200;
+
+          // Oliver Kell Bullish Trend Alignment
           const isKellTrend = (e10 > e20 && e20 > e50) || (htf.curPrice > e50 && e50 > e200);
-          const isKellCrossback = (currentPrice <= e20 * 1.006 && currentPrice >= e50 * 0.992);
 
-          if (isKellTrend && isKellCrossback && v2Score >= 6) {
-            triggerType = 'OLIVER_KELL_PRICE_CYCLE';
-            strategyName = 'Strategy V2: Oliver Kell Price Cycle (EMA Crossback)';
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger 1 (Primary): Strategy V2 Trend Pullback Setup (Score 7+)
-          else if (v2Score >= 7) {
-            triggerType = 'STRATEGY_V2_PULLBACK';
-            strategyName = `Strategy V2 Trend Pullback (Score ${v2Score}/10)`;
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger A: LuxAlgo Smart Trail Bull Flip / Confirmation Buy Signal
-          else if (lux?.lastSignal?.type === 'BUY' && lux?.trailDirection === 'BULL') {
-            triggerType = 'LUXALGO_CONFIRMATION';
-            strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Buy (+) Smart Trail' : 'LuxAlgo Confirmation Buy';
-            lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
-          }
-          // Trigger B: EMA30 Band Breakout [EL COBER Enhanced] with Volume Confirmation
-          else if (ema30?.lastSignal?.type === 'LONG' && ema30?.lastSignal?.isVolumeConfirmed) {
-            triggerType = 'EMA30_BAND_BREAKOUT';
-            strategyName = 'EMA30 Band Breakout [EL COBER]';
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger C: 15M RLM Key Level Rejection Sniper at Support (Score >= 50)
-          else if (rlmSignal && rlmSignal.type === 'LONG' && rlmSignal.levelScore >= 50) {
-            triggerType = 'RLM_REJECTION';
-            strategyName = 'HTF Bull + RLM Sniper Long';
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger D: 15M Pullback Retest with Supertrend + MACD Confluence + 26-TA >= 14
-          else if (ltf.supertrend === 'BUY' && ltf.macdTrend === 'BULLISH' && buyVotes >= 14 && sellVotes <= 6 && !isChoppy && rsi >= 36) {
-            triggerType = 'PULLBACK_MOMENTUM';
-            strategyName = 'HTF Trend + 15M Pullback Long';
-            if (isDefensive) {
-              lev = 1;
-            } else if (isTargetHit) {
-              lev = buyVotes >= 16 ? 2 : 1;
-            } else {
-              lev = (buyVotes >= 17 && buyFlow >= 0.58 && ovlScore <= 0.55) ? 3 : (buyVotes >= 15 && buyFlow >= 0.52 ? 2 : 1);
-            }
-          }
+          // Oliver Kell EMA Crossback Pullback: Price pulls back to 10 or 20 EMA
+          const isKellCrossback = (currentPrice <= e10 * 1.004 || currentPrice <= e20 * 1.008) && currentPrice >= e50 * 0.990;
+          const isRsiPullback = (rsi >= 32 && rsi <= 55);
 
-          if (triggerType) {
+          if (isKellTrend && (isKellCrossback || isRsiPullback)) {
+            const strategyName = 'Oliver Kell: EMA Crossback Setup';
+            const lev = isDefensive ? 1 : 2;
+            const atrVal = htf.atr || (currentPrice * 0.015);
+            const slDistance = Math.min(currentPrice * 0.025, Math.max(currentPrice * 0.010, atrVal * 1.1));
+            const calculatedSl = roundPriceForCoin(currentPrice - slDistance);
+
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${ltf.galton.pocPrice}]` : '';
-            const luxStr = lux ? ` [LuxTrail: ${lux.trailDirection}]` : '';
-            const reason = `${strategyName} [${lev}x]: 1H Macro BULL (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Pullback RSI ${rsi}, 26-TA Buy (${buyVotes}/26)${flowStr}${luxStr} (V2Score: ${v2Score}/10).`;
-            this.log(`🚀 HTF-Aligned Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
-            await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm);
+            const reason = `Oliver Kell Price Cycle [${lev}x]: 1H Macro BULL (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Crossback Retest RSI ${rsi}${flowStr}. Targeting Stage 1 (+2.2R) and Climax Extension (+5R~8R).`;
+            this.log(`🚀 [Pure Oliver Kell Engine] Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
+            await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm, calculatedSl);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;
           }
         }
 
         // =========================================================================
-        // HTF DIRECTION 2: SHORT SETUP
+        // PURE OLIVER KELL ENGINE: DIRECTION 2 - BEAR PRICE CYCLE (SHORT)
         // Requirements:
         //  1. Portfolio is NOT holding any LONG positions (Direction Consistency)
-        //  2. Macro Market is NOT in BULL_REGIME
-        //  3. Symbol 1H Trend is BEAR (Price < EMA50_1H)
-        //  4. No heavy 1H Support floor right below (< 1.5%)
-        //  5. 15M Entry is a RETRACEMENT BOUNCE (RSI 44-64), never short an oversold dump
-        //  6. Orderflow clean: sellFlow >= 0.48, no bullish absorption bottom
-        //  7. LuxAlgo Smart Trail Filter: Must be in BEAR trail or not deep in Oversold Reversal Zone
+        //  2. Macro Market is NOT in BULL_REGIME (BTC 1H < EMA50 or EMA200)
+        //  3. 1H Trend Alignment: EMA10 < EMA20 < EMA50, or Price < EMA50 < EMA200
+        //  4. Stage 3 EMA Crossback: Price bounces back to test 10 or 20 EMA from below
+        //  5. Orderflow clean: sellFlow >= 0.46, no bullish absorption bottom
+        //  6. Two-Stage Exit: 50% TP at -2.2R, Runner hunts for Climax Extension (-5R~8R)
         // =========================================================================
         const canShort = !hasActiveLong &&
                          btcRegime !== 'BULL_REGIME' &&
-                         htf.bias === 'BEAR' &&
-                         (!htf.nearestSup || htf.nearestSup.distancePct >= 1.5) &&
-                         (!lux || lux.trailDirection !== 'BULL') &&
-                         (!lux || lux.inReversalZone !== 'OVERSOLD');
+                         htf.bias === 'BEAR';
 
-        if (canShort && sellFlow >= 0.48 && !hasBullishAbsorptionBottom && rsi >= 44) {
-          let triggerType = null;
-          let strategyName = '';
-          let lev = 1;
+        if (canShort && sellFlow >= 0.46 && !hasBullishAbsorptionBottom) {
+          const e10 = htf.ema10 || htf.curPrice;
+          const e20 = htf.ema20 || htf.ema50;
+          const e50 = htf.ema50;
+          const e200 = htf.ema200;
 
-          // Trigger A: LuxAlgo Smart Trail Bear Flip / Confirmation Sell Signal
-          if (lux?.lastSignal?.type === 'SELL' && lux?.trailDirection === 'BEAR') {
-            triggerType = 'LUXALGO_CONFIRMATION';
-            strategyName = lux.lastSignal.isStrong ? 'LuxAlgo Strong Sell (+) Smart Trail' : 'LuxAlgo Confirmation Sell';
-            lev = isDefensive ? 1 : (lux.lastSignal.isStrong ? 2 : 1);
-          }
-          // Trigger B: EMA30 Band Breakdown [EL COBER Enhanced] with Volume Confirmation
-          else if (ema30?.lastSignal?.type === 'SHORT' && ema30?.lastSignal?.isVolumeConfirmed) {
-            triggerType = 'EMA30_BAND_BREAKDOWN';
-            strategyName = 'EMA30 Band Breakdown [EL COBER]';
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger C: 15M RLM Key Level Rejection Sniper at Resistance (Score >= 50)
-          else if (rlmSignal && rlmSignal.type === 'SHORT' && rlmSignal.levelScore >= 50) {
-            triggerType = 'RLM_REJECTION';
-            strategyName = 'HTF Bear + RLM Sniper Short';
-            lev = isDefensive ? 1 : 2;
-          }
-          // Trigger D: 15M Retracement with Supertrend + MACD Breakdown + 26-TA Sell >= 14
-          else if (ltf.supertrend === 'SELL' && ltf.macdTrend === 'BEARISH' && sellVotes >= 14 && buyVotes <= 6 && !isChoppy && rsi <= 64) {
-            triggerType = 'RETRACEMENT_BREAKDOWN';
-            strategyName = 'HTF Trend + 15M Retrace Short';
-            if (isDefensive) {
-              lev = 1;
-            } else if (isTargetHit) {
-              lev = sellVotes >= 16 ? 2 : 1;
-            } else {
-              lev = (sellVotes >= 17 && sellFlow >= 0.58 && ovlScore <= 0.55) ? 3 : (sellVotes >= 15 && sellFlow >= 0.52 ? 2 : 1);
-            }
-          }
+          // Oliver Kell Bearish Trend Alignment
+          const isKellBearTrend = (e10 < e20 && e20 < e50) || (htf.curPrice < e50 && e50 < e200);
 
-          if (triggerType) {
+          // Oliver Kell Bear EMA Crossback: Price bounces up to test 10 or 20 EMA
+          const isKellBearCrossback = (currentPrice >= e10 * 0.996 || currentPrice >= e20 * 0.992) && currentPrice <= e50 * 1.010;
+          const isRsiBounce = (rsi >= 45 && rsi <= 68);
+
+          if (isKellBearTrend && (isKellBearCrossback || isRsiBounce)) {
+            const strategyName = 'Oliver Kell: EMA Crossback Setup';
+            const lev = isDefensive ? 1 : 2;
+            const atrVal = htf.atr || (currentPrice * 0.015);
+            const slDistance = Math.min(currentPrice * 0.025, Math.max(currentPrice * 0.010, atrVal * 1.1));
+            const calculatedSl = roundPriceForCoin(currentPrice + slDistance);
+
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(sellFlow * 100)}% Sell, POC: $${ltf.galton.pocPrice}]` : '';
-            const reason = `${strategyName} [${lev}x]: 1H Macro BEAR (EMA50: $${formatTokenPrice(htf.ema50)}), 15M Retrace RSI ${rsi}, 26-TA Sell (${sellVotes}/26)${flowStr}.`;
-            this.log(`🚀 HTF-Aligned Entry: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
-            await this.openPosition(sym, 'SHORT', strategyName, reason, lev, ltf.galton, ltf.rlm);
+            const reason = `Oliver Kell Inverted Bear Cycle [${lev}x]: 1H Macro BEAR (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Bounce RSI ${rsi}${flowStr}. Targeting Stage 1 (-2.2R) and Climax Extension (-5R~8R).`;
+            this.log(`🚀 [Pure Oliver Kell Engine] Entry: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
+            await this.openPosition(sym, 'SHORT', strategyName, reason, lev, ltf.galton, ltf.rlm, calculatedSl);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;
           }

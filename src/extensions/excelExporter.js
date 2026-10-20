@@ -114,6 +114,57 @@ function loadAllTrades() {
     ms.endBalance = runningBalance;
   });
 
+  // Strategy mapping helper
+  function getStrategyGroup(stratName) {
+    const s = (stratName || '').toLowerCase();
+    if (s.includes('oliver kell') || s.includes('climax') || s.includes('crossback')) {
+      return 'Oliver Kell Price Cycle';
+    }
+    if (s.includes('v2 trend pullback') || s.includes('strategy v2')) {
+      return 'Strategy V2 Pullback';
+    }
+    if (s.includes('luxalgo')) {
+      return 'LuxAlgo Smart Trail & Signals';
+    }
+    if (s.includes('supertrend') || s.includes('momentum')) {
+      return 'Supertrend & Momentum';
+    }
+    if (s.includes('rlm') || s.includes('orderflow') || s.includes('sniper') || s.includes('confluence')) {
+      return 'Orderflow & Key Level RLM';
+    }
+    if (s.includes('retrace') || s.includes('htf')) {
+      return 'HTF Trend & Retracement';
+    }
+    return 'Other Quantitative Setups';
+  }
+
+  const strategyStats = {};
+  allTrades.forEach(t => {
+    const s = t.strategy || 'Other';
+    if (!strategyStats[s]) {
+      strategyStats[s] = {
+        name: s,
+        group: getStrategyGroup(s),
+        trades: 0,
+        wins: 0,
+        losses: 0,
+        winSum: 0,
+        lossSum: 0,
+        netPnl: 0,
+      };
+    }
+    const sm = strategyStats[s];
+    sm.trades++;
+    if (t.pnl > 0) {
+      sm.wins++;
+      sm.winSum += t.pnl;
+    } else {
+      sm.losses++;
+      sm.lossSum += Math.abs(t.pnl);
+    }
+    sm.netPnl = Math.round((sm.netPnl + t.pnl) * 100) / 100;
+  });
+
   const totalTrades = allTrades.length;
   const wins = allTrades.filter(t => t.pnl > 0).length;
   const losses = totalTrades - wins;
@@ -133,6 +184,7 @@ function loadAllTrades() {
   return {
     allTrades,
     monthlyStats,
+    strategyStats,
     totalTrades,
     wins,
     losses,
@@ -395,7 +447,184 @@ async function generateFullJournalExcelBuffer() {
     }
   }
 
-  const s1Widths = [18, 14, 14, 14, 14, 16, 16, 14, 18, 16, 22];
+  // ==========================================
+  // SECTION 2: BẢNG THỐNG KÊ CHI TIẾT THEO TỪNG STRATEGY
+  // ==========================================
+  curRow += 3;
+
+  ws1.mergeCells(`A${curRow}:K${curRow}`);
+  const stratTitle = ws1.getCell(`A${curRow}`);
+  stratTitle.value = '🎯 BẢNG THỐNG KÊ HIỆU SUẤT THEO TỪNG CHIẾN LƯỢC (STRATEGY PERFORMANCE BREAKDOWN)';
+  stratTitle.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: '0F172A' } };
+  stratTitle.alignment = { vertical: 'middle', horizontal: 'left' };
+  ws1.getRow(curRow).height = 28;
+  curRow++;
+
+  const stratHeaders = [
+    'STT (#)', 'Chiến Lược Giao Dịch (Strategy Name)', 'Nhóm Hệ Thống (Framework)',
+    'Tổng Lệnh', 'Thắng (W)', 'Thua (L)', 'Win Rate %',
+    'Tổng Lãi ($)', 'Tổng Lỗ ($)', 'Profit Factor', 'Lãi/Lỗ Ròng Net PnL ($)'
+  ];
+
+  const sHeadRow = ws1.getRow(curRow);
+  sHeadRow.height = 26;
+  stratHeaders.forEach((h, i) => {
+    const cell = sHeadRow.getCell(i + 1);
+    cell.value = h;
+    cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '0F172A' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = thinBorder;
+  });
+  curRow++;
+
+  const sortedStrats = Object.values(data.strategyStats).sort((a, b) => b.netPnl - a.netPnl);
+  let sTotTrades = 0, sTotWins = 0, sTotLosses = 0, sTotWinSum = 0, sTotLossSum = 0;
+
+  sortedStrats.forEach((sm, i) => {
+    sTotTrades += sm.trades;
+    sTotWins += sm.wins;
+    sTotLosses += sm.losses;
+    sTotWinSum += sm.winSum;
+    sTotLossSum += sm.lossSum;
+
+    const r = ws1.getRow(curRow);
+    r.height = 21;
+    const isWin = sm.netPnl >= 0;
+    const wr = sm.trades > 0 ? (sm.wins / sm.trades) : 0;
+    const pf = sm.lossSum > 0 ? (sm.winSum / sm.lossSum) : (sm.winSum > 0 ? 9.99 : 0);
+    const zebraBg = (i % 2 === 0) ? 'FFFFFF' : 'F8FAFC';
+
+    // 1. STT
+    r.getCell(1).value = i + 1;
+    r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    r.getCell(1).font = { name: 'Segoe UI', size: 9.5 };
+
+    // 2. Strategy Name
+    r.getCell(2).value = sm.name;
+    r.getCell(2).alignment = { vertical: 'middle', horizontal: 'left' };
+    r.getCell(2).font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: '0F172A' } };
+
+    // 3. Framework Group
+    r.getCell(3).value = sm.group;
+    r.getCell(3).alignment = { vertical: 'middle', horizontal: 'left' };
+    r.getCell(3).font = { name: 'Segoe UI', size: 9.5, italic: true, color: { argb: '475569' } };
+
+    // 4. Trades
+    r.getCell(4).value = sm.trades;
+    r.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 5. Wins
+    r.getCell(5).value = sm.wins;
+    r.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+    r.getCell(5).font = { name: 'Segoe UI', size: 9.5, color: { argb: '166534' } };
+
+    // 6. Losses
+    r.getCell(6).value = sm.losses;
+    r.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+    r.getCell(6).font = { name: 'Segoe UI', size: 9.5, color: { argb: '991B1B' } };
+
+    // 7. Win Rate %
+    r.getCell(7).value = wr;
+    r.getCell(7).numFmt = '0.0%';
+    r.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 8. Win Sum
+    r.getCell(8).value = sm.winSum;
+    r.getCell(8).numFmt = '$#,##0.00';
+    r.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
+
+    // 9. Loss Sum
+    r.getCell(9).value = sm.lossSum;
+    r.getCell(9).numFmt = '$#,##0.00';
+    r.getCell(9).alignment = { vertical: 'middle', horizontal: 'right' };
+
+    // 10. Profit Factor
+    r.getCell(10).value = pf;
+    r.getCell(10).numFmt = '0.00';
+    r.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 11. Net PnL
+    const pnlCell = r.getCell(11);
+    pnlCell.value = sm.netPnl;
+    pnlCell.numFmt = '$#,##0.00;($#,##0.00);"-"';
+    pnlCell.alignment = { vertical: 'middle', horizontal: 'right' };
+    pnlCell.font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: isWin ? '166534' : '991B1B' } };
+    pnlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isWin ? 'DCFCE7' : 'FEE2E2' } };
+
+    for (let c = 1; c <= 11; c++) {
+      if (c !== 11) {
+        r.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: zebraBg } };
+      }
+      r.getCell(c).border = thinBorder;
+    }
+
+    curRow++;
+  });
+
+  // Strategy Summary Row
+  const stratTotalRow = ws1.getRow(curRow);
+  stratTotalRow.height = 26;
+
+  stratTotalRow.getCell(1).value = 'TỔNG';
+  stratTotalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(1).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(2).value = 'TỔNG CỘNG TẤT CẢ CHIẾN LƯỢC';
+  stratTotalRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'left' };
+  stratTotalRow.getCell(2).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(3).value = '100% Portfolio';
+  stratTotalRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'left' };
+  stratTotalRow.getCell(3).font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: '64748B' } };
+
+  stratTotalRow.getCell(4).value = sTotTrades;
+  stratTotalRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(4).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(5).value = sTotWins;
+  stratTotalRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(5).font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: '166534' } };
+
+  stratTotalRow.getCell(6).value = sTotLosses;
+  stratTotalRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(6).font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: '991B1B' } };
+
+  stratTotalRow.getCell(7).value = sTotTrades > 0 ? (sTotWins / sTotTrades) : 0;
+  stratTotalRow.getCell(7).numFmt = '0.0%';
+  stratTotalRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(7).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(8).value = sTotWinSum;
+  stratTotalRow.getCell(8).numFmt = '$#,##0.00';
+  stratTotalRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
+  stratTotalRow.getCell(8).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(9).value = sTotLossSum;
+  stratTotalRow.getCell(9).numFmt = '$#,##0.00';
+  stratTotalRow.getCell(9).alignment = { vertical: 'middle', horizontal: 'right' };
+  stratTotalRow.getCell(9).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  stratTotalRow.getCell(10).value = sTotLossSum > 0 ? (sTotWinSum / sTotLossSum) : 1.0;
+  stratTotalRow.getCell(10).numFmt = '0.00';
+  stratTotalRow.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
+  stratTotalRow.getCell(10).font = { name: 'Segoe UI', size: 10, bold: true };
+
+  const stPnl = stratTotalRow.getCell(11);
+  stPnl.value = data.netProfit;
+  stPnl.numFmt = '$#,##0.00;($#,##0.00);"-"';
+  stPnl.alignment = { vertical: 'middle', horizontal: 'right' };
+  stPnl.font = { name: 'Segoe UI', size: 10.5, bold: true, color: { argb: '166534' } };
+  stPnl.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'BBF7D0' } };
+
+  for (let c = 1; c <= 11; c++) {
+    stratTotalRow.getCell(c).border = thickDoubleBorder;
+    if (c !== 11) {
+      stratTotalRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+    }
+  }
+
+  const s1Widths = [12, 38, 25, 13, 12, 12, 13, 16, 16, 14, 20];
   s1Widths.forEach((w, i) => {
     ws1.getColumn(i + 1).width = w;
   });

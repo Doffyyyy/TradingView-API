@@ -17,6 +17,7 @@ const { startDailyScheduler, syncDailySimulation } = require('./src/extensions/d
 const { generateFullJournalCSV } = require('./src/extensions/journalExporter');
 const { generateFullJournalExcelBuffer } = require('./src/extensions/excelExporter');
 const { macroCalendarInstance } = require('./src/extensions/macroCalendar');
+const { startMonthlyReportScheduler, dispatchMonthlyReport } = require('./src/extensions/monthlyReportScheduler');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -2346,6 +2347,10 @@ const htmlContent = `<!DOCTYPE html>
             <button class="ts-btn-outline" id="btn-ts-export-excel" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #10b981; font-weight: 600;" title="Tải File Excel Kẻ Bảng Đẹp (.xlsx)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               📊 Export Excel (.xlsx)
+            </button>
+            <button class="ts-btn-outline" id="btn-ts-send-tele" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 600;" title="Gửi File Báo Cáo Excel (.xlsx) Kèm Tổng Kết Sang Telegram Ngay Lập Tức">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              📲 Gửi Báo Cáo Tele
             </button>
             <button class="ts-btn-outline" id="btn-ts-export" title="Export CSV Report">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -8262,9 +8267,34 @@ const htmlContent = `<!DOCTYPE html>
       openDayJournalModal(currentSelectedDate, currentJournalDaysMap[currentSelectedDate]);
     });
 
-    // Export Full Comprehensive Journal Excel (.xlsx) & CSV
+    // Export Full Comprehensive Journal Excel (.xlsx) & CSV & Telegram Dispatch
     document.getElementById("btn-ts-export-excel")?.addEventListener("click", () => {
       window.location.href = '/api/paper/export-journal-excel';
+    });
+    document.getElementById("btn-ts-send-tele")?.addEventListener("click", async () => {
+      const btn = document.getElementById("btn-ts-send-tele");
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '⏳ Đang gửi Tele...';
+      btn.style.pointerEvents = 'none';
+      try {
+        const res = await fetch('/api/report/dispatch-monthly-telegram', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          btn.innerHTML = '✅ Đã gửi Tele!';
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.pointerEvents = 'auto';
+          }, 3500);
+        } else {
+          alert('Lỗi gửi Telegram: ' + (data.error || 'Unknown'));
+          btn.innerHTML = originalHtml;
+          btn.style.pointerEvents = 'auto';
+        }
+      } catch (e) {
+        alert('Lỗi kết nối server: ' + e.message);
+        btn.innerHTML = originalHtml;
+        btn.style.pointerEvents = 'auto';
+      }
     });
     document.getElementById("btn-ts-export")?.addEventListener("click", () => {
       window.location.href = '/api/paper/export-journal-csv';
@@ -9511,6 +9541,19 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (pathname === '/api/report/dispatch-monthly-telegram') {
+    try {
+      const q = parsedUrl.query || {};
+      const targetMonth = q.month || null;
+      const result = await dispatchMonthlyReport(targetMonth, true);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
   if (pathname === '/api/macro/events') {
     try {
       const q = parsedUrl.query || {};
@@ -9682,4 +9725,6 @@ server.listen(PORT, () => {
   paperTraderInstance.start();
   // Auto-start daily simulation catch-up scheduler
   startDailyScheduler();
+  // Auto-start monthly report Telegram scheduler (Month-end midnight trigger)
+  startMonthlyReportScheduler();
 });

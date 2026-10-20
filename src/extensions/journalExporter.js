@@ -208,7 +208,58 @@ function generateFullJournalCSV() {
   lines.push('');
 
   // ==========================================
-  // SECTION 3: FULL TRADE-BY-TRADE JOURNAL
+  // SECTION 3: STRATEGY PERFORMANCE BREAKDOWN
+  // ==========================================
+  lines.push('=== STRATEGY PERFORMANCE BREAKDOWN (THONG KE THEO TUNG CHIEN LUOC) ===');
+  lines.push('STT,Strategy Name,Framework Group,Total Trades,Wins,Losses,Win Rate %,Gross Profit ($),Gross Loss ($),Profit Factor,Net PnL ($),Avg Trade ($)');
+
+  const stratMap = {};
+  function getGroup(name) {
+    const s = (name || '').toLowerCase();
+    if (s.includes('oliver kell') || s.includes('climax') || s.includes('crossback')) return 'Oliver Kell Price Cycle';
+    if (s.includes('v2 trend pullback') || s.includes('strategy v2')) return 'Strategy V2 Pullback';
+    if (s.includes('luxalgo')) return 'LuxAlgo Smart Trail & Signals';
+    if (s.includes('supertrend') || s.includes('momentum')) return 'Supertrend & Momentum';
+    if (s.includes('rlm') || s.includes('orderflow') || s.includes('sniper')) return 'Orderflow & Key Level RLM';
+    return 'Other Quantitative Setups';
+  }
+
+  allTrades.forEach(t => {
+    const s = t.strategy || 'Other';
+    if (!stratMap[s]) {
+      stratMap[s] = { name: s, group: getGroup(s), trades: 0, wins: 0, losses: 0, winSum: 0, lossSum: 0, netPnl: 0 };
+    }
+    const sm = stratMap[s];
+    sm.trades++;
+    if (t.pnl > 0) { sm.wins++; sm.winSum += t.pnl; }
+    else { sm.losses++; sm.lossSum += Math.abs(t.pnl); }
+    sm.netPnl = Math.round((sm.netPnl + t.pnl) * 100) / 100;
+  });
+
+  const sortedStrats = Object.values(stratMap).sort((a, b) => b.netPnl - a.netPnl);
+  sortedStrats.forEach((sm, i) => {
+    const wr = sm.trades > 0 ? ((sm.wins / sm.trades) * 100).toFixed(1) : '0.0';
+    const pf = sm.lossSum > 0 ? (sm.winSum / sm.lossSum).toFixed(2) : 'MAX';
+    const avgTrade = sm.trades > 0 ? (sm.netPnl / sm.trades).toFixed(2) : '0.00';
+    lines.push([
+      i + 1,
+      `"${sm.name.replace(/"/g, '""')}"`,
+      `"${sm.group}"`,
+      sm.trades,
+      sm.wins,
+      sm.losses,
+      `"${wr}%"`,
+      sm.winSum.toFixed(2),
+      sm.lossSum.toFixed(2),
+      pf,
+      sm.netPnl.toFixed(2),
+      avgTrade
+    ].join(','));
+  });
+  lines.push('');
+
+  // ==========================================
+  // SECTION 4: FULL TRADE-BY-TRADE JOURNAL
   // ==========================================
   lines.push('=== FULL TRADE-BY-TRADE JOURNAL (CHI TIET TUNG LENH GIAO DICH) ===');
   lines.push('Trade #,Month,Date,Time,Symbol,Side,Entry Price ($),Exit Price ($),Net PnL ($),PnL (%),Result,Account Balance ($),Strategy,Exit Reason');
