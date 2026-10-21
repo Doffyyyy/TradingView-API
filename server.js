@@ -48,13 +48,88 @@ function formatTokenPriceServer(p) {
   return p.toFixed(8);
 }
 
-function getHistory(symbol, timeframe, range = 5000) {
-  const cacheKey = symbol + ":" + timeframe + ":" + (range || 5000);
+function mapTfToBinanceInterval(tf) {
+  const s = String(tf || 'D').trim().toUpperCase();
+  if (s === '1') return '1m';
+  if (s === '3') return '3m';
+  if (s === '5') return '5m';
+  if (s === '15') return '15m';
+  if (s === '30') return '30m';
+  if (s === '60' || s === '1H') return '1h';
+  if (s === '120' || s === '2H') return '2h';
+  if (s === '240' || s === '4H') return '4h';
+  if (s === 'D' || s === '1D') return '1d';
+  if (s === 'W' || s === '1W') return '1w';
+  if (s === 'M' || s === '1M') return '1M';
+  return null;
+}
+
+const COMMON_PREWARM_TFS = ['1', '5', '15', '60', '240', 'D'];
+const prewarmingActive = new Set();
+
+function prewarmServerTimeframes(symbol) {
+  if (!symbol) return;
+  COMMON_PREWARM_TFS.forEach(tf => {
+    const normTf = String(tf).trim();
+    const key = symbol + ':' + normTf;
+    const c = serverHistoryCache.get(key);
+    if (!c || (Date.now() - c.timestamp > 240000)) {
+      if (prewarmingActive.has(key)) return;
+      prewarmingActive.add(key);
+      setImmediate(async () => {
+        try {
+          await getHistory(symbol, normTf, 1000);
+        } catch (e) {}
+        prewarmingActive.delete(key);
+      });
+    }
+  });
+}
+
+function fetchFromTradingViewWS(querySymbol, timeframe, range, cacheKey, resolve, reject) {
+  const client = new TradingView.Client();
+  const chart = new client.Session.Chart();
+  let timer = setTimeout(() => {
+    try { chart.delete(); client.end(); } catch (e) {}
+    if (reject) reject(new Error('Timeout fetching history'));
+    else resolve({ candles: [], infos: {} });
+  }, 8000);
+
+  chart.setMarket(querySymbol, { timeframe, range: range || 1000 });
+  chart.onError((...err) => {
+    clearTimeout(timer);
+    try { chart.delete(); client.end(); } catch (e) {}
+    if (reject) reject(new Error(err.join(' ')));
+    else resolve({ candles: [], infos: {} });
+  });
+  chart.onUpdate(() => {
+    if (chart.periods && chart.periods.length > 0) {
+      clearTimeout(timer);
+      const candles = chart.periods.slice().reverse().map(p => ({
+        time: p.time,
+        open: p.open,
+        high: p.max,
+        low: p.min,
+        close: p.close,
+        volume: p.volume || 0,
+      }));
+      const infos = chart.infos || {};
+      try { chart.delete(); client.end(); } catch (e) {}
+      const resData = { candles, infos };
+      serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+      resolve(resData);
+    }
+  });
+}
+
+function getHistory(symbol, timeframe, range = 1000) {
+  const normTf = String(timeframe || 'D').trim();
+  const cacheKey = symbol + ":" + normTf;
   const now = Date.now();
   const cached = serverHistoryCache.get(cacheKey);
 
-  // Return instantly from in-memory cache if less than 20 seconds old
-  if (cached && (now - cached.timestamp < 20000)) {
+  // Return instantly from in-memory cache if less than 5 minutes old
+  if (cached && (now - cached.timestamp < 300000)) {
     return Promise.resolve(cached.data);
   }
 
@@ -64,11 +139,12 @@ function getHistory(symbol, timeframe, range = 5000) {
     return new Promise(async (resolve) => {
       try {
         const { hyperliquidProvider } = require('./src/extensions/hyperliquidProvider');
-        const candles = await hyperliquidProvider.getBars(querySymbol, timeframe, Math.min(range || 1000, 5000));
+        const candles = await hyperliquidProvider.getBars(querySymbol, normTf, Math.min(range || 1000, 5000));
         if (candles && candles.length > 0) {
           const info = await hyperliquidProvider.getSymbolInfo(querySymbol);
           const resData = { candles, infos: info };
           serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+          prewarmServerTimeframes(symbol);
           return resolve(resData);
         }
       } catch (e) {}
@@ -87,12 +163,57 @@ function getHistory(symbol, timeframe, range = 5000) {
     querySymbol = 'HIP3XYZ:BRENTOILUSDC.P';
   }
 
+  // Fast CEX REST Kline loader for Binance pairs (sub-120ms latency)
+  const isBinance = querySymbol.startsWith('BINANCE:') ||
+    ((querySymbol.endsWith('USDT') || querySymbol.endsWith('USDC') || querySymbol.endsWith('BTC')) && !querySymbol.includes('BYBIT:') && !querySymbol.includes('INDEX:') && !querySymbol.includes('TVC:'));
+  if (isBinance) {
+    const bInterval = mapTfToBinanceInterval(normTf);
+    if (bInterval) {
+      return new Promise(async (resolve) => {
+        try {
+          const axios = require('axios');
+          let pair = querySymbol.replace(/^BINANCE:/i, '').replace(/\.P$/i, '').toUpperCase();
+          const lim = Math.min(range || 1000, 1000);
+          const urls = [
+            `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`,
+            `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`
+          ];
+          for (const url of urls) {
+            try {
+              const res = await axios.get(url, { timeout: 3500 });
+              if (Array.isArray(res.data) && res.data.length > 0) {
+                const candles = res.data.map(k => ({
+                  time: Math.floor(k[0] / 1000),
+                  open: parseFloat(k[1]),
+                  high: parseFloat(k[2]),
+                  low: parseFloat(k[3]),
+                  close: parseFloat(k[4]),
+                  volume: parseFloat(k[5]) || 0,
+                }));
+                const resData = {
+                  candles,
+                  infos: { name: pair, description: `${pair} on Binance`, exchange: 'BINANCE', currency: pair.endsWith('USDT') ? 'USDT' : 'USD' }
+                };
+                serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+                prewarmServerTimeframes(symbol);
+                return resolve(resData);
+              }
+            } catch (innerE) {}
+          }
+        } catch (e) {}
+
+        // Fallback to TradingView WS if Binance REST fails
+        return fetchFromTradingViewWS(querySymbol, normTf, range, cacheKey, resolve);
+      });
+    }
+  }
+
   // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
   if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
     return new Promise(async (resolve) => {
       try {
         const axios = require('axios');
-        const tfParam = (timeframe === 'D' || timeframe === 'W' || timeframe === 'M') ? 'day' : 'hour';
+        const tfParam = (normTf === 'D' || normTf === 'W' || normTf === 'M') ? 'day' : 'hour';
         const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP/ohlcv/${tfParam}?limit=1000`;
         const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000 });
         const list = res.data?.data?.attributes?.ohlcv_list || [];
@@ -115,37 +236,7 @@ function getHistory(symbol, timeframe, range = 5000) {
   }
 
   return new Promise((resolve, reject) => {
-    const client = new TradingView.Client();
-    const chart = new client.Session.Chart();
-    let timer = setTimeout(() => {
-      try { chart.delete(); client.end(); } catch (e) {}
-      reject(new Error('Timeout fetching history'));
-    }, 8000);
-
-    chart.setMarket(querySymbol, { timeframe, range: range || 5000 });
-    chart.onError((...err) => {
-      clearTimeout(timer);
-      try { chart.delete(); client.end(); } catch (e) {}
-      reject(new Error(err.join(' ')));
-    });
-    chart.onUpdate(() => {
-      if (chart.periods && chart.periods.length > 0) {
-        clearTimeout(timer);
-        const candles = chart.periods.slice().reverse().map(p => ({
-          time: p.time,
-          open: p.open,
-          high: p.max,
-          low: p.min,
-          close: p.close,
-          volume: p.volume || 0,
-        }));
-        const infos = chart.infos || {};
-        try { chart.delete(); client.end(); } catch (e) {}
-        const resData = { candles, infos };
-        serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
-        resolve(resData);
-      }
-    });
+    fetchFromTradingViewWS(querySymbol, normTf, range, cacheKey, resolve, reject);
   });
 }
 
@@ -2836,11 +2927,8 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Right Action: Clean 3-Column Standard Badge & Run All -->
+          <!-- Right Action: Run All AI Engines -->
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="mc-pill-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-size: 10px; padding: 4px 10px; font-weight: 700;">
-              ▤ CHẾ ĐỘ 3 CỘT (COLUMNS)
-            </span>
             <button class="btn active" id="btn-ai-run-all" style="background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700; padding: 5px 12px; font-size: 11px;">
               ⚡ Run All AI Engines
             </button>
@@ -4688,7 +4776,7 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     function updateFiboRadar(candles) {
-      clearAllIndicatorLines();
+      clearFiboLines();
       const hud = document.getElementById('fiboradar-hud');
       if (!fiboEnabled || !candles || candles.length < 5) {
         if (hud) hud.style.display = 'none';
@@ -5169,10 +5257,32 @@ const htmlContent = `<!DOCTYPE html>
 
     // --- Instant In-Memory Chart Cache for Zero-Latency Switching ---
     const clientChartCache = {};
+    const POPULAR_TIMEFRAMES = ['1', '5', '15', '60', '240', 'D'];
+    const prefetchInFlight = new Set();
+
+    function prefetchSymbolTimeframes(sym) {
+      if (!sym) return;
+      POPULAR_TIMEFRAMES.forEach(tf => {
+        const key = sym + '_' + tf;
+        if (!clientChartCache[key] && !prefetchInFlight.has(key)) {
+          prefetchInFlight.add(key);
+          fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=1000')
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.candles && data.candles.length > 0) {
+                clientChartCache[key] = { candles: data.candles, time: Date.now() };
+              }
+            })
+            .catch(() => {})
+            .finally(() => {
+              prefetchInFlight.delete(key);
+            });
+        }
+      });
+    }
 
     async function loadChart(sym, tf) {
       if (eventSource) eventSource.close();
-      clearAllIndicatorLines();
 
       if (typeof syncDockCoin === 'function') {
         syncDockCoin(sym);
@@ -5214,19 +5324,21 @@ const htmlContent = `<!DOCTYPE html>
       const targetTf = tf;
       if (typeof triggerAutoSave === 'function') triggerAutoSave();
 
-      // 2. ZERO-DELAY RENDER: If cached in memory, display immediately!
-      const cached = clientChartCache[activeKey];
-      if (cached && cached.candles && cached.candles.length > 0) {
-        currentCandlesCache = cached.candles;
-        autoAdjustChartPrecision(cached.candles);
+      // Trigger background pre-warming for all popular timeframes of this symbol immediately
+      prefetchSymbolTimeframes(sym);
+
+      // Helper to render candles & indicators synchronously (Zero Latency)
+      function applyCandlesAndIndicators(candlesList) {
+        currentCandlesCache = candlesList;
+        autoAdjustChartPrecision(candlesList);
         try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
-        candleSeries.setData(cached.candles);
-        volumeSeries.setData(cached.candles.map(c => ({
+        candleSeries.setData(candlesList);
+        volumeSeries.setData(candlesList.map(c => ({
           time: c.time,
           value: c.volume || 0,
           color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
         })));
-        const len = cached.candles.length;
+        const len = candlesList.length;
         try {
           chart.priceScale('right').applyOptions({ autoScale: true });
           const totalBars = 125;
@@ -5236,44 +5348,28 @@ const htmlContent = `<!DOCTYPE html>
             to: len + rightOffset,
           });
         } catch (e) {}
-        lastLoadedCandle = cached.candles[len - 1];
+        lastLoadedCandle = candlesList[len - 1];
         setLegendOHLC(lastLoadedCandle);
-        updateActiveIndicators(cached.candles);
+        updateActiveIndicators(candlesList);
         updateProviewTitle(sym, lastLoadedCandle.close);
       }
 
-      // 3. Background fetch for latest candle stream & full history
+      // 2. ZERO-DELAY RENDER: If cached in memory, display IMMEDIATELY in 0ms!
+      const cached = clientChartCache[activeKey];
+      if (cached && cached.candles && cached.candles.length > 0) {
+        applyCandlesAndIndicators(cached.candles);
+      }
+
+      // 3. Fast Background fetch for latest candle stream & full history
       try {
-        const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=5000');
+        const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=1000');
         const data = await res.json();
         if (data.candles && data.candles.length > 0) {
           clientChartCache[activeKey] = { candles: data.candles, time: Date.now() };
 
           // Only apply if user is still on this exact symbol and timeframe
           if (currentSymbol === targetSym && currentTimeframe === targetTf) {
-            currentCandlesCache = data.candles;
-            autoAdjustChartPrecision(data.candles);
-            try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
-            candleSeries.setData(data.candles);
-            volumeSeries.setData(data.candles.map(c => ({
-              time: c.time,
-              value: c.volume || 0,
-              color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
-            })));
-            const len = data.candles.length;
-            try {
-              chart.priceScale('right').applyOptions({ autoScale: true });
-              const totalBars = 125;
-              const rightOffset = 52;
-              chart.timeScale().setVisibleLogicalRange({
-                from: Math.max(0, len - (totalBars - rightOffset)),
-                to: len + rightOffset,
-              });
-            } catch (e) {}
-            lastLoadedCandle = data.candles[len - 1];
-            setLegendOHLC(lastLoadedCandle);
-            updateActiveIndicators(currentCandlesCache);
-            updateProviewTitle(sym, lastLoadedCandle.close);
+            applyCandlesAndIndicators(data.candles);
             if (typeof refreshEdgeStats === 'function') {
               refreshEdgeStats(sym);
             }
@@ -6183,7 +6279,7 @@ const htmlContent = `<!DOCTYPE html>
       if (!sym) return;
       const key = sym + '_' + currentTimeframe;
       if (!clientChartCache[key]) {
-        fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=5000')
+        fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=1000')
           .then(r => r.json())
           .then(data => {
             if (data.candles && data.candles.length > 0) {
@@ -6201,7 +6297,7 @@ const htmlContent = `<!DOCTYPE html>
           const key = item.symbol + '_' + currentTimeframe;
           if (!clientChartCache[key] && item.symbol !== currentSymbol) {
             setTimeout(() => {
-              fetch('/api/history?symbol=' + encodeURIComponent(item.symbol) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=5000')
+              fetch('/api/history?symbol=' + encodeURIComponent(item.symbol) + '&timeframe=' + encodeURIComponent(currentTimeframe) + '&range=1000')
                 .then(r => r.json())
                 .then(data => {
                   if (data.candles && data.candles.length > 0) {
@@ -7085,6 +7181,24 @@ const htmlContent = `<!DOCTYPE html>
       loadChart(currentSymbol, currentTimeframe);
     });
 
+    // Proactive Hover Prefetch: Pre-load candle history the moment mouse hovers on timeframe button
+    document.querySelectorAll('#timeframes button[data-tf]').forEach(btn => {
+      btn.addEventListener('mouseenter', () => {
+        const tf = btn.dataset.tf;
+        const key = currentSymbol + '_' + tf;
+        if (!clientChartCache[key]) {
+          fetch('/api/history?symbol=' + encodeURIComponent(currentSymbol) + '&timeframe=' + encodeURIComponent(tf) + '&range=1000')
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.candles && data.candles.length > 0) {
+                clientChartCache[key] = { candles: data.candles, time: Date.now() };
+              }
+            })
+            .catch(() => {});
+        }
+      });
+    });
+
     // --- Hyperliquid Ticker Bar & Header Logic ---
     async function updateTickerBar(coin) {
       if (!coin || coin !== currentDockCoin) return;
@@ -7626,21 +7740,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     document.getElementById('btn-hub-refresh').addEventListener('click', refreshHub);
 
-    // --- AI Intelligence Hub Layout & Focus Controls ---
-    document.getElementById('btn-ai-layout-3col')?.addEventListener('click', () => {
-      document.getElementById('btn-ai-layout-3col')?.classList.add('active');
-      document.getElementById('btn-ai-layout-3rows')?.classList.remove('active');
-      const c = document.getElementById('ai-hub-main-container');
-      if (c) c.className = 'ai-hub-grid-3col';
-    });
-
-    document.getElementById('btn-ai-layout-3rows')?.addEventListener('click', () => {
-      document.getElementById('btn-ai-layout-3rows')?.classList.add('active');
-      document.getElementById('btn-ai-layout-3col')?.classList.remove('active');
-      const c = document.getElementById('ai-hub-main-container');
-      if (c) c.className = 'ai-hub-grid-3rows';
-    });
-
+    // --- AI Intelligence Hub Section Focus Controls ---
     document.querySelectorAll('.ai-hub-focus-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.ai-hub-focus-btn').forEach(b => b.classList.remove('active'));
@@ -7654,9 +7754,7 @@ const htmlContent = `<!DOCTYPE html>
           if (col1) col1.style.display = 'flex';
           if (col2) col2.style.display = 'flex';
           if (col3) col3.style.display = 'flex';
-          if (c && !document.getElementById('btn-ai-layout-3rows')?.classList.contains('active')) {
-            c.className = 'ai-hub-grid-3col';
-          }
+          if (c) c.className = 'ai-hub-grid-3col';
         } else {
           if (col1) col1.style.display = targetSec === 'ai-sec-validation' ? 'flex' : 'none';
           if (col2) col2.style.display = targetSec === 'ai-sec-backtest' ? 'flex' : 'none';
