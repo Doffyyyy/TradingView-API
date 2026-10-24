@@ -57,7 +57,7 @@ async function syncDailySimulation() {
       mergedData[`${sym}_1h`] = Array.from(timeMap.values()).sort((a, b) => a.time - b.time);
     }
 
-    // 2. Run Oliver Kell Strategy V2 Engine on complete merged data
+    // 2. Run Oliver Kell Strategy V2 Engine on complete merged data with Pure Loss Guard up to Sep 30
     const engine = new OliverKellEngine({
       maxCrossbacks: 3,
       minRRPivot: 2.2,
@@ -66,6 +66,8 @@ async function syncDailySimulation() {
       riskPerTradePct: 0.005,
       maxMargin: 2500,
       maxLeverage: 2.0,
+      pureLossGuard: true,
+      maxDate: '2026-09-30T23:59:59Z', // Simulate March-September; October is pure live paper trading
     });
 
     const res = engine.run(mergedData, SYMBOLS);
@@ -81,8 +83,8 @@ async function syncDailySimulation() {
     // Generate date sequence from 2026-03-01 to today
     const startDate = new Date('2026-03-01T00:00:00Z');
     const today = new Date();
-    // Default today fallback to 2026-10-13 if system clock is behind
-    const effectiveEnd = today.getFullYear() >= 2026 ? today : new Date('2026-10-13T23:59:59Z');
+    // Default today fallback to 2026-10-24 if system clock is behind
+    const effectiveEnd = today.getFullYear() >= 2026 ? today : new Date('2026-10-24T23:59:59Z');
     const curD = new Date(startDate);
 
     while (curD <= effectiveEnd) {
@@ -91,8 +93,10 @@ async function syncDailySimulation() {
       curD.setUTCDate(curD.getUTCDate() + 1);
     }
 
+    // Populate March - September from Pure Loss Guard Simulation
     for (const t of trades) {
       const dStr = t.exitTime ? t.exitTime.slice(0, 10) : t.entryTime.slice(0, 10);
+      if (dStr >= '2026-10-01') continue;
       const mStr = dStr.slice(0, 7);
       const pnlRound = Math.round(t.pnl * 100) / 100;
       currentBalance = Math.round((currentBalance + pnlRound) * 100) / 100;
@@ -103,13 +107,11 @@ async function syncDailySimulation() {
 
       daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + pnlRound) * 100) / 100;
 
-      let stratLabel = 'Oliver Kell Price Cycle';
-      if (t.reason === 'EXHAUSTION_CLIMAX') {
+      let stratLabel = 'Oliver Kell: EMA Crossback Setup';
+      if (t.reason === 'EXHAUSTION_CLIMAX' || t.reason === 'RUNNER_EMA20_EXIT') {
         stratLabel = 'Oliver Kell: Climax Extension (+5R~8R)';
       } else if (t.stage1Taken) {
         stratLabel = 'Oliver Kell: Stage 1 TP (+2.2R) + Runner';
-      } else {
-        stratLabel = 'Oliver Kell: EMA Crossback Setup';
       }
 
       const pnlPct = Math.round(((t.exitPrice - t.entryPrice) / t.entryPrice) * 10000) / 100;
@@ -134,14 +136,73 @@ async function syncDailySimulation() {
       });
     }
 
+    // Populate October 2026 onwards purely from authentic live paper trades
+    const PORTFOLIO_PATH = path.join(__dirname, '..', '..', 'data', 'paper_portfolio.json');
+    if (fs.existsSync(PORTFOLIO_PATH)) {
+      try {
+        const portData = JSON.parse(fs.readFileSync(PORTFOLIO_PATH, 'utf8'));
+        const octTrades = (portData.trades || []).filter(t => {
+          const exitTime = t.exitTime || t.entryTime;
+          return exitTime && exitTime.slice(0, 10) >= '2026-10-01';
+        });
+        octTrades.sort((a, b) => (a.exitTime || a.entryTime).localeCompare(b.exitTime || b.entryTime));
+
+        for (const t of octTrades) {
+          const exitTime = t.exitTime || t.entryTime;
+          const dStr = exitTime.slice(0, 10);
+          const mStr = dStr.slice(0, 7);
+          const pnlRound = Math.round(t.pnl * 100) / 100;
+          currentBalance = Math.round((currentBalance + pnlRound) * 100) / 100;
+
+          if (!daysMap[dStr]) daysMap[dStr] = { pnl: 0, trades: [] };
+          daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + pnlRound) * 100) / 100;
+          daysMap[dStr].trades.push({
+            id: t.id,
+            symbol: t.symbol,
+            side: t.side,
+            strategy: t.strategy || 'Oliver Kell: EMA Crossback Setup',
+            entry: t.entryPrice,
+            entryPrice: t.entryPrice,
+            exit: t.exitPrice,
+            exitPrice: t.exitPrice,
+            pnl: pnlRound,
+            pnlDollar: pnlRound,
+            pnlPercent: t.pnlPercent,
+            isWin: pnlRound > 0,
+            reason: t.reason,
+            time: exitTime.slice(11, 16),
+            date: dStr,
+            month: mStr,
+            balanceAfter: currentBalance,
+          });
+        }
+      } catch (err) {
+        console.warn('[DailySimScheduler] Error loading live October trades:', err.message);
+      }
+    }
+
+    let totalTradesCount = 0;
+    let winCount = 0;
+    let lossCount = 0;
+    let netProfit = 0;
+    for (const dObj of Object.values(daysMap)) {
+      netProfit += dObj.pnl;
+      for (const tr of dObj.trades) {
+        totalTradesCount++;
+        if (tr.pnl > 0) winCount++;
+        else if (tr.pnl < 0) lossCount++;
+      }
+    }
+    netProfit = Math.round(netProfit * 100) / 100;
+
     const summary = {
       initialBalance: 10000.0,
-      endingBalance: Math.round(res.finalBalance * 100) / 100,
-      netProfit: Math.round(res.netPnl * 100) / 100,
-      totalTrades: res.totalTrades,
-      winCount: res.wins,
-      lossCount: res.losses,
-      winRate: Math.round(res.winRate * 10) / 10,
+      endingBalance: Math.round((10000.0 + netProfit) * 100) / 100,
+      netProfit: netProfit,
+      totalTrades: totalTradesCount,
+      winCount: winCount,
+      lossCount: lossCount,
+      winRate: Math.round((winCount / (totalTradesCount || 1)) * 1000) / 10,
       profitFactor: Math.round(res.profitFactor * 100) / 100,
       maxDrawdown: Math.round(res.maxDrawdownPct * 100) / 100,
       strategy: 'Strategy V2 (Oliver Kell Price Cycle Edition - Live Auto-Synced)',

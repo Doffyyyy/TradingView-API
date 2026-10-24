@@ -58,6 +58,8 @@ class OliverKellEngine {
       takerFee: config.takerFee || 0.00035,
       makerFee: config.makerFee || 0.00010,
       slippageRate: config.slippageRate || 0.0002,
+      maxDate: config.maxDate || null, // Optional cutoff e.g. '2026-09-30T23:59:59Z'
+      pureLossGuard: config.pureLossGuard !== undefined ? config.pureLossGuard : true,
     };
   }
 
@@ -101,12 +103,98 @@ class OliverKellEngine {
       symbolStats[s] = { trades: 0, wins: 0, pnl: 0, gp: 0, gl: 0 };
     });
 
+    let currentDay = '';
+    let dailyRealizedPnl = 0.0;
+    let dailyLossLimit = Math.round(balance * 0.018);
+
     for (let i = 200; i < nBars; i++) {
       const currentBarTime = btc1h[i].time;
-      const dateStr = new Date(currentBarTime).toISOString();
+      const dateObj = new Date(currentBarTime);
+      const dateStr = dateObj.toISOString();
+      const dayStr = dateStr.slice(0, 10);
       const monthStr = dateStr.slice(0, 7);
 
-      // 1. Process Exits
+      if (this.config.maxDate && dateStr > this.config.maxDate) {
+        break; // Stop at simulation boundary
+      }
+
+      // Daily rollover
+      if (dayStr !== currentDay) {
+        currentDay = dayStr;
+        dailyRealizedPnl = 0.0;
+        dailyLossLimit = Math.round(balance * 0.018);
+      }
+
+      // -------------------------------------------------------------
+      // 1. Process Exits & Trailing Stops
+      // -------------------------------------------------------------
+      if (this.config.pureLossGuard) {
+        // Layer 4: Emergency Circuit Breaker on Floating Drawdown
+        let totalFloatingPnl = 0;
+        for (const pos of openPositions) {
+          const c = symData[pos.symbol].closes[i];
+          totalFloatingPnl += (c - pos.entryPrice) * pos.size;
+        }
+        if ((dailyRealizedPnl + totalFloatingPnl) <= -(dailyLossLimit * 1.05)) {
+          for (let pIdx = openPositions.length - 1; pIdx >= 0; pIdx--) {
+            const pos = openPositions[pIdx];
+            const exitPrice = symData[pos.symbol].closes[i];
+            const remQty = pos.remainingSize !== undefined ? pos.remainingSize : pos.size;
+            const remNotional = pos.remainingNotional !== undefined ? pos.remainingNotional : pos.notional;
+            const grossDiff = (exitPrice - pos.entryPrice) * remQty;
+            const fee = (pos.entryPrice * remQty * this.config.takerFee) + (exitPrice * remQty * this.config.takerFee);
+            const slip = remNotional * this.config.slippageRate;
+            const netRemaining = grossDiff - fee - slip;
+
+            balance += netRemaining;
+            dailyRealizedPnl += netRemaining;
+            const totalNet = (pos.realizedPnl || 0) + netRemaining;
+
+            if (balance > peakBalance) peakBalance = balance;
+            const dd = peakBalance - balance;
+            const ddPct = (dd / peakBalance) * 100;
+            if (dd > maxDrawdown) maxDrawdown = dd;
+            if (ddPct > maxDrawdownPct) maxDrawdownPct = ddPct;
+
+            if (!monthStats[monthStr]) monthStats[monthStr] = { trades: 0, wins: 0, pnl: 0, gp: 0, gl: 0 };
+            monthStats[monthStr].trades++;
+            if (totalNet > 0) {
+              monthStats[monthStr].wins++;
+              monthStats[monthStr].gp += totalNet;
+            } else {
+              monthStats[monthStr].gl += Math.abs(totalNet);
+            }
+            monthStats[monthStr].pnl += totalNet;
+
+            symbolStats[pos.symbol].trades++;
+            if (totalNet > 0) {
+              symbolStats[pos.symbol].wins++;
+              symbolStats[pos.symbol].gp += totalNet;
+            } else {
+              symbolStats[pos.symbol].gl += Math.abs(totalNet);
+            }
+            symbolStats[pos.symbol].pnl += totalNet;
+
+            closedTrades.push({
+              id: pos.id,
+              symbol: pos.symbol,
+              entryTime: pos.entryTime,
+              exitTime: dateStr,
+              entryPrice: pos.entryPrice,
+              exitPrice,
+              pnl: totalNet,
+              isWin: totalNet > 0,
+              reason: 'EMERGENCY_DAILY_CIRCUIT_BREAKER',
+              stage1Taken: pos.stage1Taken,
+              barsHeld: pos.barsHeld,
+            });
+
+            openPositions.splice(pIdx, 1);
+          }
+        }
+      }
+
+      // Normal position exit checking
       for (let pIdx = openPositions.length - 1; pIdx >= 0; pIdx--) {
         const pos = openPositions[pIdx];
         const state = symData[pos.symbol];
@@ -127,6 +215,7 @@ class OliverKellEngine {
             const slip50 = (pos.notional * 0.5) * this.config.slippageRate;
             const netStage1 = pnl50 - fee50 - slip50;
             balance += netStage1;
+            dailyRealizedPnl += netStage1;
             pos.realizedPnl += netStage1;
             pos.remainingSize = pos.size * 0.5;
             pos.remainingNotional = pos.notional * 0.5;
@@ -158,6 +247,7 @@ class OliverKellEngine {
           const netRemaining = grossDiff - fee - slip;
 
           balance += netRemaining;
+          dailyRealizedPnl += netRemaining;
           const totalNet = (pos.realizedPnl || 0) + netRemaining;
 
           if (balance > peakBalance) peakBalance = balance;
@@ -203,67 +293,107 @@ class OliverKellEngine {
         }
       }
 
+      // -------------------------------------------------------------
       // 2. Process Pending Pivot Orders (Buy Stop Confirmation)
+      // -------------------------------------------------------------
+      let canEnterNewTrade = true;
+      let allowedMaxPositions = this.config.maxOpenPositions;
+      let riskFraction = this.config.riskPerTradePct;
+
+      if (this.config.pureLossGuard) {
+        // Layer 1: Daily Circuit Breaker Hard Lock (-1.8%)
+        if (dailyRealizedPnl <= -dailyLossLimit) {
+          canEnterNewTrade = false;
+        }
+
+        // Layer 2: Defensive Throttling (-50% daily limit)
+        const isDefensive = (dailyRealizedPnl <= -(dailyLossLimit * 0.5));
+        if (isDefensive) {
+          allowedMaxPositions = 1;
+          riskFraction = riskFraction * 0.5; // Reduce risk to 0.25% (1x leverage)
+        }
+
+        // Layer 3: Committed Daily Risk Gate
+        let openPositionsMaxRisk = 0;
+        for (const p of openPositions) {
+          const slDist = p.sl > 0 ? Math.abs(p.entryPrice - p.sl) : (p.entryPrice * 0.015);
+          openPositionsMaxRisk += (slDist * p.size);
+        }
+        const currentRealizedLoss = Math.max(0, -dailyRealizedPnl);
+        const estNewRisk = balance * riskFraction;
+
+        if ((currentRealizedLoss + openPositionsMaxRisk + estNewRisk) > dailyLossLimit) {
+          canEnterNewTrade = false;
+        }
+      }
+
       for (const sym of symbols) {
         const state = symData[sym];
         if (!state.pendingPivotOrder) continue;
         const order = state.pendingPivotOrder;
         const bar = state.candles[i];
-        if (bar.high >= order.triggerPrice) {
-          const entryPrice = Math.max(bar.open, order.triggerPrice) * 1.0002;
-          const stopDistance = entryPrice - order.sl;
-          if (stopDistance > 0 && openPositions.length < this.config.maxOpenPositions && !openPositions.some(p => p.symbol === sym)) {
-            const stopDistPct = stopDistance / entryPrice;
-            if (stopDistPct >= 0.008 && stopDistPct <= 0.045) {
-              const riskDollar = balance * this.config.riskPerTradePct;
-              let notional = riskDollar / stopDistPct;
-              const maxNotional = Math.min(balance * this.config.maxLeverage, this.config.maxMargin * 2);
-              if (notional > maxNotional) notional = maxNotional;
-              const size = notional / entryPrice;
-              openPositions.push({
-                id: `OK_${sym}_${i}`,
-                symbol: sym,
-                entryTime: dateStr,
-                entryPrice,
-                sl: order.sl,
-                stopDist: stopDistance,
-                tpStage1: entryPrice + stopDistance * this.config.minRRPivot,
-                size,
-                notional,
-                riskDollar,
-                barsHeld: 0,
-                stage1Taken: false,
-                realizedPnl: 0,
-              });
+
+        if (canEnterNewTrade && openPositions.length < allowedMaxPositions && !openPositions.some(p => p.symbol === sym)) {
+          if (bar.high >= order.triggerPrice) {
+            const entryPrice = Math.max(bar.open, order.triggerPrice) * 1.0002;
+            const stopDistance = entryPrice - order.sl;
+            if (stopDistance > 0) {
+              const stopDistPct = stopDistance / entryPrice;
+              if (stopDistPct >= 0.008 && stopDistPct <= 0.045) {
+                const riskDollar = balance * riskFraction;
+                let notional = riskDollar / stopDistPct;
+                const maxNotional = Math.min(balance * this.config.maxLeverage, this.config.maxMargin * 2);
+                if (notional > maxNotional) notional = maxNotional;
+                const size = notional / entryPrice;
+                openPositions.push({
+                  id: `OK_${sym}_${i}`,
+                  symbol: sym,
+                  entryTime: dateStr,
+                  entryPrice,
+                  sl: order.sl,
+                  stopDist: stopDistance,
+                  tpStage1: entryPrice + stopDistance * this.config.minRRPivot,
+                  size,
+                  notional,
+                  riskDollar,
+                  barsHeld: 0,
+                  stage1Taken: false,
+                  realizedPnl: 0,
+                });
+              }
             }
+            state.pendingPivotOrder = null;
+          } else {
+            order.barsPending++;
+            if (order.barsPending >= 3 || bar.close < order.sl) state.pendingPivotOrder = null;
           }
-          state.pendingPivotOrder = null;
         } else {
-          order.barsPending++;
-          if (order.barsPending >= 3 || bar.close < order.sl) state.pendingPivotOrder = null;
+          state.pendingPivotOrder = null;
         }
       }
 
-      // 3. Update Wedge Pop & Crossback tracking
-      for (const sym of symbols) {
-        const state = symData[sym];
-        const bar = state.candles[i];
-        const e20 = state.ema20[i];
-        if (bar.close < e20) {
-          state.wasBelowEma20 = true;
-        } else if (state.wasBelowEma20 && bar.close > state.ema10[i] && state.ema10[i] > e20) {
-          state.wasBelowEma20 = false;
-          state.crossbackCount = 0;
-        }
-      }
-
-      // 4. Setup Detection on Bar Close
+      // -------------------------------------------------------------
+      // 3. Setup Detection on Bar Close (RS Leader Selection)
+      // -------------------------------------------------------------
       const btcClose = btcCloses[i];
       const btcBull = btcClose > btcEma50[i] || btcClose > btcEma200[i];
-      if (btcBull && openPositions.length < this.config.maxOpenPositions) {
+
+      if (btcBull && canEnterNewTrade && openPositions.length < allowedMaxPositions) {
+        const btcPerf = (btcClose - btcCloses[i - 24]) / btcCloses[i - 24];
+        const rsScores = [];
         for (const sym of symbols) {
           const state = symData[sym];
+          const sClose = state.closes[i];
+          const sPerf = (sClose - state.closes[i - 24]) / state.closes[i - 24];
+          rsScores.push({ sym, rs: sPerf - btcPerf });
+        }
+        rsScores.sort((a, b) => b.rs - a.rs);
+
+        for (const item of rsScores) {
+          const sym = item.sym;
+          const state = symData[sym];
           if (openPositions.some(p => p.symbol === sym) || state.pendingPivotOrder) continue;
+
           const bar = state.candles[i];
           const close = state.closes[i];
           const e10 = state.ema10[i];
@@ -274,14 +404,12 @@ class OliverKellEngine {
 
           const trendAligned = e10 > e20 && e20 > e50 && close > e200;
           const touched = (bar.low <= e10 * 1.002 || bar.low <= e20 * 1.004) && close >= e20 * 0.995;
+          const isLeader = item.rs >= -0.01;
 
-          if (trendAligned && touched) {
-            state.crossbackCount++;
-            if (this.config.maxCrossbacks === 0 || state.crossbackCount <= this.config.maxCrossbacks) {
-              const pivotHigh = bar.high;
-              const sl = bar.low - curAtr * this.config.atrBuffer;
-              state.pendingPivotOrder = { triggerPrice: pivotHigh * 1.001, sl, barsPending: 0 };
-            }
+          if (trendAligned && touched && isLeader) {
+            const pivotHigh = bar.high;
+            const sl = bar.low - curAtr * this.config.atrBuffer;
+            state.pendingPivotOrder = { triggerPrice: pivotHigh * 1.001, sl, barsPending: 0 };
           }
         }
       }
