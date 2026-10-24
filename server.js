@@ -7922,30 +7922,18 @@ const htmlContent = `<!DOCTYPE html>
         year = mInfo.year;
         month = mInfo.month;
 
-        if (simData && simData.daysMap) {
-          // Filter days for active month
-          for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
-            if (dStr.startsWith(mInfo.prefix)) {
-              daysMap[dStr] = {
-                pnl: dObj.pnl,
-                trades: [...(dObj.trades || [])]
-              };
-            }
-          }
-        }
-
-        // Dynamically merge real live paper trades from portfolio if on October (or current live session)
-        if (cachedPaperStatus && cachedPaperStatus.allTrades) {
-          cachedPaperStatus.allTrades.forEach(t => {
-            const exitTime = t.exitTime || t.entryTime;
-            if (!exitTime) return;
-            const dStr = exitTime.slice(0, 10);
-            if (dStr.startsWith(mInfo.prefix)) {
-              if (!daysMap[dStr]) {
-                daysMap[dStr] = { pnl: 0, trades: [] };
-              }
-              const exists = daysMap[dStr].trades.some(x => (t.id && x.id === t.id) || (x.symbol === t.symbol && x.time === exitTime.slice(11, 16)));
-              if (!exists) {
+        if (mInfo.prefix === "2026-10") {
+          // October 2026 is 100% Live Paper Trading — populate purely from live paper portfolio to prevent double-counting
+          daysMap = {};
+          if (cachedPaperStatus && cachedPaperStatus.allTrades) {
+            cachedPaperStatus.allTrades.forEach(t => {
+              const exitTime = t.exitTime || t.entryTime;
+              if (!exitTime) return;
+              const dStr = exitTime.slice(0, 10);
+              if (dStr.startsWith(mInfo.prefix)) {
+                if (!daysMap[dStr]) {
+                  daysMap[dStr] = { pnl: 0, trades: [] };
+                }
                 const tPnl = Math.round(Number(t.pnl || 0) * 100) / 100;
                 daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + tPnl) * 100) / 100;
                 daysMap[dStr].trades.push({
@@ -7963,8 +7951,20 @@ const htmlContent = `<!DOCTYPE html>
                   exitTime: exitTime
                 });
               }
+            });
+          }
+        } else {
+          if (simData && simData.daysMap) {
+            // Filter days for active month
+            for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
+              if (dStr.startsWith(mInfo.prefix)) {
+                daysMap[dStr] = {
+                  pnl: dObj.pnl,
+                  trades: [...(dObj.trades || [])]
+                };
+              }
             }
-          });
+          }
         }
 
         // Calculate stats for all trades in this active month

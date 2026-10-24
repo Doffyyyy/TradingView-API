@@ -174,6 +174,27 @@ class PaperTradingEngine {
   }
 
   async checkExitRules() {
+    // 0. Portfolio-Level Emergency Circuit Breaker:
+    // If daily realized loss plus active positions floating drawdown exceeds 105% of dailyStopLossMax,
+    // immediately close all active positions to prevent catastrophic loss overshoot.
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    let totalFloatingPnl = 0;
+    for (const p of this.portfolio.positions) {
+      const c = this.latestPrices[p.symbol]?.price;
+      if (c) {
+        totalFloatingPnl += (p.side === 'LONG' ? (c - p.entryPrice) : (p.entryPrice - c)) * p.size;
+      }
+    }
+    if ((this.portfolio.dailyRealizedPnl + totalFloatingPnl) <= -(dailyLossLimit * 1.05)) {
+      this.log(`🚨 EMERGENCY CIRCUIT BREAKER ACTIVATED: Total daily loss + floating drawdown (-$${Math.abs(this.portfolio.dailyRealizedPnl + totalFloatingPnl).toFixed(2)}) reached hard limit. Closing all remaining open positions.`);
+      for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
+        const p = this.portfolio.positions[i];
+        const c = this.latestPrices[p.symbol]?.price || p.entryPrice;
+        await this.closePosition(p.id, c, 'EMERGENCY_DAILY_CIRCUIT_BREAKER');
+      }
+      return;
+    }
+
     for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
       const pos = this.portfolio.positions[i];
       const curr = this.latestPrices[pos.symbol]?.price;
@@ -383,6 +404,12 @@ class PaperTradingEngine {
   }
 
   async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null, customSl = null) {
+    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    if (this.portfolio.dailyRealizedPnl <= -dailyLossLimit) {
+      this.log(`🛑 Cannot open position on ${symbol}: Daily Stop Loss already reached (-$${Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2)} <= -$${dailyLossLimit}).`);
+      return null;
+    }
+
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
       return null;
     }
@@ -574,24 +601,39 @@ class PaperTradingEngine {
       return; // Stop scanning, no new trades allowed today!
     }
 
+    // 1B. Committed Daily Risk Gate (Prevents Open Positions SL Cascade from Exceeding Daily Limit):
+    // Calculate worst-case loss if all currently open positions hit Stop Loss:
+    let openPositionsMaxRisk = 0;
+    for (const p of this.portfolio.positions) {
+      const slDist = p.stopLoss > 0 ? Math.abs(p.entryPrice - p.stopLoss) : (p.entryPrice * 0.015);
+      openPositionsMaxRisk += (slDist * p.size);
+    }
+    const currentRealizedLoss = Math.max(0, -this.portfolio.dailyRealizedPnl);
+    const estimatedNewTradeRisk = this.portfolio.equity * ((this.portfolio.riskPerTradePercent || 0.5) / 100);
+
+    if ((currentRealizedLoss + openPositionsMaxRisk + estimatedNewTradeRisk) > dailyLossLimit) {
+      // Risk budget exhausted for today! Do not open any more positions to guarantee total daily loss <= dailyLossLimit!
+      return;
+    }
+
     const dailyTargetMax = this.portfolio.dailyTargetMax || 300.0;
     const dailyTargetMin = this.portfolio.dailyTargetMin || 100.0;
 
-    // 2. Maximum Daily Target Lock (3% = $300+)
+    // 2. Maximum Daily Target Milestone (+3% ~ +5%) -> Preserves Profit via Sniper Mode, Does NOT clip runners
     if (this.portfolio.dailyRealizedPnl >= dailyTargetMax) {
       if (!this.hasLoggedDailyMax) {
-        this.log(`🏆 MAXIMUM DAILY TARGET ACHIEVED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $${dailyTargetMax} [3%]). Locking daily profit! Trading paused until tomorrow.`);
+        this.log(`🏆 MAXIMUM DAILY TARGET ACHIEVED (+$${this.portfolio.dailyRealizedPnl.toFixed(2)} >= $${dailyTargetMax} [3%]). Pure Loss Guard active: Preserving profit in 1-position Sniper mode without clipping runners.`);
         this.hasLoggedDailyMax = true;
 
         try {
           sendTelegramAlert({
             instrument: 'PORTFOLIO_TARGET',
-            customMessage: `🏆 MAX DAILY TARGET ACHIEVED! Daily Profit: +$${this.portfolio.dailyRealizedPnl.toFixed(2)} (>= 3% / $${dailyTargetMax}). Profit locked, auto-trading paused until tomorrow (00:00 UTC+7). Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            customMessage: `🏆 MAX DAILY TARGET ACHIEVED! Daily Profit: +$${this.portfolio.dailyRealizedPnl.toFixed(2)} (>= 3% / $${dailyTargetMax}). Preserving profit, operating in A+ Sniper mode. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
             accountEquity: this.portfolio.equity,
           }).catch(() => {});
         } catch (e) {}
       }
-      return; // Stop scanning, lock profit for the day!
+      // Pure Loss Guard: Do not hard return, allow A+ runner climax extensions under single slot control
     }
 
     // 3. Minimum Daily Target Met (1% = $100+) -> Switches to Sniper A+ mode
@@ -608,8 +650,8 @@ class PaperTradingEngine {
 
     // Dynamic slot control:
     // - Target Min reached ($100+): max 1 position to safeguard profit
-    // - Defensive mode (loss >= -$90, 50% of stoploss limit): max 1 position, 1x leverage only
-    const isDefensive = !this.portfolio.defensiveDisabled && (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5));
+    // - Defensive mode (loss >= 50% of stoploss limit, e.g. -$90): max 1 position, 1x leverage only
+    const isDefensive = (this.portfolio.dailyRealizedPnl <= -(dailyLossLimit * 0.5));
     if ((isTargetHit || isDefensive) && this.portfolio.positions.length >= 1) {
       return;
     }

@@ -21,6 +21,7 @@ function loadAllTrades() {
 
   if (simData && simData.daysMap) {
     for (const [dateStr, dayObj] of Object.entries(simData.daysMap)) {
+      if (dateStr.startsWith('2026-10')) continue; // Skip simulated October, live October is loaded purely from portData!
       for (const t of (dayObj.trades || [])) {
         const dStr = t.date || dateStr;
         const timeStr = t.time || (t.exitTime ? t.exitTime.slice(11, 16) : '12:00');
