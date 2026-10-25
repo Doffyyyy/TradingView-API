@@ -111,18 +111,21 @@ function getLoginPageHtml(config = {}) {
       z-index: 2;
     }
     .bg-video-main {
-      position: absolute; top: 50%; left: 50%;
-      min-width: 100%; min-height: 100%;
-      width: auto; height: auto;
-      transform: translate(-50%, -50%) scale(1.02);
-      object-fit: cover;
-      opacity: 0.94;
+      height: 100vh;
+      max-height: 100vh;
+      width: auto;
+      max-width: 100vw;
+      aspect-ratio: 816 / 1104;
+      object-fit: contain;
+      opacity: 0.98;
       filter: saturate(1.22) contrast(1.18) brightness(1.0);
+      mask-image: radial-gradient(ellipse 92% 97% at 50% 50%, black 70%, rgba(0,0,0,0.85) 86%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 92% 97% at 50% 50%, black 70%, rgba(0,0,0,0.85) 86%, transparent 100%);
     }
     .video-ambient-overlay {
       position: absolute; inset: 0;
-      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.16) 0%, rgba(7, 9, 14, 0.22) 55%, rgba(5, 7, 11, 0.6) 100%),
-                  linear-gradient(180deg, rgba(7, 9, 14, 0.12) 0%, rgba(7, 9, 14, 0.52) 100%);
+      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.12) 0%, rgba(7, 9, 14, 0.18) 55%, rgba(5, 7, 11, 0.55) 100%),
+                  linear-gradient(180deg, rgba(7, 9, 14, 0.08) 0%, rgba(7, 9, 14, 0.45) 100%);
       pointer-events: none;
       z-index: 3;
     }
