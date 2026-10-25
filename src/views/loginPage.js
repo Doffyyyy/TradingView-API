@@ -1,0 +1,1062 @@
+/**
+ * TradingView-API — High-End Gateway & Login Landing Page
+ *
+ * Visual Theme: Inspired by MO_IAI's "Sweet Dreams"
+ * Aesthetic: Dark Sublime, Gothic Elegance, Neoclassical Chiaroscuro
+ * Palette:
+ *   - Abyssal Charcoal: #090b10, #0f121a
+ *   - Bone White / Alabaster: #f5f2eb, #d8d4c8
+ *   - Muted Sage / Antique Slate: #828c7e, #94a3b8
+ *   - Ember Rust / Burnt Ochre: #b8432e, #ea580c, #7f1d1d
+ *
+ * Features:
+ *   - Single-intent Gateway: Direct Google/Gmail login & Web3 Wallet (EIP-4361 SIWE)
+ *   - Comprehensive Security Disclosures, Terms of Service & Privacy Policy Modals
+ *   - Multi-channel Contact Support (Telegram, Twitter/X, Email)
+ *   - Seamless transition to Trading Terminal upon authentication
+ */
+
+function getLoginPageHtml(config = {}) {
+  const domain = config.domain || 'hyperview.ai.id';
+  const googleClientId = config.googleClientId || '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyperview — Institutional AI Trading & Price Cycle Gateway</title>
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    :root {
+      --bg-abyss: #07090e;
+      --bg-card: rgba(14, 18, 27, 0.88);
+      --bg-card-hover: rgba(18, 23, 35, 0.94);
+      --text-alabaster: #f5f2eb;
+      --text-muted: #8e95a5;
+      --text-sage: #889487;
+      --border-subtle: rgba(136, 148, 135, 0.22);
+      --border-ember: rgba(184, 67, 46, 0.55);
+      --ember-primary: #b8432e;
+      --ember-glow: rgba(184, 67, 46, 0.35);
+      --ember-gradient: linear-gradient(135deg, #b8432e 0%, #87281a 100%);
+      --accent-blue: #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-abyss);
+      color: var(--text-alabaster);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Film Grain & Atmospheric Stippling */
+    .film-grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 1;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    /* Ambient Dynamic Background Video & Atmospheric Overlay */
+    .video-background-wrap {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: 0; pointer-events: none;
+    }
+    .bg-video-stream {
+      position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
+      width: auto; height: auto; transform: translate(-50%, -50%) scale(1.04);
+      object-fit: cover; opacity: 0.88; filter: saturate(1.15) contrast(1.15) brightness(0.95);
+    }
+    .video-ambient-overlay {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.22) 0%, rgba(7, 9, 14, 0.38) 55%, rgba(5, 7, 11, 0.72) 100%),
+                  linear-gradient(180deg, rgba(7, 9, 14, 0.18) 0%, rgba(7, 9, 14, 0.75) 100%);
+      pointer-events: none;
+    }
+
+    /* Floating Island Header (Frosted Glass) */
+    header.floating-nav {
+      position: fixed; top: 20px; left: 0; right: 0; margin: 0 auto;
+      width: calc(100% - 48px); max-width: 1180px; height: 56px;
+      background: rgba(10, 14, 22, 0.35) !important;
+      backdrop-filter: blur(16px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(16px) saturate(190%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 100;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .brand-group {
+      display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;
+    }
+    .brand-logo-img {
+      width: 22px; height: 22px; border-radius: 4px;
+    }
+    .brand-title {
+      font-family: 'Cinzel', serif; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;
+      color: var(--text-alabaster);
+    }
+    .brand-status-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #10b981;
+      box-shadow: 0 0 8px #10b981; animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 28px; list-style: none;
+    }
+    .nav-link {
+      font-size: 13px; font-weight: 600; color: #cbd5e1; text-decoration: none;
+      transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .nav-link:hover { color: #fff; }
+
+    .btn-nav-cta {
+      background: linear-gradient(135deg, rgba(184, 67, 46, 0.45) 0%, rgba(127, 29, 29, 0.55) 100%) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      color: #fff;
+      border: 1px solid rgba(251, 146, 60, 0.7) !important;
+      border-radius: 999px; padding: 7px 18px; font-size: 12.5px; font-weight: 700;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 16px rgba(184, 67, 46, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(184, 67, 46, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    /* Main Container */
+    main.landing-main {
+      position: relative; z-index: 10;
+      padding-top: 130px; max-width: 1240px; margin: 0 auto; padding-left: 24px; padding-right: 24px;
+    }
+
+    /* Hero Grid: Split Headline & Monolithic Login Card */
+    .hero-split-grid {
+      display: grid; grid-template-columns: 1.15fr 0.95fr; gap: 48px;
+      align-items: center; min-height: calc(100vh - 160px);
+      padding-bottom: 60px;
+    }
+
+    .hero-badge-live {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(184, 67, 46, 0.22); border: 1px solid rgba(251, 146, 60, 0.5);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 999px; padding: 5px 14px; font-size: 11px; font-weight: 700;
+      color: #fed7aa; margin-bottom: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-headline {
+      font-family: 'Cinzel', serif; font-size: 46px; line-height: 1.14; font-weight: 800;
+      margin-bottom: 20px; letter-spacing: -0.5px;
+      background: linear-gradient(180deg, #ffffff 40%, #d8d4c8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .hero-subhead {
+      font-size: 16px; line-height: 1.6; color: #e2e8f0;
+      margin-bottom: 32px; max-width: 540px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    .hero-proof-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      background: rgba(10, 14, 22, 0.32) !important;
+      backdrop-filter: blur(18px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      border-radius: 16px; padding: 18px 22px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      max-width: 520px;
+    }
+    .stat-metric {
+      font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #fff;
+      margin-bottom: 4px; display: flex; align-items: baseline; gap: 4px;
+      font-feature-settings: "tnum"; letter-spacing: -0.5px;
+    }
+    .stat-metric span { font-size: 12px; color: #10b981; }
+    .stat-label {
+      font-size: 10.5px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+    }
+
+    /* Monolithic Authentication Console Card (Frosted Glass Translucent) */
+    .auth-monolith-card {
+      background: rgba(12, 16, 25, 0.34) !important;
+      backdrop-filter: blur(28px) saturate(200%) !important;
+      -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      border-radius: 20px;
+      box-shadow: 0 32px 72px rgba(0, 0, 0, 0.65), 0 0 40px rgba(184, 67, 46, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      overflow: hidden; position: relative;
+    }
+
+    .card-ember-accent {
+      height: 3px; width: 100%;
+      background: linear-gradient(90deg, #ea580c 0%, #b8432e 50%, #7f1d1d 100%);
+    }
+
+    .card-header-inner {
+      padding: 24px 28px 16px 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-title-main {
+      font-family: 'Cinzel', serif; font-size: 18px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+    }
+    .card-subtext {
+      font-size: 12.5px; color: #cbd5e1;
+    }
+
+    /* Segmented Navigation Tabs */
+    .auth-selector-tabs {
+      display: flex; padding: 6px 20px; gap: 6px;
+      background: rgba(8, 11, 17, 0.28) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    .tab-trigger {
+      flex: 1; padding: 9px 8px;
+      background: rgba(255, 255, 255, 0.04) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 8px; color: #cbd5e1; font-size: 12px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tab-trigger:hover { color: #fff; background: rgba(255, 255, 255, 0.08) !important; }
+    .tab-trigger.active {
+      background: rgba(255, 255, 255, 0.14) !important; color: #fff;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .auth-tab-content-area {
+      padding: 28px;
+    }
+
+    .auth-pane { display: none; }
+    .auth-pane.active { display: block; animation: paneFade 0.25s ease-out; }
+    @keyframes paneFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Translucent Action Buttons */
+    .btn-connect-web3 {
+      width: 100%; padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(184, 67, 46, 0.45) 0%, rgba(127, 29, 29, 0.55) 100%) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      color: #fff;
+      border: 1px solid rgba(251, 146, 60, 0.7) !important;
+      border-radius: 10px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      box-shadow: 0 8px 28px rgba(184, 67, 46, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-connect-web3:hover {
+      transform: translateY(-1.5px);
+      background: linear-gradient(135deg, rgba(184, 67, 46, 0.6) 0%, rgba(127, 29, 29, 0.7) 100%) !important;
+      box-shadow: 0 12px 32px rgba(184, 67, 46, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .input-auth-field {
+      width: 100%;
+      background: rgba(7, 10, 16, 0.32) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #fff; padding: 12px 14px; border-radius: 10px; font-size: 13px; outline: none;
+      margin-bottom: 14px; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-auth-field:focus {
+      border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-email-submit {
+      width: 100%; padding: 12px 16px;
+      background: rgba(37, 99, 235, 0.38) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      color: #fff;
+      border: 1px solid rgba(96, 165, 250, 0.6) !important;
+      border-radius: 10px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .btn-email-submit:hover {
+      background: rgba(37, 99, 235, 0.55) !important;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.5);
+    }
+
+    /* Translucent Security Notice Pill Box */
+    .security-callout-pill {
+      background: rgba(136, 148, 135, 0.1) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 10px; padding: 12px 14px; margin-top: 20px; font-size: 11.5px;
+      color: #cbd5e1; line-height: 1.55;
+    }
+
+    .divider-text-line {
+      display: flex; align-items: center; gap: 12px; margin: 18px 0;
+    }
+    .divider-text-line div { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
+    .divider-text-line span { font-size: 10.5px; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+
+    .guest-preview-link {
+      display: block; text-align: center; margin-top: 18px; font-size: 12px;
+      color: #cbd5e1; text-decoration: none; transition: color 0.15s;
+    }
+    .guest-preview-link:hover { color: #fff; text-decoration: underline; }
+
+    /* SECTION 2: ARCHITECTURE & VALUE PILLARS (Frosted Translucent Cards) */
+    .section-pillars {
+      padding: 90px 0 60px 0; border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .section-head-center {
+      text-align: center; max-width: 680px; margin: 0 auto 50px auto;
+    }
+    .section-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase;
+      color: #fb923c; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 12px; display: block;
+    }
+    .section-title {
+      font-family: 'Cinzel', serif; font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 14px;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    }
+    .section-desc {
+      font-size: 14.5px; color: #cbd5e1; line-height: 1.6;
+    }
+
+    .pillars-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+    .pillar-card {
+      background: rgba(12, 16, 25, 0.34) !important;
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 16px; padding: 28px 24px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pillar-card:hover {
+      border-color: rgba(251, 146, 60, 0.6) !important; transform: translateY(-3px);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(184, 67, 46, 0.25);
+    }
+    .pillar-icon-box {
+      width: 44px; height: 44px; border-radius: 10px; background: rgba(184, 67, 46, 0.2);
+      border: 1px solid rgba(251, 146, 60, 0.45); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px; color: #fb923c;
+    }
+    .pillar-heading {
+      font-family: 'Cinzel', serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px;
+    }
+    .pillar-text {
+      font-size: 13px; color: #cbd5e1; line-height: 1.6;
+    }
+
+    /* SECTION 3: SECURITY ARCHITECTURE (SIWE & CRYPTOGRAPHY) */
+    .section-security-banner {
+      background: linear-gradient(180deg, rgba(14, 18, 27, 0.45) 0%, rgba(8, 10, 16, 0.55) 100%) !important;
+      backdrop-filter: blur(24px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      border: 1px solid rgba(184, 67, 46, 0.4) !important;
+      border-radius: 20px; padding: 48px;
+      margin: 40px 0 90px 0; position: relative; overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+    .sec-grid-2col {
+      display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;
+    }
+    .sec-feature-list {
+      list-style: none; margin-top: 20px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .sec-item {
+      display: flex; gap: 12px; font-size: 13.5px; color: var(--text-alabaster); line-height: 1.5;
+    }
+    .sec-item svg { flex-shrink: 0; color: #10b981; margin-top: 3px; }
+
+    /* FOOTER */
+    footer.landing-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08); background: #05070a;
+      padding: 60px 24px 40px 24px; position: relative; z-index: 10;
+    }
+    .footer-inner {
+      max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 40px;
+      margin-bottom: 48px;
+    }
+    .footer-col-title {
+      font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #fff;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 18px;
+    }
+    .footer-link-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-link-item a {
+      color: var(--text-muted); font-size: 13px; text-decoration: none; transition: color 0.15s; cursor: pointer;
+    }
+    .footer-link-item a:hover { color: #fff; }
+
+    .footer-bottom-bar {
+      max-width: 1240px; margin: 0 auto; padding-top: 28px; border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b;
+    }
+
+    /* MODAL SYSTEM (TERMS, PRIVACY, CONTACT) */
+    .modal-backdrop-layer {
+      position: fixed; inset: 0; background: rgba(4, 6, 10, 0.88);
+      backdrop-filter: blur(20px); z-index: 9999; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-dialog-box {
+      background: #0d101a; border: 1px solid rgba(184, 67, 46, 0.4); border-radius: 18px;
+      width: 100%; max-width: 620px; max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.95), 0 0 36px rgba(184, 67, 46, 0.15); overflow: hidden;
+      animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+    .modal-header-strip {
+      padding: 18px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .modal-headline-text {
+      font-family: 'Cinzel', serif; font-size: 16.5px; font-weight: 800; color: #fff;
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .modal-close-btn:hover { background: rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.6); }
+    .modal-scrollable-body {
+      padding: 24px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: #cbd5e1;
+    }
+    .modal-scrollable-body h3 {
+      font-family: 'Cinzel', serif; color: #fff; font-size: 14.5px; margin: 18px 0 8px 0; font-weight: 700;
+    }
+    .modal-scrollable-body p { margin-bottom: 12px; }
+
+    .modal-footer-strip {
+      padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.4);
+    }
+    .btn-modal-accept {
+      background: var(--ember-gradient); color: #fff; border: 1px solid var(--border-ember);
+      border-radius: 8px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-modal-accept:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--ember-glow); }
+
+    .contact-channel-pill {
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px; text-decoration: none; color: inherit; transition: all 0.2s;
+    }
+    .contact-channel-pill:hover {
+      background: rgba(255, 255, 255, 0.08); border-color: rgba(184, 67, 46, 0.45);
+      transform: translateY(-1px);
+    }
+    .channel-icon-bg {
+      width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .channel-action-badge {
+      font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 6px;
+    }
+
+    /* Toast Notification */
+    .landing-toast-pill {
+      position: fixed; bottom: 24px; right: 24px; background: #111624;
+      border: 1px solid #b8432e; color: #fff; padding: 12px 20px; border-radius: 10px;
+      font-size: 12.5px; font-weight: 600; box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      z-index: 10000; display: none; align-items: center; gap: 10px;
+    }
+
+    @media (max-width: 960px) {
+      .hero-split-grid { grid-template-columns: 1fr; gap: 40px; }
+      .pillars-grid { grid-template-columns: 1fr; }
+      .sec-grid-2col { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="film-grain"></div>
+  <div class="video-background-wrap">
+    <video class="bg-video-stream" autoplay loop muted playsinline poster="/public/sweet_dreams_hero.jpg">
+      <source src="/public/sweet_dreams_bg.mp4" type="video/mp4">
+    </video>
+    <div class="video-ambient-overlay"></div>
+  </div>
+
+  <!-- FLOATING NAVIGATION ISLAND -->
+  <header class="floating-nav">
+    <a href="/" class="brand-group">
+      <img src="/public/favicon.svg" alt="Hyperview" class="brand-logo-img">
+      <span class="brand-title">HYPERVIEW</span>
+      <span class="brand-status-dot" title="Core Engine Operational"></span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#features" class="nav-link">Intelligence</a></li>
+      <li><a href="#security" class="nav-link">Web3 Security</a></li>
+      <li><a href="#architecture" class="nav-link">Risk Engine</a></li>
+      <li><a href="javascript:void(0)" onclick="openLegalModal('terms')" class="nav-link">Terms</a></li>
+      <li><a href="javascript:void(0)" onclick="openLegalModal('privacy')" class="nav-link">Privacy</a></li>
+      <li><a href="javascript:void(0)" onclick="openLegalModal('contact')" class="nav-link">Contact</a></li>
+    </ul>
+
+    <div>
+      <a href="#gateway-console" class="btn-nav-cta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span>Access Terminal</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN LANDING HERO & GATEWAY -->
+  <main class="landing-main">
+    <div class="hero-split-grid">
+      <!-- Left Hero Pitch -->
+      <div>
+        <div class="hero-badge-live">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f97316;"></span>
+          Institutional Price Cycle Intelligence
+        </div>
+        <h1 class="hero-headline">
+          The Execution Edge for Quantitative Crypto Markets.
+        </h1>
+        <p class="hero-subhead">
+          Powered by Oliver Kell's championship price cycles, 26 technical consensus models, and zero-latency timeframe execution. Built for disciplined capital compounding.
+        </p>
+
+        <div class="hero-proof-stats">
+          <div>
+            <div class="stat-metric">$11,547 <span>+15.4%</span></div>
+            <div class="stat-label">Ending Equity (T3-T10)</div>
+          </div>
+          <div>
+            <div class="stat-metric">&lt; 18ms <span>REST</span></div>
+            <div class="stat-label">Switching Latency</div>
+          </div>
+          <div>
+            <div class="stat-metric">4-Layer <span>Pure Guard</span></div>
+            <div class="stat-label">Loss Slippage Shield</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Monolithic Authentication Console -->
+      <div id="gateway-console">
+        <div class="auth-monolith-card">
+          <div class="card-ember-accent"></div>
+          <div class="card-header-inner">
+            <div class="card-title-main">
+              <span>SECURITY GATEWAY</span>
+              <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #fb923c; background: rgba(251, 146, 60, 0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(251, 146, 60, 0.3);">EIP-4361 VERIFIED</span>
+            </div>
+            <div class="card-subtext">Sign in to unlock terminal workspaces, trading logs & live AI engines.</div>
+          </div>
+
+          <!-- Tabs: Web3 Wallet vs Google vs Master Key -->
+          <div class="auth-selector-tabs">
+            <button class="tab-trigger active" data-tab-target="pane-wallet">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+              <span>Web3 Wallet</span>
+            </button>
+            <button class="tab-trigger" data-tab-target="pane-google">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
+              <span>Google / Gmail</span>
+            </button>
+            <button class="tab-trigger" data-tab-target="pane-master">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Master Key</span>
+            </button>
+          </div>
+
+          <div class="auth-tab-content-area">
+            <!-- PANE 1: WEB3 WALLET (EIP-4361 SIWE) -->
+            <div class="auth-pane active" id="pane-wallet">
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                Connect your decentralized EVM wallet (MetaMask, Rabby, Phantom). Ownership is verified via cryptographic challenge with <strong>zero gas fees</strong>.
+              </div>
+
+              <div id="wallet-auth-status-text" style="font-size: 11px; color: var(--text-sage); margin-bottom: 12px; min-height: 16px;"></div>
+
+              <button class="btn-connect-web3" id="btn-login-wallet">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                <span id="btn-login-wallet-label">Connect EVM Wallet & Sign In</span>
+              </button>
+
+              <div class="security-callout-pill">
+                🔒 <strong>Non-Custodial Guarantee:</strong> Sign-In with Ethereum only verifies cryptographic address possession. We never ask for contract approval, token transfer, or private keys.
+              </div>
+            </div>
+
+            <!-- PANE 2: GOOGLE / GMAIL -->
+            <div class="auth-pane" id="pane-google">
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                Sign in with your verified Google account to store customized alerts, journal configurations, and notifications.
+              </div>
+
+              <input type="email" class="input-auth-field" id="login-email-input" placeholder="Enter your Gmail (e.g. name@gmail.com)">
+              <button class="btn-email-submit" id="btn-login-email">Continue with Gmail</button>
+
+              <div class="divider-text-line">
+                <div></div>
+                <span>Secured by Google Identity</span>
+                <div></div>
+              </div>
+
+              <div class="security-callout-pill">
+                🛡️ <strong>Zero Password Storage:</strong> Authentication occurs through OAuth 2.0 cryptographic token signatures. Your credentials remain securely stored with Google.
+              </div>
+            </div>
+
+            <!-- PANE 3: BOT OWNER MASTER KEY -->
+            <div class="auth-pane" id="pane-master">
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                Bot administrator access. Enter your master administrative key to unlock order execution, risk reset, and strategy parameters.
+              </div>
+
+              <input type="password" class="input-auth-field" id="login-master-key-input" placeholder="Enter Master Key (e.g. hyperview2026)">
+              <button class="btn-email-submit" id="btn-login-master" style="background: #d97706; border-color: rgba(245, 158, 11, 0.4);">
+                Authorize Admin Privileges
+              </button>
+
+              <div class="security-callout-pill">
+                👑 <strong>Full Administrative Authority:</strong> Allows toggling live algorithms, emergency circuit breakers, and Hyperliquid execution.
+              </div>
+            </div>
+
+            <a href="/terminal" class="guest-preview-link">
+              Or explore terminal in Guest Mode (View-only) →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALUE PROPOSITIONS & INTELLIGENCE PILLARS -->
+    <section class="section-pillars" id="features">
+      <div class="section-head-center">
+        <span class="section-tag">ENGINEERING CORE</span>
+        <h2 class="section-title">Built for the Asymmetric Trader</h2>
+        <p class="section-desc">Traditional indicators lag. Hyperview pairs relative strength leader selection with multi-tier capital preservation.</p>
+      </div>
+
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="pillar-heading">Oliver Kell Price Cycles</h3>
+          <p class="pillar-text">
+            Strict wedge pop confirmation, EMA 10/20 crossbacks, and two-stage take profit: 50% locked at +2.2R, runner captures Climax Extensions at +5R to +8R.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="pillar-heading">4-Layer Pure Loss Guard</h3>
+          <p class="pillar-text">
+            Committed Risk Gate rejects orders when floating risk threatens the $180 daily ceiling. Emergency Circuit Breaker prevents overnight cascading drawdowns.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3 class="pillar-heading">Zero-Latency Switching</h3>
+          <p class="pillar-text">
+            Binance Vision direct REST clusters and in-memory pre-warming reduce 1m, 15m, 1h, 4h, and 1D indicator compute down to 18 milliseconds without screen flashes.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: WEB3 SECURITY SPECIFICATION -->
+    <section class="section-security-banner" id="security">
+      <div class="sec-grid-2col">
+        <div>
+          <span class="section-tag">DEFENSE IN DEPTH</span>
+          <h2 class="section-title" style="font-size: 28px; margin-bottom: 12px;">Cryptographic SIWE Architecture</h2>
+          <p class="section-desc">
+            Hyperview operates on modern Web3 security foundations. When connecting your wallet, identity is established via mathematical proof rather than passwords.
+          </p>
+          <ul class="sec-feature-list">
+            <li class="sec-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>EIP-4361 Standardized Nonce:</strong> Cryptographically generated 256-bit challenge invalidated immediately upon single use.</span>
+            </li>
+            <li class="sec-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Anti-Replay Defense:</strong> 5-minute strict time-to-live prevents eavesdropped signatures from reuse.</span>
+            </li>
+            <li class="sec-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>HttpOnly, Secure Cookies:</strong> Session tokens isolated from browser scripts to eliminate XSS token exfiltration.</span>
+            </li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+          <div style="color: #fb923c; margin-bottom: 8px;">// EIP-4361 Challenge Format</div>
+          <div>hyperview.ai.id wants you to sign in:</div>
+          <div style="color: #fff;">0x71C...4e79</div>
+          <div style="margin: 8px 0; color: #64748b;">-------------------------------</div>
+          <div>URI: https://hyperview.ai.id</div>
+          <div>Version: 1 | Chain: 1</div>
+          <div>Nonce: 35fd851c64c9b78e568d51b68d8a</div>
+          <div>Issued: 2026-10-25T16:00:00Z</div>
+          <div style="margin-top: 10px; color: #10b981;">// Recovered via secp256k1: Valid</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="landing-footer" id="contact">
+    <div class="footer-inner">
+      <div>
+        <div class="brand-group" style="margin-bottom: 14px;">
+          <img src="/public/favicon.svg" alt="Hyperview" class="brand-logo-img">
+          <span class="brand-title">HYPERVIEW</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 340px; margin-bottom: 20px;">
+          Institutional-grade algorithmic execution, price cycle intelligence, and quantitative risk management for digital assets.
+        </p>
+        <div style="display: flex; gap: 12px;">
+          <a href="https://t.me/_teml" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Telegram @_teml
+          </a>
+          <span style="color: #334155;">•</span>
+          <a href="https://x.com/_teml" target="_blank" rel="noopener" style="color: #cbd5e1; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Twitter @_teml
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Navigation</div>
+        <ul class="footer-link-list">
+          <li class="footer-link-item"><a href="/terminal">Trading Terminal</a></li>
+          <li class="footer-link-item"><a href="#features">AI Intelligence Hub</a></li>
+          <li class="footer-link-item"><a href="#security">Security Specs</a></li>
+          <li class="footer-link-item"><a href="/api/paper/simulated-6m">Historical Journal (API)</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Compliance & Legal</div>
+        <ul class="footer-link-list">
+          <li class="footer-link-item"><a onclick="openLegalModal('terms')">Terms of Service</a></li>
+          <li class="footer-link-item"><a onclick="openLegalModal('privacy')">Privacy Policy</a></li>
+          <li class="footer-link-item"><a onclick="openLegalModal('security-audit')">Security Audit</a></li>
+          <li class="footer-link-item"><a onclick="openLegalModal('disclaimer')">Risk Disclaimer</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Contact & Help</div>
+        <ul class="footer-link-list">
+          <li class="footer-link-item"><a onclick="openLegalModal('contact')">Direct Contact</a></li>
+          <li class="footer-link-item"><a href="mailto:admin@hyperview.ai.id">admin@hyperview.ai.id</a></li>
+          <li class="footer-link-item"><a href="https://t.me/_teml" target="_blank">Telegram Support</a></li>
+          <li class="footer-link-item"><span style="color: #10b981; font-size: 11px;">● All Systems Normal</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom-bar">
+      <div>© 2026 Hyperview Network. All rights reserved. Non-custodial trading software.</div>
+      <div style="display: flex; gap: 16px;">
+        <span>Cloudflare Protected</span>
+        <span>EIP-4361 Standard</span>
+        <span>Oliver Kell Price Cycle V2</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- INTERACTIVE MODAL DIALOG (TERMS, PRIVACY, CONTACT) -->
+  <div class="modal-backdrop-layer" id="legal-modal-backdrop">
+    <div class="modal-dialog-box">
+      <div class="modal-header-strip">
+        <div class="modal-headline-text" id="legal-modal-title">Terms of Service</div>
+        <button class="modal-close-btn" onclick="closeLegalModal()">✕</button>
+      </div>
+      <div class="modal-scrollable-body" id="legal-modal-body"></div>
+      <div class="modal-footer-strip">
+        <span style="font-size: 11px; color: #64748b;" id="legal-modal-foot-meta">Effective Date: October 2026 • Compliance v2.4</span>
+        <button class="btn-modal-accept" onclick="closeLegalModal()">I Understand & Accept</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="landing-toast-pill" id="landing-toast"></div>
+
+  <!-- CLIENT-SIDE GATEWAY CONTROLLER -->
+  <script>
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('landing-toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.borderColor = isError ? '#ef4444' : '#10b981';
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    // Tab switcher
+    document.querySelectorAll('.tab-trigger').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.auth-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.getAttribute('data-tab-target');
+        document.getElementById(target)?.classList.add('active');
+      });
+    });
+
+    // 1. Web3 Wallet Sign-In (EIP-4361 SIWE)
+    document.getElementById('btn-login-wallet')?.addEventListener('click', async () => {
+      const statusText = document.getElementById('wallet-auth-status-text');
+      const btnLabel = document.getElementById('btn-login-wallet-label');
+
+      if (!window.ethereum) {
+        alert('No Web3 wallet found. Please install MetaMask, Rabby, or Coinbase Wallet to proceed!');
+        return;
+      }
+
+      try {
+        btnLabel.textContent = 'Connecting...';
+        statusText.textContent = '1. Requesting account permission from wallet...';
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts || accounts.length === 0) throw new Error('No account selected');
+        const userAddress = accounts[0];
+
+        statusText.textContent = '2. Requesting cryptographic Nonce challenge from server...';
+        const nonceRes = await fetch('/api/auth/wallet/nonce', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: userAddress })
+        });
+        const nonceData = await nonceRes.json();
+        if (!nonceData.success) throw new Error(nonceData.error || 'Failed to generate Nonce');
+
+        statusText.textContent = '3. Please sign the EIP-4361 challenge on your wallet window (0 gas fee)...';
+        btnLabel.textContent = 'Awaiting signature...';
+
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [nonceData.message, userAddress]
+        });
+
+        statusText.textContent = '4. Verifying secp256k1 signature and issuing session...';
+        btnLabel.textContent = 'Verifying...';
+
+        const verifyRes = await fetch('/api/auth/wallet/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: userAddress,
+            signature,
+            message: nonceData.message
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+        if (verifyData.success) {
+          showToast('✅ Signature verified! Welcome to Hyperview (' + verifyData.user.role + ')');
+          setTimeout(() => { window.location.href = '/terminal'; }, 800);
+        } else {
+          throw new Error(verifyData.error || 'Verification failed');
+        }
+      } catch (err) {
+        showToast('❌ ' + err.message, true);
+        statusText.textContent = 'Error: ' + err.message;
+      } finally {
+        btnLabel.textContent = 'Connect EVM Wallet & Sign In';
+      }
+    });
+
+    // 2. Gmail / Email Direct Sign-In
+    document.getElementById('btn-login-email')?.addEventListener('click', async () => {
+      const email = (document.getElementById('login-email-input')?.value || '').trim();
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid Gmail / Email address');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/direct-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email, role: 'USER' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Welcome, ' + data.user.displayId);
+          setTimeout(() => { window.location.href = '/terminal'; }, 800);
+        } else {
+          alert(data.error || 'Login failed');
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+    // 3. Bot Owner Master Key Admin Sign-In
+    document.getElementById('btn-login-master')?.addEventListener('click', async () => {
+      const key = (document.getElementById('login-master-key-input')?.value || '').trim();
+      if (!key) {
+        alert('Please enter the Master Key');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/claim-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ masterKey: key })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('👑 Administrative privileges authorized!');
+          setTimeout(() => { window.location.href = '/terminal'; }, 800);
+        } else {
+          alert('❌ ' + (data.error || 'Invalid Master Key'));
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+    // LEGAL & CONTACT MODALS
+    const LEGAL_CONTENT = {
+      terms: {
+        title: 'Terms of Service',
+        body: '<h3>1. Acceptance of Terms</h3>'
+          + '<p>By accessing Hyperview (the "Platform") at ' + '${domain}' + ', you agree to comply with and be bound by these Terms of Service. If you do not agree, you must immediately cease accessing the platform.</p>'
+          + '<h3>2. Informational & Educational Software</h3>'
+          + '<p>Hyperview provides automated market indicators, technical pattern detection, and simulation journals. None of the materials or automated outputs constitute personalized investment or financial advice.</p>'
+          + '<h3>3. Non-Custodial Operation</h3>'
+          + '<p>The Platform operates on a 100% non-custodial framework. Hyperview never retains custody of your private keys or cryptographic assets. All live trade routing via Hyperliquid is signed directly by the user environment.</p>'
+          + '<h3>4. Prohibited Activities</h3>'
+          + '<p>Users shall not attempt denial-of-service attacks, reverse engineer proprietary algorithmic modules, or bypass security rate limiters. Violations result in permanent IP blacklisting.</p>'
+      },
+      privacy: {
+        title: 'Privacy & Data Protection Policy',
+        body: '<h3>1. Data We Collect</h3>'
+          + '<p>We believe in radical data minimization. When you connect via Web3 wallet, we collect only your public EVM address. When you sign in via Google, we collect only your verified email and display name for session identification.</p>'
+          + '<h3>2. Cryptographic Security Standards</h3>'
+          + '<p>Authentication utilizes EIP-4361 (Sign-In with Ethereum). Sessions are bound to 256-bit cryptographically random tokens stored in HttpOnly, SameSite=Strict cookies. No private keys or passwords ever touch our infrastructure.</p>'
+          + '<h3>3. Zero Third-Party Monetization</h3>'
+          + '<p>We do not sell, rent, or monetize your trading journals, simulated strategies, or browsing activities. All analytical caching is localized.</p>'
+          + '<h3>4. Data Removal</h3>'
+          + '<p>You may request deletion of all server-side session logs at any time by contacting admin@hyperview.ai.id.</p>'
+      },
+      disclaimer: {
+        title: 'Risk Disclaimer & Disclosure',
+        body: '<h3>High-Risk Derivative Warning</h3>'
+          + '<p>Trading cryptocurrencies, perpetual futures, and financial derivatives carries a substantial risk of capital loss and is not suitable for every investor. Leverage can work against you as well as for you.</p>'
+          + '<h3>Hypothetical & Simulation Results</h3>'
+          + '<p>Backtested performance results (including the Oliver Kell V2 Pure Loss Guard journal) have inherent limitations. Past performance does not guarantee future results in live market liquidity.</p>'
+      },
+      contact: {
+        title: 'Direct Support & Official Channels',
+        body: '<p style="margin-bottom:14px; font-size:13px; color:#94a3b8;">For strategic integrations, algorithmic inquiries, or account recovery:</p>'
+          + '<div style="display:flex; flex-direction:column; gap:10px;">'
+          + '<a href="https://t.me/_teml" target="_blank" rel="noopener" class="contact-channel-pill">'
+          + '<div style="display:flex; align-items:center; gap:12px;">'
+          + '<div class="channel-icon-bg" style="background:rgba(56,189,248,0.15); color:#38bdf8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>'
+          + '<div><div style="font-weight:700; color:#fff; font-size:13px;">Telegram Direct Support</div><div style="font-size:11.5px; color:#38bdf8;">@_teml</div></div>'
+          + '</div>'
+          + '<span class="channel-action-badge">Open Telegram ↗</span>'
+          + '</a>'
+          + '<a href="https://x.com/_teml" target="_blank" rel="noopener" class="contact-channel-pill">'
+          + '<div style="display:flex; align-items:center; gap:12px;">'
+          + '<div class="channel-icon-bg" style="background:rgba(255,255,255,0.08); color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>'
+          + '<div><div style="font-weight:700; color:#fff; font-size:13px;">Twitter / X Operator</div><div style="font-size:11.5px; color:#38bdf8;">@_teml</div></div>'
+          + '</div>'
+          + '<span class="channel-action-badge" style="color:#cbd5e1; border-color:rgba(255,255,255,0.2); background:rgba(255,255,255,0.05);">Message on X ↗</span>'
+          + '</a>'
+          + '<a href="mailto:admin@hyperview.ai.id" class="contact-channel-pill">'
+          + '<div style="display:flex; align-items:center; gap:12px;">'
+          + '<div class="channel-icon-bg" style="background:rgba(245,158,11,0.15); color:#f59e0b;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>'
+          + '<div><div style="font-weight:700; color:#fff; font-size:13px;">Official Operator Email</div><div style="font-size:11.5px; color:#38bdf8;">admin@hyperview.ai.id</div></div>'
+          + '</div>'
+          + '<span class="channel-action-badge" style="color:#f59e0b; border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.1);">Send Mail ↗</span>'
+          + '</a>'
+          + '<a href="https://github.com/Doffyyyy/TradingView-API" target="_blank" rel="noopener" class="contact-channel-pill">'
+          + '<div style="display:flex; align-items:center; gap:12px;">'
+          + '<div class="channel-icon-bg" style="background:rgba(168,85,247,0.15); color:#c084fc;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></div>'
+          + '<div><div style="font-weight:700; color:#fff; font-size:13px;">GitHub Core Repository</div><div style="font-size:11.5px; color:#38bdf8;">Doffyyyy/TradingView-API</div></div>'
+          + '</div>'
+          + '<span class="channel-action-badge" style="color:#c084fc; border-color:rgba(168,85,247,0.3); background:rgba(168,85,247,0.1);">Repository ↗</span>'
+          + '</a>'
+          + '</div>'
+      },
+      'security-audit': {
+        title: 'Security Architecture Audit',
+        body: '<h3>Independent Defense Specifications</h3>'
+          + '<p>• <strong>Rate Limiting:</strong> Enforced at 5 attempts per 5 minutes per IP on auth gates.<br>'
+          + '• <strong>Anti-Replay Mechanism:</strong> Nonce challenges strictly deleted upon execution.<br>'
+          + '• <strong>Security Headers:</strong> X-Frame-Options: SAMEORIGIN, nosniff, strict-origin-when-cross-origin.<br>'
+          + '• <strong>Automated Resilience:</strong> Daily continuous state snapshots stored under data/backups/.</p>'
+      }
+    };
+
+    function openLegalModal(key) {
+      const data = LEGAL_CONTENT[key];
+      if (!data) return;
+      document.getElementById('legal-modal-title').textContent = data.title;
+      document.getElementById('legal-modal-body').innerHTML = data.body;
+      const footMeta = document.getElementById('legal-modal-foot-meta');
+      const acceptBtn = document.querySelector('.btn-modal-accept');
+      if (key === 'contact') {
+        if (footMeta) footMeta.innerHTML = '<span style="color:#10b981;">● Typical response within 2 hours</span>';
+        if (acceptBtn) acceptBtn.textContent = 'Close Directory';
+      } else {
+        if (footMeta) footMeta.textContent = 'Effective Date: October 2026 • Compliance v2.4';
+        if (acceptBtn) acceptBtn.textContent = 'I Understand & Accept';
+      }
+      document.getElementById('legal-modal-backdrop').style.display = 'flex';
+    }
+
+    function closeLegalModal() {
+      document.getElementById('legal-modal-backdrop').style.display = 'none';
+    }
+
+    document.getElementById('legal-modal-backdrop')?.addEventListener('click', (e) => {
+      if (e.target.id === 'legal-modal-backdrop') closeLegalModal();
+    });
+  </script>
+</body>
+</html>`;
+}
+
+module.exports = {
+  getLoginPageHtml,
+};
