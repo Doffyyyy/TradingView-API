@@ -29,7 +29,7 @@ function getLoginPageHtml(config = {}) {
   <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syncopate:wght@700&family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
@@ -151,14 +151,24 @@ function getLoginPageHtml(config = {}) {
     }
 
     .brand-group {
-      display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;
+      display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;
     }
-    .brand-logo-img {
-      width: 22px; height: 22px; border-radius: 4px;
+    .brand-logo-badge {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, #b8432e 0%, #ea580c 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(234, 88, 12, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.25);
     }
+    .brand-logo-badge svg { width: 15px; height: 15px; }
     .brand-title {
-      font-family: 'Cinzel', serif; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;
-      color: var(--text-alabaster);
+      font-family: 'Cormorant Garamond', 'Cinzel', serif;
+      font-size: 21px; font-weight: 700; letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      line-height: 1;
     }
     .brand-status-dot {
       width: 7px; height: 7px; border-radius: 50%; background: #10b981;
@@ -657,7 +667,9 @@ function getLoginPageHtml(config = {}) {
   <!-- FLOATING NAVIGATION ISLAND -->
   <header class="floating-nav">
     <a href="/" class="brand-group">
-      <img src="/public/favicon.svg" alt="Hyperview" class="brand-logo-img">
+      <div class="brand-logo-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
       <span class="brand-title">HYPERVIEW</span>
       <span class="brand-status-dot" title="Core Engine Operational"></span>
     </a>
@@ -867,7 +879,9 @@ function getLoginPageHtml(config = {}) {
     <div class="footer-inner">
       <div>
         <div class="brand-group" style="margin-bottom: 14px;">
-          <img src="/public/favicon.svg" alt="Hyperview" class="brand-logo-img">
+          <div class="brand-logo-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
           <span class="brand-title">HYPERVIEW</span>
         </div>
         <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 340px; margin-bottom: 20px;">
