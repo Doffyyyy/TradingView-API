@@ -70,35 +70,69 @@ function getLoginPageHtml(config = {}) {
     /* Ambient Dynamic Background Video & Atmospheric Overlay */
     .video-background-wrap {
       position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: 0; pointer-events: none;
+      background: #070608;
     }
+
+    /* Misty Mountain Ridge Horizon across 100vw */
+    .ambient-horizon-layer {
+      position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+      background:
+        radial-gradient(ellipse 90% 45% at 50% 55%, rgba(45, 52, 48, 0.45) 0%, rgba(18, 20, 22, 0.6) 60%, transparent 85%),
+        linear-gradient(180deg, #070608 0%, rgba(20, 24, 22, 0.4) 45%, rgba(10, 8, 9, 0.85) 75%, #050405 100%);
+      z-index: 1;
+    }
+
+    /* Volumetric Crimson Smoke Billows extending horizontally across Left and Right flanks */
+    .ambient-smoke-spread {
+      position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;
+      background:
+        radial-gradient(ellipse 70% 36% at 50% 96%, rgba(184, 67, 46, 0.48) 0%, rgba(138, 29, 29, 0.3) 45%, transparent 75%),
+        radial-gradient(circle at 18% 92%, rgba(150, 25, 25, 0.38) 0%, rgba(184, 67, 46, 0.16) 40%, transparent 68%),
+        radial-gradient(circle at 82% 90%, rgba(150, 25, 25, 0.38) 0%, rgba(184, 67, 46, 0.16) 40%, transparent 68%);
+      mix-blend-mode: screen;
+      animation: smokeBreathing 9s ease-in-out infinite alternate;
+    }
+    @keyframes smokeBreathing {
+      0% { opacity: 0.82; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.02); }
+    }
+
     .bg-video-ambient {
       position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh; min-width: 100%; min-height: 100%;
       transform: translate(-50%, -50%) scale(1.15);
       object-fit: cover; filter: blur(52px) saturate(1.8) brightness(0.85); opacity: 0.78;
+      z-index: 1;
     }
     .bg-video-stage {
       position: absolute; inset: 0; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
-      padding: 85px 24px 30px 24px;
+      padding: 75px 20px 20px 20px;
       box-sizing: border-box;
       pointer-events: none;
+      z-index: 3;
     }
     .bg-video-main {
-      height: calc(100vh - 115px); max-height: calc(100vh - 115px);
+      height: calc(100vh - 105px); max-height: 880px;
       width: auto; max-width: 100vw;
       aspect-ratio: 816 / 1104;
-      object-fit: contain; opacity: 0.98;
-      filter: saturate(1.2) contrast(1.18) brightness(1.02);
+      object-fit: contain; opacity: 1;
+      filter: saturate(1.22) contrast(1.18) brightness(1.02);
       border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 80px rgba(184, 67, 46, 0.15);
-      mask-image: linear-gradient(180deg, transparent 0%, black 3.5%, black 95%, transparent 100%);
-      -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 3.5%, black 95%, transparent 100%);
+      mask-image: radial-gradient(ellipse 82% 80% at 50% 50%, black 50%, rgba(0,0,0,0.85) 70%, transparent 98%);
+      -webkit-mask-image: radial-gradient(ellipse 82% 80% at 50% 50%, black 50%, rgba(0,0,0,0.85) 70%, transparent 98%);
     }
     .video-ambient-overlay {
       position: absolute; inset: 0;
-      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.12) 0%, rgba(7, 9, 14, 0.22) 55%, rgba(5, 7, 11, 0.62) 100%),
-                  linear-gradient(180deg, rgba(7, 9, 14, 0.1) 0%, rgba(7, 9, 14, 0.5) 100%);
+      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.1) 0%, rgba(7, 9, 14, 0.18) 55%, rgba(5, 7, 11, 0.58) 100%),
+                  linear-gradient(180deg, rgba(7, 9, 14, 0.08) 0%, rgba(7, 9, 14, 0.45) 100%);
       pointer-events: none;
+      z-index: 4;
+    }
+
+    /* Floating Atmospheric Particles (Feathers & Embers) Canvas */
+    #atmospheric-particles {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 5;
     }
 
     /* Floating Island Header (Frosted Glass) */
@@ -195,12 +229,12 @@ function getLoginPageHtml(config = {}) {
 
     .hero-proof-stats {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-      background: rgba(10, 14, 22, 0.32) !important;
-      backdrop-filter: blur(18px) saturate(180%) !important;
-      -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
-      border: 1px solid rgba(255, 255, 255, 0.16) !important;
-      border-radius: 16px; padding: 18px 22px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      background: rgba(16, 13, 15, 0.6) !important;
+      backdrop-filter: blur(22px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(22px) saturate(190%) !important;
+      border: 1px solid rgba(220, 80, 40, 0.3) !important;
+      border-radius: 14px; padding: 18px 22px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(184, 67, 46, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       max-width: 520px;
     }
     .stat-metric {
@@ -208,19 +242,19 @@ function getLoginPageHtml(config = {}) {
       margin-bottom: 4px; display: flex; align-items: baseline; gap: 4px;
       font-feature-settings: "tnum"; letter-spacing: -0.5px;
     }
-    .stat-metric span { font-size: 12px; color: #10b981; }
+    .stat-metric span { font-size: 11.5px; color: #10b981; }
     .stat-label {
-      font-size: 10.5px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+      font-size: 10px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
     }
 
-    /* Monolithic Authentication Console Card (Frosted Glass Translucent) */
+    /* Monolithic Authentication Console Card (Frosted Glass Translucent with Warm Rim Glow) */
     .auth-monolith-card {
-      background: rgba(12, 16, 25, 0.34) !important;
-      backdrop-filter: blur(28px) saturate(200%) !important;
-      -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
-      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      background: rgba(14, 11, 14, 0.68) !important;
+      backdrop-filter: blur(28px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+      border: 1px solid rgba(220, 80, 40, 0.35) !important;
       border-radius: 20px;
-      box-shadow: 0 32px 72px rgba(0, 0, 0, 0.65), 0 0 40px rgba(184, 67, 46, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      box-shadow: 0 28px 72px rgba(0, 0, 0, 0.8), 0 0 45px rgba(184, 67, 46, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
       overflow: hidden; position: relative;
     }
 
@@ -243,13 +277,13 @@ function getLoginPageHtml(config = {}) {
     /* Segmented Navigation Tabs */
     .auth-selector-tabs {
       display: flex; padding: 6px 20px; gap: 6px;
-      background: rgba(8, 11, 17, 0.28) !important;
+      background: rgba(8, 11, 17, 0.38) !important;
       backdrop-filter: blur(14px) !important;
       -webkit-backdrop-filter: blur(14px) !important;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     .tab-trigger {
-      flex: 1; padding: 9px 8px;
+      flex: 1; padding: 10px 8px;
       background: rgba(255, 255, 255, 0.04) !important;
       backdrop-filter: blur(8px) !important;
       -webkit-backdrop-filter: blur(8px) !important;
@@ -260,9 +294,9 @@ function getLoginPageHtml(config = {}) {
     }
     .tab-trigger:hover { color: #fff; background: rgba(255, 255, 255, 0.08) !important; }
     .tab-trigger.active {
-      background: rgba(255, 255, 255, 0.14) !important; color: #fff;
-      border-color: rgba(255, 255, 255, 0.25) !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      background: rgba(255, 255, 255, 0.15) !important; color: #fff;
+      border-color: rgba(251, 146, 60, 0.4) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
 
     .auth-tab-content-area {
@@ -273,23 +307,23 @@ function getLoginPageHtml(config = {}) {
     .auth-pane.active { display: block; animation: paneFade 0.25s ease-out; }
     @keyframes paneFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Translucent Action Buttons */
+    /* Translucent Action Buttons (Rich Crimson Gradient matching reference image) */
     .btn-connect-web3 {
       width: 100%; padding: 14px 18px;
-      background: linear-gradient(135deg, rgba(184, 67, 46, 0.45) 0%, rgba(127, 29, 29, 0.55) 100%) !important;
+      background: linear-gradient(135deg, #7c1d1d 0%, #450a0a 100%) !important;
       backdrop-filter: blur(16px) !important;
       -webkit-backdrop-filter: blur(16px) !important;
       color: #fff;
-      border: 1px solid rgba(251, 146, 60, 0.7) !important;
-      border-radius: 10px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      border: 1px solid rgba(248, 113, 113, 0.45) !important;
+      border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 10px;
-      box-shadow: 0 8px 28px rgba(184, 67, 46, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 24px rgba(124, 29, 29, 0.5), 0 0 16px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-connect-web3:hover {
       transform: translateY(-1.5px);
-      background: linear-gradient(135deg, rgba(184, 67, 46, 0.6) 0%, rgba(127, 29, 29, 0.7) 100%) !important;
-      box-shadow: 0 12px 32px rgba(184, 67, 46, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      background: linear-gradient(135deg, #991b1b 0%, #5a0d0d 100%) !important;
+      box-shadow: 0 12px 32px rgba(220, 38, 38, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
 
     .input-auth-field {
@@ -603,6 +637,8 @@ function getLoginPageHtml(config = {}) {
   <div class="viewport-corner-bracket bracket-br"></div>
 
   <div class="video-background-wrap">
+    <div class="ambient-horizon-layer"></div>
+    <div class="ambient-smoke-spread"></div>
     <video class="bg-video-ambient" autoplay loop muted playsinline>
       <source src="/public/sweet_dreams_loop.mp4" type="video/mp4">
     </video>
@@ -613,6 +649,9 @@ function getLoginPageHtml(config = {}) {
     </div>
     <div class="video-ambient-overlay"></div>
   </div>
+
+  <!-- FLOATING FEATHERS & EMBER PARTICLES CANVAS -->
+  <canvas id="atmospheric-particles"></canvas>
 
   <!-- FLOATING NAVIGATION ISLAND -->
   <header class="floating-nav">
@@ -645,8 +684,8 @@ function getLoginPageHtml(config = {}) {
       <!-- Left Hero Pitch -->
       <div>
         <div class="hero-badge-live">
-          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f97316;"></span>
-          Institutional Price Cycle Intelligence
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f97316; box-shadow:0 0 8px #f97316;"></span>
+          Institutional Grade Cycle Intelligence
         </div>
         <h1 class="hero-headline">
           The Execution Edge for Quantitative Crypto Markets.
@@ -658,14 +697,14 @@ function getLoginPageHtml(config = {}) {
         <div class="hero-proof-stats">
           <div>
             <div class="stat-metric">$11,547 <span>+15.4%</span></div>
-            <div class="stat-label">Ending Equity (T3-T10)</div>
+            <div class="stat-label">Current Equity (T3–T10)</div>
           </div>
           <div>
-            <div class="stat-metric">&lt; 18ms <span>REST</span></div>
+            <div class="stat-metric">&lt; 18ms <span>INST</span></div>
             <div class="stat-label">Switching Latency</div>
           </div>
           <div>
-            <div class="stat-metric">4-Layer <span>Pure Guard</span></div>
+            <div class="stat-metric">4-Layer <span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span>Pure Guard</span></div>
             <div class="stat-label">Loss Slippage Shield</div>
           </div>
         </div>
@@ -1137,6 +1176,134 @@ function getLoginPageHtml(config = {}) {
         mainVid.play();
       });
     }
+
+    // FLOATING BLACK FEATHERS & EMBER PARTICLES ENGINE
+    (function initAtmosphericEngine() {
+      const canvas = document.getElementById('atmospheric-particles');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      });
+
+      // 12 Feathers with varied depth, scale, blur, and swaying physics
+      const feathers = [];
+      for (let i = 0; i < 12; i++) {
+        feathers.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          scale: 0.45 + Math.random() * 0.85,
+          angle: Math.random() * Math.PI * 2,
+          angularSpeed: (Math.random() - 0.5) * 0.012,
+          vy: 0.35 + Math.random() * 0.45,
+          swaySpeed: 0.008 + Math.random() * 0.014,
+          swayAmp: 0.6 + Math.random() * 0.9,
+          phase: Math.random() * Math.PI * 2,
+          blur: Math.random() > 0.65 ? (1 + Math.random() * 2) : 0,
+          color: Math.random() > 0.4 ? 'rgba(12, 14, 18, 0.88)' : 'rgba(22, 18, 20, 0.82)'
+        });
+      }
+
+      // 45 Fiery Embers rising from the bottom smoke
+      const embers = [];
+      const emberColors = ['#ff5500', '#ff7700', '#ff9900', '#ff3300', '#ffb347'];
+      for (let i = 0; i < 45; i++) {
+        embers.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: 1 + Math.random() * 2.2,
+          vy: -(0.5 + Math.random() * 1.1),
+          vx: (Math.random() - 0.5) * 0.4,
+          alpha: 0.2 + Math.random() * 0.7,
+          color: emberColors[Math.floor(Math.random() * emberColors.length)],
+          pulse: Math.random() * Math.PI * 2
+        });
+      }
+
+      function drawFeather(f) {
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.angle);
+        ctx.scale(f.scale, f.scale);
+        if (f.blur) ctx.filter = 'blur(' + f.blur + 'px)';
+
+        // Feather Vanes (Organic curved blade)
+        ctx.beginPath();
+        ctx.moveTo(0, 32);
+        ctx.bezierCurveTo(-14, 16, -17, -14, 0, -36);
+        ctx.bezierCurveTo(15, -14, 13, 16, 0, 32);
+        ctx.fillStyle = f.color;
+        ctx.fill();
+
+        // Rim Light
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Central Rachis (Stem)
+        ctx.beginPath();
+        ctx.moveTo(0, 35);
+        ctx.quadraticCurveTo(1.5, 0, 0, -36);
+        ctx.strokeStyle = 'rgba(45, 50, 60, 0.9)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, w, h);
+
+        // Render & Update Embers
+        for (let i = 0; i < embers.length; i++) {
+          const e = embers[i];
+          e.y += e.vy;
+          e.x += e.vx + Math.sin(e.pulse) * 0.25;
+          e.pulse += 0.03;
+          e.alpha = 0.3 + Math.sin(e.pulse) * 0.4;
+          if (e.y < -10) {
+            e.y = h + Math.random() * 30;
+            e.x = Math.random() * w;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.1, Math.min(1, e.alpha));
+          ctx.shadowColor = e.color;
+          ctx.shadowBlur = e.size * 3.5;
+          ctx.fillStyle = e.color;
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Render & Update Feathers
+        for (let i = 0; i < feathers.length; i++) {
+          const f = feathers[i];
+          f.y += f.vy;
+          f.x += Math.sin(f.phase) * f.swayAmp;
+          f.phase += f.swaySpeed;
+          f.angle += f.angularSpeed;
+
+          if (f.y > h + 50) {
+            f.y = -50;
+            f.x = Math.random() * w;
+          }
+          if (f.x < -50) f.x = w + 40;
+          if (f.x > w + 50) f.x = -40;
+
+          drawFeather(f);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
 
     // LEGAL & CONTACT MODALS
     const LEGAL_CONTENT = {
