@@ -1,8 +1,11 @@
 const axios = require('axios');
+const { ethers } = require('ethers');
 const { paperTraderInstance } = require('./paperTrader');
 
 const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 const HL_EXCHANGE_URL = 'https://api.hyperliquid.xyz/exchange';
+const ARBITRUM_RPC_URL = 'https://arb1.arbitrum.io/rpc';
+const ARB_USDC_CONTRACT = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 
 /**
  * Normalizes symbols into Hyperliquid coin name
@@ -290,7 +293,7 @@ class HyperliquidConnector {
   }
 
   /**
-   * Get Account State: Either Connected Hyperliquid Wallet or Paper Account
+   * Get Account State: Either Connected Hyperliquid / EVM Wallet (USDC Equity) or Paper Account
    */
   async getAccountState(walletAddress = null) {
     const targetAddress = walletAddress || this.activeWalletAddress;
@@ -309,16 +312,27 @@ class HyperliquidConnector {
       };
     }
 
+    let hlAccountValue = 0;
+    let hlWithdrawable = 0;
+    let hlMarginUsed = 0;
+    let positions = [];
+    let spotUsdc = 0;
+    let arbUsdc = 0;
+
+    // 1. Query Hyperliquid Perpetual Clearinghouse State (Account Value in USDC)
     try {
       const res = await axios.post(
         HL_INFO_URL,
         { type: 'clearinghouseState', user: targetAddress },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 5000 }
+        { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
       );
 
       const d = res.data;
       const margin = d.marginSummary || {};
-      const positions = (d.assetPositions || []).map(p => {
+      hlAccountValue = parseFloat(margin.accountValue || 0);
+      hlWithdrawable = parseFloat(d.withdrawable || margin.accountValue || 0);
+      hlMarginUsed = parseFloat(margin.totalMarginUsed || 0);
+      positions = (d.assetPositions || []).map(p => {
         const pos = p.position || {};
         return {
           coin: pos.coin,
@@ -330,27 +344,56 @@ class HyperliquidConnector {
           liquidationPx: pos.liquidationPx ? parseFloat(pos.liquidationPx) : null,
         };
       });
-
-      return {
-        connected: true,
-        mode: 'HYPERLIQUID_LIVE',
-        walletAddress: targetAddress,
-        available: parseFloat(d.withdrawable || margin.accountValue || 0),
-        equity: parseFloat(margin.accountValue || 0),
-        marginUsed: parseFloat(margin.totalMarginUsed || 0),
-        positionsCount: positions.length,
-        positions,
-      };
     } catch (e) {
-      return {
-        connected: false,
-        error: e.message,
-        mode: 'PAPER_FALLBACK',
-        available: paperTraderInstance.portfolio.cash,
-        equity: paperTraderInstance.portfolio.equity,
-        positions: paperTraderInstance.portfolio.positions,
-      };
+      // Non-fatal if address is fresh or network timeout
     }
+
+    // 2. Query Hyperliquid Spot Balances for USDC
+    try {
+      const res = await axios.post(
+        HL_INFO_URL,
+        { type: 'spotClearinghouseState', user: targetAddress },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 4000 }
+      );
+      const balances = res.data?.balances || [];
+      const usdcItem = balances.find(b => b.coin === 'USDC');
+      if (usdcItem) {
+        spotUsdc = parseFloat(usdcItem.total || 0);
+      }
+    } catch (e) {}
+
+    // 3. Query Arbitrum Native ERC-20 USDC balance directly in connected wallet
+    try {
+      const provider = new ethers.JsonRpcProvider(ARBITRUM_RPC_URL);
+      const usdcContract = new ethers.Contract(
+        ARB_USDC_CONTRACT,
+        ['function balanceOf(address) view returns (uint256)'],
+        provider
+      );
+      const bal = await usdcContract.balanceOf(targetAddress);
+      arbUsdc = parseFloat(ethers.formatUnits(bal, 6));
+    } catch (e) {}
+
+    const totalUsdcEquity = Math.round((hlAccountValue + spotUsdc + arbUsdc) * 100) / 100;
+    const totalAvailable = Math.round((hlWithdrawable + spotUsdc + arbUsdc) * 100) / 100;
+
+    return {
+      connected: true,
+      mode: 'HYPERLIQUID_LIVE',
+      walletAddress: targetAddress,
+      available: totalAvailable,
+      equity: totalUsdcEquity,
+      usdcEquity: totalUsdcEquity,
+      usdcBreakdown: {
+        hlPerpAccountValue: hlAccountValue,
+        hlSpotUsdc: spotUsdc,
+        arbitrumWalletUsdc: arbUsdc,
+        total: totalUsdcEquity,
+      },
+      marginUsed: hlMarginUsed,
+      positionsCount: positions.length,
+      positions,
+    };
   }
 
   /**

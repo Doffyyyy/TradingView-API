@@ -19,6 +19,7 @@ const { generateFullJournalExcelBuffer } = require('./src/extensions/excelExport
 const { macroCalendarInstance } = require('./src/extensions/macroCalendar');
 const { startMonthlyReportScheduler, dispatchMonthlyReport } = require('./src/extensions/monthlyReportScheduler');
 const { authSecurityInstance } = require('./src/extensions/authSecurity');
+const { userProfileManager } = require('./src/extensions/userProfileManager');
 const { getLoginPageHtml } = require('./src/views/loginPage');
 
 const PORT = process.env.PORT || 8095;
@@ -1788,6 +1789,15 @@ const htmlContent = `<!DOCTYPE html>
                       </select>
                     </div>
                   </div>
+
+                  <!-- 7. Bottom Section: Add / Manage Strategy Button -->
+                  <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(168, 85, 247, 0.25);">
+                    <button class="btn" id="btn-indicators-add-strategy" style="width: 100%; padding: 8px 10px; background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(79, 70, 229, 0.3)); border: 1px solid #a855f7; color: #fff; font-weight: 700; font-size: 11px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);">
+                      <span>🧠</span>
+                      <span>➕ Add Strategy (Code Engine)</span>
+                      <span style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #9333ea; color: #fff; font-weight: 800;">CUSTOM</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2288,6 +2298,115 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
+        <!-- Quant Strategy Studio & Custom Code Modal -->
+        <div id="strategy-studio-modal" class="web3-modal-overlay" style="display: none; z-index: 10050;">
+          <div class="web3-modal-card" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; background: #0b0f19; border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.15); border-radius: 14px;">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; font-size: 16px;">🧠</div>
+                <div>
+                  <div style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.3px;">QUANT STRATEGY STUDIO & CODE ENGINE</div>
+                  <div style="font-size: 11px; color: #94a3b8;">Chọn chiến lược định lượng có sẵn hoặc tự viết / dán mã nguồn JavaScript cá nhân</div>
+                </div>
+              </div>
+              <button id="btn-close-strat-modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Modal Subtabs Bar -->
+            <div style="display: flex; gap: 4px; padding: 10px 20px 0 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: #080c14; flex-shrink: 0;">
+              <button class="strat-tab-btn active" id="tab-strat-list" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #fff; background: transparent; border: none; border-bottom: 2px solid #a855f7; cursor: pointer;">
+                📋 Danh Sách Chiến Lược (<span id="strat-count-badge">4</span>)
+              </button>
+              <button class="strat-tab-btn" id="tab-strat-editor" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
+                ✍️ Tự Thêm / Dán Source Code (Code Studio)
+              </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div style="padding: 18px 20px; overflow-y: auto; flex: 1; min-height: 0;">
+              <!-- VIEW 1: Available Strategies List -->
+              <div id="strat-view-list">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <div>
+                    <span style="font-size: 12px; font-weight: 800; color: #fff;">CHIẾN LƯỢC ĐANG ÁP DỤNG:</span>
+                    <span id="studio-active-pill" style="margin-left: 8px; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700;">● Oliver Kell Price Cycle</span>
+                  </div>
+                  <button class="btn active" id="btn-studio-goto-add" style="padding: 6px 14px; font-size: 11px; background: #9333ea; color: #fff; font-weight: 700;">➕ Thêm Chiến Lược Mới (Dán Code)</button>
+                </div>
+
+                <div id="strat-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <!-- Dynamically rendered cards -->
+                </div>
+              </div>
+
+              <!-- VIEW 2: Custom Code Editor -->
+              <div id="strat-view-editor" style="display: none;">
+                <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #c084fc; font-size: 11.5px;">💻 Trình Biên Soạn & Nạp Mã Nguồn Chiến Lược</strong>
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px;">Dán trực tiếp code JavaScript của bạn hoặc nạp nhanh từ các mẫu dựng sẵn</div>
+                  </div>
+                  <!-- Quick Templates -->
+                  <div style="display: flex; gap: 6px;">
+                    <span style="font-size: 10px; color: #94a3b8; align-self: center; font-weight: 700;">NẠP MẪU:</span>
+                    <button class="btn" id="btn-load-tpl-rsi" style="padding: 4px 8px; font-size: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8;">📋 RSI Scalp</button>
+                    <button class="btn" id="btn-load-tpl-ema" style="padding: 4px 8px; font-size: 10px; background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #4ade80;">📋 EMA Trend</button>
+                    <button class="btn" id="btn-load-tpl-breakout" style="padding: 4px 8px; font-size: 10px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24;">📋 Breakout</button>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TÊN CHIẾN LƯỢC *</label>
+                    <input type="text" id="strat-input-name" placeholder="Ví dụ: My MACD Scalp Pro" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">KHUNG THỜI GIAN (TIMEFRAME)</label>
+                    <select id="strat-input-tf" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                      <option value="1m">1m (Scalping siêu ngắn)</option>
+                      <option value="5m">5m (Scalping nhanh)</option>
+                      <option value="15m" selected>15m (Intraday chuẩn)</option>
+                      <option value="1h">1H (Swing Trader)</option>
+                      <option value="4h">4H (Xu hướng vĩ mô)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔ TẢ CHIẾN LƯỢC / GHI CHÚ QUY TẮC VÀO LỆNH</label>
+                  <input type="text" id="strat-input-desc" placeholder="Ví dụ: Đánh theo phân kỳ RSI khung 15m, chốt lời +3%, cắt lỗ -1.5%" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">MÃ NGUỒN JAVASCRIPT (HÀM onTick) *</label>
+                    <span style="font-size: 10px; color: #64748b; font-family: monospace;">function onTick(market, portfolio)</span>
+                  </div>
+                  <textarea id="strat-input-code" spellcheck="false" style="width: 100%; height: 260px; background: #05070c; border: 1px solid #1e2433; color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; line-height: 1.6; padding: 12px; border-radius: 8px; outline: none; resize: vertical; tab-size: 2;"></textarea>
+                </div>
+
+                <!-- API Reference cheatsheet -->
+                <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 10px; color: #94a3b8; line-height: 1.6;">
+                  <strong style="color: #cbd5e1;">📌 Biến đầu vào:</strong> <code>market: { symbol, price, high, low, volume, rsi, ema10, ema20, ema50, supertrend, macd }</code> | <code>portfolio: { balance, cash, equity, openPositions }</code><br>
+                  <strong style="color: #cbd5e1;">📌 Giá trị trả về:</strong> <code>return { action: 'BUY'|'SELL'|'CLOSE', symbol, sizePct: 20, tp: 85000, sl: 82000, reason: 'Lý do' }</code> hoặc <code>return null;</code>
+                </div>
+
+                <!-- Validation Status Banner -->
+                <div id="strat-val-msg" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 12px;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <button class="btn" id="btn-studio-back-list" style="padding: 7px 14px; font-size: 11px;">← Quay Lại Danh Sách</button>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btn-studio-test-syntax" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra Cú Pháp</button>
+                    <button class="btn active" id="btn-studio-save-strat" style="padding: 7px 18px; font-size: 11px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu & Kích Hoạt Chiến Lược</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Web3 Wallet Selection Modal -->
         <div id="web3-wallet-modal" class="web3-modal-overlay" style="display: none;">
           <div class="web3-modal-card">
@@ -2364,6 +2483,7 @@ const htmlContent = `<!DOCTYPE html>
       <div class="controls-bar">
         <div style="display: flex; gap: 8px; align-items: center;">
           <button class="btn active" id="btn-toggle-auto-trade" style="background: #22c55e; color: #fff; font-weight: 700;">🟢 Auto-Trade: ACTIVE</button>
+          <button class="btn" id="btn-open-strategy-studio" style="background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); color: #d8b4fe; font-weight: 700;" title="Quản lý chiến lược có sẵn & Tự viết code chiến lược mới">🧠 Chiến Lược: <span id="paper-active-strat-lbl">Oliver Kell Cycle</span> ▾</button>
           <button class="btn" id="btn-paper-refresh">🔄 Refresh Status</button>
           <button class="btn" id="btn-paper-close-all" style="background: rgba(239, 83, 80, 0.15); color: #ef5350;">Close All Positions</button>
           <button class="btn" id="btn-paper-reset" style="background: rgba(140, 147, 163, 0.15);">Reset $10k Fund</button>
@@ -3346,7 +3466,7 @@ const htmlContent = `<!DOCTYPE html>
         <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">
           For privacy and security, alerts are dispatched directly to your own Telegram. Enter your Telegram Bot Token and Chat ID below (stored only locally in your browser):
         </p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: flex-end;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 8px; align-items: flex-end;">
           <div>
             <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM BOT TOKEN (From @BotFather)</label>
             <input type="password" id="user-tg-token-input" placeholder="e.g. 7123456789:AAH..." style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
@@ -3355,7 +3475,9 @@ const htmlContent = `<!DOCTYPE html>
             <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM CHAT ID / CHANNEL ID</label>
             <input type="text" id="user-tg-chat-input" placeholder="e.g. 1561044995 or @your_channel" style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
           </div>
-          <button class="btn active" id="btn-save-user-tg" style="padding: 7px 16px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">Save & Link</button>
+          <button class="btn active" id="btn-save-user-tg" style="padding: 7px 14px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình</button>
+          <button class="btn" id="btn-test-user-tg" style="padding: 7px 12px; font-size: 11px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; font-weight: 700;">⚡ Test Bot</button>
+          <button class="btn" id="btn-del-user-tg" style="padding: 7px 12px; font-size: 11px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-weight: 700;">🗑️ Xóa</button>
         </div>
       </div>
 
@@ -5349,13 +5471,61 @@ const htmlContent = `<!DOCTYPE html>
     let watchlistPriceGeneration = 0;
     const pricesCache = {};
 
+    function getWatchlistStorageKey() {
+      const uid = (typeof currentAuthUser !== 'undefined' && currentAuthUser && currentAuthUser.userId)
+        ? currentAuthUser.userId
+        : 'guest';
+      return 'tv_custom_watchlist_v4_' + encodeURIComponent(uid);
+    }
+
     function saveWatchlist() {
       try {
+        const key = getWatchlistStorageKey();
+        localStorage.setItem(key, JSON.stringify(customWatchlist));
+        // Fallback backward compatibility
         localStorage.setItem('tv_custom_watchlist_v4', JSON.stringify(customWatchlist));
+
+        // Sync with user profile on server
+        if (typeof currentAuthUser !== 'undefined' && currentAuthUser && currentAuthUser.userId) {
+          fetch('/api/user/watchlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ watchlist: customWatchlist })
+          }).catch(() => {});
+        }
+
         if (window.multiChartManagerInstance) {
           window.multiChartManagerInstance.populateWatchlistTokens(customWatchlist);
         }
       } catch (e) {}
+    }
+
+    async function loadWatchlistForCurrentUser() {
+      try {
+        if (typeof currentAuthUser !== 'undefined' && currentAuthUser && currentAuthUser.userId) {
+          const res = await fetch('/api/user/watchlist');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.watchlist && Array.isArray(data.watchlist) && data.watchlist.length > 0) {
+              customWatchlist = data.watchlist;
+              if (window.multiChartManagerInstance) {
+                window.multiChartManagerInstance.populateWatchlistTokens(customWatchlist);
+              }
+              renderWatchlist();
+              return;
+            }
+          }
+        }
+        const key = getWatchlistStorageKey();
+        const saved = localStorage.getItem(key) || localStorage.getItem('tv_custom_watchlist_v4');
+        if (saved) {
+          customWatchlist = JSON.parse(saved);
+        }
+      } catch (e) {}
+      if (window.multiChartManagerInstance) {
+        window.multiChartManagerInstance.populateWatchlistTokens(customWatchlist);
+      }
+      renderWatchlist();
     }
 
 
@@ -6874,17 +7044,19 @@ const htmlContent = `<!DOCTYPE html>
         }
       } catch (e) {}
 
-      // 3. Fetch Account
+      // 3. Fetch Account (Live USDC Wallet or $10k Paper Portfolio)
       try {
-        const accountUrl = (currentDockMode === 'HYPERLIQUID_LIVE' && connectedWalletAddress)
-          ? '/api/hyperliquid/account?address=' + encodeURIComponent(connectedWalletAddress)
-          : '/api/hyperliquid/account';
+        const isLive = currentDockMode === 'HYPERLIQUID_LIVE';
+        const accountUrl = isLive
+          ? ('/api/hyperliquid/account' + (connectedWalletAddress ? '?address=' + encodeURIComponent(connectedWalletAddress) : ''))
+          : '/api/paper/status';
         const res = await fetch(accountUrl);
         const acc = await res.json();
         if (acc) {
-          dockAvailableBalance = acc.available || 10000;
-          document.getElementById('dock-avail-bal').textContent = '$' + dockAvailableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-          const matchingPos = (acc.positions || []).find(p => (p.symbol && p.symbol.includes(c)) || (p.coin === c));
+          dockAvailableBalance = isLive ? (acc.equity || acc.available || 0) : (acc.balance || 10000);
+          const suffix = isLive ? ' USDC' : '';
+          document.getElementById('dock-avail-bal').textContent = '$' + dockAvailableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
+          const matchingPos = (acc.positions || acc.openPositions || []).find(p => (p.symbol && p.symbol.includes(c)) || (p.coin === c));
           const posEl = document.getElementById('dock-active-pos');
           if (posEl) {
             if (matchingPos) {
@@ -6901,9 +7073,10 @@ const htmlContent = `<!DOCTYPE html>
                 '<span class="' + (pnl >= 0 ? 'val-green' : 'val-red') + '" style="font-size: 11px; font-weight: 700; white-space: nowrap;">(' + pnlSign + pnlStr + ')</span>' +
               '</div>';
             } else {
-              if (acc.positions && acc.positions.length > 0) {
-                const coins = acc.positions.map(p => (p.coin || (p.symbol ? p.symbol.split(':')[1] || p.symbol : '')).replace(/USDT|USDC|USD|\.P/g, '')).filter(Boolean);
-                posEl.innerHTML = '<span style="font-size: 10px; color: #8c93a3; font-weight: 600;">' + acc.positions.length + ' active (' + coins.join(', ') + ')</span>';
+              const allPositions = acc.positions || acc.openPositions || [];
+              if (allPositions && allPositions.length > 0) {
+                const coins = allPositions.map(p => (p.coin || (p.symbol ? p.symbol.split(':')[1] || p.symbol : '')).replace(/USDT|USDC|USD|\.P/g, '')).filter(Boolean);
+                posEl.innerHTML = '<span style="font-size: 10px; color: #8c93a3; font-weight: 600;">' + allPositions.length + ' active (' + coins.join(', ') + ')</span>';
               } else {
                 posEl.textContent = '--';
               }
@@ -7725,6 +7898,8 @@ const htmlContent = `<!DOCTYPE html>
     const btnCfgTg = document.getElementById('btn-configure-user-tg');
     const btnCloseTg = document.getElementById('close-user-tg-box');
     const btnSaveTg = document.getElementById('btn-save-user-tg');
+    const btnTestTg = document.getElementById('btn-test-user-tg');
+    const btnDelTg = document.getElementById('btn-del-user-tg');
     const inpTgToken = document.getElementById('user-tg-token-input');
     const inpTgChat = document.getElementById('user-tg-chat-input');
     const tgStatus = document.getElementById('alert-status');
@@ -7759,18 +7934,77 @@ const htmlContent = `<!DOCTYPE html>
       });
     }
     if (btnSaveTg) {
-      btnSaveTg.addEventListener('click', () => {
+      btnSaveTg.addEventListener('click', async () => {
         const token = (inpTgToken?.value || '').trim();
         const chat = (inpTgChat?.value || '').trim();
         if (!token || !chat) {
-          alert('Please enter both your Bot Token and Telegram Chat ID');
+          alert('Vui lòng nhập cả Telegram Bot Token và Chat ID');
           return;
         }
         localStorage.setItem('hyperview_user_tg_token', token);
         localStorage.setItem('hyperview_user_tg_chat', chat);
         updateTgStatusDisplay();
+
+        // Also save to user account profile on server
+        try {
+          await fetch('/api/user/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, chatId: chat })
+          });
+        } catch (e) {}
+
         tgBox.style.display = 'none';
-        alert('Telegram credentials saved locally in your browser!');
+        alert('Đã lưu cấu hình Telegram vào tài khoản của bạn thành công!');
+      });
+    }
+
+    if (btnTestTg) {
+      btnTestTg.addEventListener('click', async () => {
+        const token = (inpTgToken?.value || localStorage.getItem('hyperview_user_tg_token') || '').trim();
+        const chat = (inpTgChat?.value || localStorage.getItem('hyperview_user_tg_chat') || '').trim();
+        if (!token || !chat) {
+          alert('Vui lòng nhập Bot Token và Chat ID trước khi test');
+          return;
+        }
+        btnTestTg.textContent = '⏳ Đang test...';
+        btnTestTg.disabled = true;
+        try {
+          const res = await fetch('/api/user/telegram/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, chatId: chat })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('✅ Test thành công! Vui lòng kiểm tra tin nhắn xác nhận trên ứng dụng Telegram của bạn.');
+          } else {
+            alert('❌ Test thất bại: ' + (data.error || 'Lỗi không xác định'));
+          }
+        } catch (e) {
+          alert('❌ Lỗi kết nối: ' + e.message);
+        } finally {
+          btnTestTg.textContent = '⚡ Test Bot';
+          btnTestTg.disabled = false;
+        }
+      });
+    }
+
+    if (btnDelTg) {
+      btnDelTg.addEventListener('click', async () => {
+        if (!confirm('Bạn có chắc chắn muốn xóa cấu hình Telegram của tài khoản này?')) return;
+        localStorage.removeItem('hyperview_user_tg_token');
+        localStorage.removeItem('hyperview_user_tg_chat');
+        if (inpTgToken) inpTgToken.value = '';
+        if (inpTgChat) inpTgChat.value = '';
+        updateTgStatusDisplay();
+
+        try {
+          await fetch('/api/user/telegram', { method: 'DELETE' });
+        } catch (e) {}
+
+        tgBox.style.display = 'none';
+        alert('Đã xóa cấu hình Telegram thành công.');
       });
     }
 
@@ -8983,37 +9217,60 @@ const htmlContent = `<!DOCTYPE html>
       refreshPaperStatus();
     };
 
-    document.getElementById('btn-toggle-auto-trade').addEventListener('click', async () => {
-      if (!currentAuthUser || currentAuthUser.role !== 'ADMIN') {
-        alert('🔒 Quyền truy cập bị từ chối: Cần đăng nhập Admin để bật/tắt Auto-Trade.');
-        openAuthModal('tab-admin');
+    window.closePaperPosition = async function(id) {
+      if (!currentAuthUser) {
+        alert('🔒 Vui lòng kết nối ví hoặc đăng nhập để thao tác vị thế.');
+        openAuthModal('tab-wallet');
         return;
       }
-      await fetch('/api/paper/toggle', { method: 'POST' });
+      await fetch('/api/paper/close-position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ positionId: id })
+      });
       refreshPaperStatus();
+    };
+
+    document.getElementById('btn-toggle-auto-trade').addEventListener('click', async () => {
+      if (!currentAuthUser) {
+        alert('🔒 Vui lòng kết nối ví hoặc đăng nhập để bật/tắt Bot Auto-Trade.');
+        openAuthModal('tab-wallet');
+        return;
+      }
+      try {
+        const res = await fetch('/api/paper/toggle', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          refreshPaperStatus();
+        } else {
+          alert('Không thể chuyển đổi trạng thái: ' + (data.error || 'Lỗi'));
+        }
+      } catch (e) {
+        alert('Lỗi: ' + e.message);
+      }
     });
 
     document.getElementById('btn-paper-refresh').addEventListener('click', refreshPaperStatus);
 
     document.getElementById('btn-paper-close-all').addEventListener('click', async () => {
-      if (!currentAuthUser || currentAuthUser.role !== 'ADMIN') {
-        alert('🔒 Quyền truy cập bị từ chối: Cần đăng nhập Admin để đóng toàn bộ vị thế bot.');
-        openAuthModal('tab-admin');
+      if (!currentAuthUser) {
+        alert('🔒 Vui lòng kết nối ví hoặc đăng nhập để thao tác.');
+        openAuthModal('tab-wallet');
         return;
       }
-      if (confirm('Close all active paper positions at current market prices?')) {
+      if (confirm('Đóng toàn bộ các vị thế đang mở theo giá thị trường hiện tại?')) {
         await fetch('/api/paper/close-all', { method: 'POST' });
         refreshPaperStatus();
       }
     });
 
     document.getElementById('btn-paper-reset').addEventListener('click', async () => {
-      if (!currentAuthUser || currentAuthUser.role !== 'ADMIN') {
-        alert('🔒 Quyền truy cập bị từ chối: Cần đăng nhập Admin để reset số dư bot.');
-        openAuthModal('tab-admin');
+      if (!currentAuthUser) {
+        alert('🔒 Vui lòng kết nối ví hoặc đăng nhập để reset tài khoản.');
+        openAuthModal('tab-wallet');
         return;
       }
-      if (confirm('Reset paper account fund back to $10,000.00?')) {
+      if (confirm('Khôi phục tài khoản về số dư vốn ban đầu $10,000.00 USD?')) {
         await fetch('/api/paper/reset', { method: 'POST' });
         refreshPaperStatus();
       }
@@ -9022,6 +9279,384 @@ const htmlContent = `<!DOCTYPE html>
     // Auto-poll paper trader status every 3 seconds
     setInterval(refreshPaperStatus, 3000);
     refreshPaperStatus();
+
+    // ========================================================
+    // QUANT STRATEGY STUDIO & CUSTOM CODE CLIENT CONTROLLER
+    // ========================================================
+    let cachedStrategiesData = null;
+
+    async function loadStrategiesData() {
+      try {
+        const res = await fetch('/api/user/strategies');
+        if (res.ok) {
+          cachedStrategiesData = await res.json();
+          renderStrategyUI(cachedStrategiesData);
+        }
+      } catch (e) {
+        console.warn('Error loading strategies:', e);
+      }
+    }
+
+    function renderStrategyUI(data) {
+      if (!data) return;
+      const { builtin = [], custom = [], activeStrategyId, activeStrategy, templates = {} } = data;
+      const allStrategies = [...builtin, ...custom];
+      const activeObj = activeStrategy || builtin[0] || {};
+
+      // 1. Update Badges & Labels
+      const paperStratLbl = document.getElementById('paper-active-strat-lbl');
+      if (paperStratLbl) paperStratLbl.textContent = activeObj.name || 'Oliver Kell Cycle';
+
+      const dockStratBadge = document.getElementById('dock-strat-badge');
+      if (dockStratBadge) {
+        dockStratBadge.textContent = activeObj.type === 'custom' ? 'CUSTOM' : 'BUILTIN';
+        dockStratBadge.style.background = activeObj.type === 'custom' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(168, 85, 247, 0.2)';
+        dockStratBadge.style.color = activeObj.type === 'custom' ? '#4ade80' : '#c084fc';
+      }
+
+      const studioActivePill = document.getElementById('studio-active-pill');
+      if (studioActivePill) {
+        studioActivePill.textContent = '● ' + (activeObj.name || 'Oliver Kell');
+      }
+
+      const stratCountBadge = document.getElementById('strat-count-badge');
+      if (stratCountBadge) stratCountBadge.textContent = allStrategies.length;
+
+      // 2. Populate Dock Strategy Dropdown
+      const bgGroup = document.getElementById('optgroup-builtin-strats');
+      const custGroup = document.getElementById('optgroup-custom-strats');
+      if (bgGroup) {
+        bgGroup.innerHTML = builtin.map(s => {
+          const isSel = s.id === activeStrategyId ? 'selected' : '';
+          return '<option value="' + s.id + '" ' + isSel + '>🌟 ' + s.name + ' (' + (s.timeframe || '15m') + ')</option>';
+        }).join('');
+      }
+      if (custGroup) {
+        if (custom.length === 0) {
+          custGroup.innerHTML = '<option disabled>Chưa có chiến lược tự tạo</option>';
+        } else {
+          custGroup.innerHTML = custom.map(s => {
+            const isSel = s.id === activeStrategyId ? 'selected' : '';
+            return '<option value="' + s.id + '" ' + isSel + '>⚡ ' + s.name + ' (' + (s.timeframe || '15m') + ')</option>';
+          }).join('');
+        }
+      }
+
+      const dockDesc = document.getElementById('dock-strategy-desc');
+      if (dockDesc) {
+        dockDesc.textContent = activeObj.description || 'Chiến lược định lượng tự động.';
+      }
+
+      // 3. Populate Strategy Studio Cards Grid
+      const cardsGrid = document.getElementById('strat-cards-grid');
+      if (cardsGrid) {
+        cardsGrid.innerHTML = allStrategies.map(s => {
+          const isActive = s.id === activeStrategyId;
+          const isCustom = s.type === 'custom';
+          const badgeBg = isCustom ? 'rgba(34, 197, 94, 0.15)' : 'rgba(168, 85, 247, 0.15)';
+          const badgeBorder = isCustom ? '#22c55e' : '#a855f7';
+          const badgeColor = isCustom ? '#4ade80' : '#c084fc';
+
+          const activeBorder = isActive ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.08)';
+          const activeGlow = isActive ? 'box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);' : '';
+
+          const actionHtml = isActive
+            ? '<span style="font-size: 11px; padding: 4px 10px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 800; border: 1px solid #10b981;">✓ ĐANG CHẠY</span>'
+            : '<button class="btn active btn-activate-strat" data-id="' + s.id + '" style="padding: 5px 12px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">⚡ Kích Hoạt</button>';
+
+          const editBtn = isCustom
+            ? '<button class="btn btn-edit-strat" data-id="' + s.id + '" style="padding: 4px 8px; font-size: 10px; background: rgba(255, 255, 255, 0.08);">✏️ Sửa Code</button>'
+            : '';
+          const delBtn = isCustom
+            ? '<button class="btn btn-del-strat" data-id="' + s.id + '" style="padding: 4px 8px; font-size: 10px; color: #ef4444; background: rgba(239, 68, 68, 0.15);">🗑️</button>'
+            : '';
+
+          return '<div style="background: rgba(15, 23, 42, 0.65); border: ' + activeBorder + '; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; ' + activeGlow + '">' +
+            '<div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">' +
+                '<strong style="font-size: 12.5px; color: #fff; line-height: 1.4;">' + s.name + '</strong>' +
+                '<span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: ' + badgeBg + '; border: 1px solid ' + badgeBorder + '; color: ' + badgeColor + '; font-weight: 700; white-space: nowrap; margin-left: 6px;">' + s.badge + '</span>' +
+              '</div>' +
+              '<div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px;">' +
+                '<span>⏱️ Khung: <strong style="color: #cbd5e1;">' + (s.timeframe || '15m') + '</strong></span>' +
+                '<span style="margin-left: 10px;">👤 Tác giả: <strong style="color: #cbd5e1;">' + (s.author || 'Hyperview') + '</strong></span>' +
+              '</div>' +
+              '<p style="font-size: 11px; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">' + (s.description || 'Không có mô tả chi tiết.') + '</p>' +
+            '</div>' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 10px;">' +
+              '<div style="display: flex; gap: 4px;">' + editBtn + delBtn + '</div>' +
+              '<div>' + actionHtml + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+        // Attach listeners for strategy cards
+        cardsGrid.querySelectorAll('.btn-activate-strat').forEach(b => {
+          b.addEventListener('click', async () => {
+            const sid = b.dataset.id;
+            await setActiveStrategy(sid);
+          });
+        });
+
+        cardsGrid.querySelectorAll('.btn-edit-strat').forEach(b => {
+          b.addEventListener('click', () => {
+            const sid = b.dataset.id;
+            const target = custom.find(c => c.id === sid);
+            if (target) {
+              openStrategyEditor(target);
+            }
+          });
+        });
+
+        cardsGrid.querySelectorAll('.btn-del-strat').forEach(b => {
+          b.addEventListener('click', async () => {
+            const sid = b.dataset.id;
+            if (!confirm('Bạn có chắc muốn xóa chiến lược tự tạo này?')) return;
+            try {
+              const res = await fetch('/api/user/strategies', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: sid })
+              });
+              const resData = await res.json();
+              if (resData.success) {
+                alert('Đã xóa chiến lược thành công!');
+                loadStrategiesData();
+              }
+            } catch (err) {
+              alert('Lỗi: ' + err.message);
+            }
+          });
+        });
+      }
+    }
+
+    async function setActiveStrategy(strategyId) {
+      try {
+        const res = await fetch('/api/user/strategies/set-active', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: strategyId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Đã kích hoạt chiến lược: ' + (data.activeStrategy?.name || strategyId));
+          await loadStrategiesData();
+          if (typeof refreshPaperStatus === 'function') refreshPaperStatus();
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể kích hoạt chiến lược'));
+        }
+      } catch (e) {
+        alert('Lỗi kết nối: ' + e.message);
+      }
+    }
+
+    function openStrategyEditor(strategyToEdit = null) {
+      switchStratTab('editor');
+      const valBanner = document.getElementById('strat-val-msg');
+      if (valBanner) valBanner.style.display = 'none';
+
+      if (strategyToEdit) {
+        document.getElementById('strat-input-name').value = strategyToEdit.name || '';
+        document.getElementById('strat-input-desc').value = strategyToEdit.description || '';
+        document.getElementById('strat-input-tf').value = strategyToEdit.timeframe || '15m';
+        document.getElementById('strat-input-code').value = strategyToEdit.code || '';
+        document.getElementById('strat-input-code').dataset.editingId = strategyToEdit.id;
+      } else {
+        document.getElementById('strat-input-name').value = '';
+        document.getElementById('strat-input-desc').value = '';
+        document.getElementById('strat-input-tf').value = '15m';
+        delete document.getElementById('strat-input-code').dataset.editingId;
+        // Load default template if empty
+        if (!document.getElementById('strat-input-code').value) {
+          const tpls = cachedStrategiesData?.templates || {};
+          document.getElementById('strat-input-code').value = tpls.rsi_scalp || '';
+          document.getElementById('strat-input-name').value = 'RSI Mean-Reversion Scalp (Tự Tạo)';
+          document.getElementById('strat-input-desc').value = 'Vào Long khi RSI < 32 và EMA10 cắt lên, chốt lời +3%';
+        }
+      }
+    }
+
+    function switchStratTab(tab) {
+      const btnList = document.getElementById('tab-strat-list');
+      const btnEditor = document.getElementById('tab-strat-editor');
+      const viewList = document.getElementById('strat-view-list');
+      const viewEditor = document.getElementById('strat-view-editor');
+
+      if (tab === 'list') {
+        if (btnList) { btnList.style.color = '#fff'; btnList.style.borderBottomColor = '#a855f7'; }
+        if (btnEditor) { btnEditor.style.color = '#8c93a3'; btnEditor.style.borderBottomColor = 'transparent'; }
+        if (viewList) viewList.style.display = 'block';
+        if (viewEditor) viewEditor.style.display = 'none';
+      } else {
+        if (btnEditor) { btnEditor.style.color = '#fff'; btnEditor.style.borderBottomColor = '#a855f7'; }
+        if (btnList) { btnList.style.color = '#8c93a3'; btnList.style.borderBottomColor = 'transparent'; }
+        if (viewEditor) viewEditor.style.display = 'block';
+        if (viewList) viewList.style.display = 'none';
+      }
+    }
+
+    const stratModal = document.getElementById('strategy-studio-modal');
+    function openStrategyModal(tab = 'list') {
+      if (stratModal) stratModal.style.display = 'flex';
+      switchStratTab(tab);
+      loadStrategiesData();
+    }
+    function closeStrategyModal() {
+      if (stratModal) stratModal.style.display = 'none';
+    }
+
+    document.getElementById('btn-close-strat-modal')?.addEventListener('click', closeStrategyModal);
+    stratModal?.addEventListener('click', (e) => {
+      if (e.target === stratModal) closeStrategyModal();
+    });
+
+    document.getElementById('tab-strat-list')?.addEventListener('click', () => switchStratTab('list'));
+    document.getElementById('tab-strat-editor')?.addEventListener('click', () => openStrategyEditor());
+    document.getElementById('btn-studio-goto-add')?.addEventListener('click', () => openStrategyEditor());
+    document.getElementById('btn-studio-back-list')?.addEventListener('click', () => switchStratTab('list'));
+    document.getElementById('btn-open-strategy-studio')?.addEventListener('click', () => openStrategyModal('list'));
+    document.getElementById('btn-dock-open-studio')?.addEventListener('click', () => openStrategyModal('list'));
+    document.getElementById('btn-dock-code-studio')?.addEventListener('click', () => openStrategyModal('editor'));
+    document.getElementById('btn-indicators-add-strategy')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const indDrop = document.getElementById('indicators-dropdown');
+      if (indDrop) indDrop.style.display = 'none';
+      document.getElementById('btn-indicators-menu')?.classList.remove('active');
+      openStrategyModal('list');
+    });
+
+    // Template buttons
+    document.getElementById('btn-load-tpl-rsi')?.addEventListener('click', () => {
+      const t = cachedStrategiesData?.templates?.rsi_scalp;
+      if (t) {
+        document.getElementById('strat-input-code').value = t;
+        document.getElementById('strat-input-name').value = 'RSI Mean-Reversion Scalp (Custom)';
+        document.getElementById('strat-input-desc').value = 'Quá bán RSI < 32 + EMA10 cắt lên -> Long (TP: +3%, SL: -1.5%)';
+        document.getElementById('strat-input-tf').value = '15m';
+      }
+    });
+
+    document.getElementById('btn-load-tpl-ema')?.addEventListener('click', () => {
+      const t = cachedStrategiesData?.templates?.ema_cross;
+      if (t) {
+        document.getElementById('strat-input-code').value = t;
+        document.getElementById('strat-input-name').value = 'EMA Dual Trend Runner (Custom)';
+        document.getElementById('strat-input-desc').value = 'Golden Cross EMA10/50 + Supertrend Bullish -> Mua theo sóng';
+        document.getElementById('strat-input-tf').value = '15m';
+      }
+    });
+
+    document.getElementById('btn-load-tpl-breakout')?.addEventListener('click', () => {
+      const t = cachedStrategiesData?.templates?.breakout;
+      if (t) {
+        document.getElementById('strat-input-code').value = t;
+        document.getElementById('strat-input-name').value = 'Breakout Volume Surge (Custom)';
+        document.getElementById('strat-input-desc').value = 'Vượt đỉnh 24h kèm động lượng RSI bứt phá';
+        document.getElementById('strat-input-tf').value = '5m';
+      }
+    });
+
+    // Test syntax button
+    document.getElementById('btn-studio-test-syntax')?.addEventListener('click', async () => {
+      const code = document.getElementById('strat-input-code').value;
+      const banner = document.getElementById('strat-val-msg');
+      if (!banner) return;
+      banner.style.display = 'block';
+      banner.textContent = '⏳ Đang kiểm tra cú pháp...';
+      banner.style.background = 'rgba(56, 189, 248, 0.15)';
+      banner.style.color = '#38bdf8';
+      banner.style.border = '1px solid #38bdf8';
+
+      try {
+        const res = await fetch('/api/user/strategies/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const d = await res.json();
+        if (d.valid) {
+          banner.textContent = '✅ Cú pháp JavaScript hợp lệ! Hàm onTick(market, portfolio) đã sẵn sàng thực thi.';
+          banner.style.background = 'rgba(16, 185, 129, 0.15)';
+          banner.style.color = '#10b981';
+          banner.style.border = '1px solid #10b981';
+        } else {
+          banner.textContent = '❌ ' + (d.error || 'Cú pháp không hợp lệ');
+          banner.style.background = 'rgba(239, 68, 68, 0.15)';
+          banner.style.color = '#ef4444';
+          banner.style.border = '1px solid #ef4444';
+        }
+      } catch (e) {
+        banner.textContent = '❌ Lỗi kiểm tra: ' + e.message;
+        banner.style.background = 'rgba(239, 68, 68, 0.15)';
+        banner.style.color = '#ef4444';
+        banner.style.border = '1px solid #ef4444';
+      }
+    });
+
+    // Save and activate strategy button
+    document.getElementById('btn-studio-save-strat')?.addEventListener('click', async () => {
+      const name = document.getElementById('strat-input-name').value.trim();
+      const description = document.getElementById('strat-input-desc').value.trim();
+      const timeframe = document.getElementById('strat-input-tf').value;
+      const code = document.getElementById('strat-input-code').value.trim();
+      const editingId = document.getElementById('strat-input-code').dataset.editingId || null;
+
+      if (!name) {
+        alert('Vui lòng đặt tên cho chiến lược của bạn');
+        return;
+      }
+      if (!code) {
+        alert('Vui lòng dán mã nguồn vào ô code');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/user/strategies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingId, name, description, timeframe, code })
+        });
+        const savedData = await res.json();
+        if (!savedData.success) {
+          alert('❌ Lưu thất bại: ' + (savedData.error || 'Lỗi không xác định'));
+          return;
+        }
+
+        // Set as active
+        if (savedData.strategy?.id) {
+          await setActiveStrategy(savedData.strategy.id);
+        }
+
+        alert('🎉 Chúc mừng! Đã lưu và kích hoạt chiến lược "' + name + '" thành công!');
+        switchStratTab('list');
+        loadStrategiesData();
+      } catch (err) {
+        alert('❌ Lỗi: ' + err.message);
+      }
+    });
+
+    // Dock strategy select change & apply
+    document.getElementById('dock-strategy-select')?.addEventListener('change', (e) => {
+      const sid = e.target.value;
+      const all = [...(cachedStrategiesData?.builtin || []), ...(cachedStrategiesData?.custom || [])];
+      const match = all.find(s => s.id === sid);
+      const descEl = document.getElementById('dock-strategy-desc');
+      if (descEl && match) {
+        descEl.textContent = match.description || 'Chiến lược định lượng tự động.';
+      }
+    });
+
+    document.getElementById('btn-dock-apply-strat')?.addEventListener('click', async () => {
+      const sel = document.getElementById('dock-strategy-select');
+      const sid = sel ? sel.value : null;
+      if (!sid) return;
+      await setActiveStrategy(sid);
+    });
+
+    // Initial load of strategies
+    loadStrategiesData();
 
     // ========================================================
     // AUTHENTICATION & WEB3 WALLET CLIENT CONTROLLER
@@ -10228,6 +10863,14 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/alert/telegram') {
     const body = await parseBody(req);
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && !body.userToken) {
+      const userTg = userProfileManager.getUserTelegram(session.userId);
+      if (userTg && userTg.configured) {
+        body.userToken = userTg.token;
+        body.userChatId = userTg.chatId;
+      }
+    }
     try {
       const result = await sendTelegramAlert(body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -10262,8 +10905,17 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify(data));
   }
 
-  // --- Paper Trader Endpoints ---
+  // --- Paper Trader Endpoints (RBAC Isolated) ---
   if (pathname === '/api/paper/simulated-6m') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (!session || session.role !== 'ADMIN') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: false,
+        error: 'Quyền truy cập bị từ chối: Bản Journal mô phỏng chiến lược độc quyền chỉ dành riêng cho Admin.',
+        code: 'ADMIN_SIMULATION_RESTRICTED'
+      }));
+    }
     const simPath = path.join(__dirname, 'data/simulated_6month_pnl.json');
     if (fs.existsSync(simPath)) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -10275,6 +10927,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/paper/sync-simulation') {
+    if (!requireAdminPrivilege()) return;
     try {
       const ok = await syncDailySimulation();
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -10286,6 +10939,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/paper/export-journal-csv') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (!session || session.role !== 'ADMIN') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Chỉ Admin mới có quyền tải về bản Journal mô phỏng chiến lược.' }));
+    }
     try {
       const csvData = generateFullJournalCSV();
       res.writeHead(200, {
@@ -10300,6 +10958,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/paper/export-journal-excel') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (!session || session.role !== 'ADMIN') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Chỉ Admin mới có quyền tải về bản Journal mô phỏng chiến lược.' }));
+    }
     try {
       const excelBuf = await generateFullJournalExcelBuffer();
       res.writeHead(200, {
@@ -10310,6 +10973,144 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  // --- User Watchlist Endpoints (Per-Account Isolated) ---
+  if (pathname === '/api/user/watchlist') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (req.method === 'GET') {
+      const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+      const list = userProfileManager.getUserWatchlist(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, userId, watchlist: list }));
+    } else if (req.method === 'POST') {
+      const body = await parseBody(req);
+      const userId = session ? session.userId : (body.userId || 'guest');
+      userProfileManager.saveUserWatchlist(userId, body.watchlist || []);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, message: 'Đã lưu Watchlist cho tài khoản' }));
+    }
+  }
+
+  // --- User Telegram Endpoints (Self-Service For All Users) ---
+  if (pathname === '/api/user/telegram') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (req.method === 'GET') {
+      const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+      const cfg = userProfileManager.getUserTelegram(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, config: cfg }));
+    } else if (req.method === 'POST') {
+      const body = await parseBody(req);
+      const userId = session ? session.userId : (body.userId || 'guest');
+      const updated = userProfileManager.saveUserTelegram(userId, body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, config: updated, message: 'Đã lưu cấu hình Telegram cho tài khoản' }));
+    } else if (req.method === 'DELETE') {
+      const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+      userProfileManager.deleteUserTelegram(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, message: 'Đã xóa cấu hình Telegram cá nhân' }));
+    }
+  }
+
+  if (pathname === '/api/user/telegram/test') {
+    const body = await parseBody(req);
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (body.userId || 'guest');
+    const userCfg = userProfileManager.getUserTelegram(userId);
+    const token = (body.token || userCfg.token || '').trim();
+    const chatId = (body.chatId || userCfg.chatId || '').trim();
+
+    if (!token || !chatId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Vui lòng cung cấp cả Telegram Bot Token và Chat ID' }));
+    }
+
+    try {
+      const testMsg = `🔔 <b>HYPERVIEW TELEGRAM ALERT VERIFIED</b>\n\n`
+        + `● Tài khoản: <code>${userId}</code>\n`
+        + `● Trạng thái: Kết nối thành công\n`
+        + `● Thời gian: ${new Date().toLocaleString('vi-VN')}\n\n`
+        + `Cấu hình Telegram của bạn đã hoạt động bình thường và sẵn sàng nhận tín hiệu chiến lược!`;
+      
+      const axios = require('axios');
+      const tgRes = await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+        chat_id: chatId,
+        text: testMsg,
+        parse_mode: 'HTML',
+      }, { timeout: 10000 });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, messageId: tgRes.data?.result?.message_id }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.response?.data?.description || err.message }));
+    }
+  }
+
+  // --- User Custom Strategy Endpoints (Built-in Selection & Custom Code Engine) ---
+  if (pathname === '/api/user/strategies') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+
+    if (req.method === 'GET') {
+      const builtin = userProfileManager.getBuiltinStrategies();
+      const custom = userProfileManager.getUserStrategies(userId);
+      const active = userProfileManager.getActiveStrategy(userId);
+      const templates = userProfileManager.getStarterTemplates();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        userId,
+        activeStrategyId: active.id,
+        activeStrategy: active,
+        builtin,
+        custom,
+        templates,
+      }));
+    } else if (req.method === 'POST') {
+      const body = await parseBody(req);
+      try {
+        const saved = userProfileManager.saveUserStrategy(userId, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, strategy: saved, message: 'Đã lưu chiến lược thành công' }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    } else if (req.method === 'DELETE') {
+      const body = await parseBody(req);
+      const stratId = body.id || parsedUrl.query.id;
+      if (!stratId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: 'Thiếu ID chiến lược cần xóa' }));
+      }
+      userProfileManager.deleteUserStrategy(userId, stratId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, message: 'Đã xóa chiến lược' }));
+    }
+  }
+
+  if (pathname === '/api/user/strategies/validate') {
+    const body = await parseBody(req);
+    const result = userProfileManager.validateStrategyCode(body.code);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(result));
+  }
+
+  if (pathname === '/api/user/strategies/set-active') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const body = await parseBody(req);
+    try {
+      const act = userProfileManager.setActiveStrategy(userId, body.id);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, activeStrategy: act, message: `Đã kích hoạt: ${act.name}` }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.message }));
     }
   }
 
@@ -10369,46 +11170,137 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/paper/status') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify(paperTraderInstance.getStatus()));
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && session.role === 'ADMIN') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(paperTraderInstance.getStatus()));
+    } else if (session) {
+      const userStatus = userProfileManager.getUserPaperStatus(session.userId, paperTraderInstance.latestPrices);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(userStatus));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        guest: true,
+        autoTradeEnabled: false,
+        initialBalance: 10000.0,
+        balance: 10000.0,
+        equity: 10000.0,
+        realizedPnl: 0,
+        unrealizedPnl: 0,
+        dailyRealizedPnl: 0,
+        dailyPnl: 0,
+        openPositions: [],
+        closedTrades: [],
+        allTrades: [],
+      }));
+    }
   }
 
   if (pathname === '/api/paper/toggle') {
-    if (!requireAdminPrivilege()) return;
-    paperTraderInstance.portfolio.autoTradeEnabled = !paperTraderInstance.portfolio.autoTradeEnabled;
-    paperTraderInstance.savePortfolio();
-    paperTraderInstance.log(`Auto-trading switched to: ${paperTraderInstance.portfolio.autoTradeEnabled ? 'ACTIVE' : 'PAUSED'}`);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ success: true, autoTradeEnabled: paperTraderInstance.portfolio.autoTradeEnabled }));
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && session.role === 'ADMIN') {
+      paperTraderInstance.portfolio.autoTradeEnabled = !paperTraderInstance.portfolio.autoTradeEnabled;
+      paperTraderInstance.savePortfolio();
+      paperTraderInstance.log(`Auto-trading switched to: ${paperTraderInstance.portfolio.autoTradeEnabled ? 'ACTIVE' : 'PAUSED'}`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, autoTradeEnabled: paperTraderInstance.portfolio.autoTradeEnabled }));
+    } else if (session) {
+      const state = userProfileManager.toggleUserAutoTrade(session.userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, autoTradeEnabled: state }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Vui lòng đăng nhập để bật chiến lược bot' }));
+    }
   }
 
   if (pathname === '/api/paper/close-position') {
-    if (!requireAdminPrivilege()) return;
+    const session = authSecurityInstance.authenticateRequest(req);
     const body = await parseBody(req);
-    const pos = paperTraderInstance.portfolio.positions.find(p => p.id === body.positionId);
-    if (pos) {
-      const curr = paperTraderInstance.latestPrices[pos.symbol]?.price || pos.entryPrice;
-      await paperTraderInstance.closePosition(pos.id, curr, 'Manual Close from Dashboard');
+    if (session && session.role === 'ADMIN') {
+      const pos = paperTraderInstance.portfolio.positions.find(p => p.id === body.positionId);
+      if (pos) {
+        const curr = paperTraderInstance.latestPrices[pos.symbol]?.price || pos.entryPrice;
+        await paperTraderInstance.closePosition(pos.id, curr, 'Manual Close from Dashboard');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    } else if (session) {
+      try {
+        const curr = paperTraderInstance.latestPrices[body.symbol]?.price || body.price || 0;
+        userProfileManager.closeUserPosition(session.userId, body.positionId, curr, 'Manual Close from Dashboard');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Unauthorized' }));
     }
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ success: true }));
   }
 
   if (pathname === '/api/paper/close-all') {
-    if (!requireAdminPrivilege()) return;
-    for (const pos of [...paperTraderInstance.portfolio.positions]) {
-      const curr = paperTraderInstance.latestPrices[pos.symbol]?.price || pos.entryPrice;
-      await paperTraderInstance.closePosition(pos.id, curr, 'Manual Close All');
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && session.role === 'ADMIN') {
+      for (const pos of [...paperTraderInstance.portfolio.positions]) {
+        const curr = paperTraderInstance.latestPrices[pos.symbol]?.price || pos.entryPrice;
+        await paperTraderInstance.closePosition(pos.id, curr, 'Manual Close All');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    } else if (session) {
+      const port = userProfileManager.getUserPortfolio(session.userId);
+      for (const pos of [...port.openPositions]) {
+        const curr = paperTraderInstance.latestPrices[pos.symbol]?.price || pos.entryPrice;
+        userProfileManager.closeUserPosition(session.userId, pos.id, curr, 'Manual Close All');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Unauthorized' }));
     }
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ success: true }));
   }
 
   if (pathname === '/api/paper/reset') {
-    if (!requireAdminPrivilege()) return;
-    paperTraderInstance.resetAccount();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ success: true }));
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && session.role === 'ADMIN') {
+      paperTraderInstance.resetAccount();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    } else if (session) {
+      // Reset user paper account to clean $10k
+      const initial = {
+        userId: session.userId,
+        initialBalance: 10000.0,
+        balance: 10000.0,
+        cash: 10000.0,
+        equity: 10000.0,
+        realizedPnl: 0.0,
+        unrealizedPnl: 0.0,
+        dailyRealizedPnl: 0.0,
+        dailyTargetMax: 300.0,
+        dailyStopLossMax: 180.0,
+        autoTradeEnabled: false,
+        strategyMode: 'Oliver Kell Cycle + Astra-Supertrend',
+        maxOpenPositions: 3,
+        openPositions: [],
+        closedTrades: [],
+        recentLogs: [
+          `[${new Date().toISOString().slice(11, 19)}] Personal paper trading account reset to $10,000.00 USD capital.`,
+        ],
+        createdAt: new Date().toISOString(),
+      };
+      userProfileManager.saveUserPortfolio(session.userId, initial);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Unauthorized' }));
+    }
   }
 
   // --- Hyperliquid & Terminal Dock Endpoints ---
@@ -10437,7 +11329,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/hyperliquid/account') {
-    const address = parsedUrl.query.address || null;
+    const session = authSecurityInstance.authenticateRequest(req);
+    let address = parsedUrl.query.address || null;
+    if (!address && session && session.type === 'wallet' && session.userId && session.userId.startsWith('0x')) {
+      address = session.userId;
+    }
     try {
       const acc = await hyperliquidInstance.getAccountState(address);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -10480,15 +11376,47 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/trade/execute') {
-    if (!requireAdminPrivilege()) return;
     const body = await parseBody(req);
-    try {
-      const result = await hyperliquidInstance.executeTrade(body);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(result));
-    } catch (e) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: e.message }));
+    const session = authSecurityInstance.authenticateRequest(req);
+    const mode = (body.mode || 'paper').toLowerCase();
+
+    if (mode === 'paper') {
+      // Paper trading is available to all authenticated users & guests ($10,000 initial capital)
+      if (session && session.role === 'ADMIN') {
+        try {
+          const result = await hyperliquidInstance.executeTrade(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      } else {
+        // Execute on user personal paper portfolio ($10k initial balance)
+        try {
+          const userId = session ? session.userId : (body.userId || 'guest');
+          const result = userProfileManager.executePaperTrade(userId, body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+    } else {
+      // Live trade on Hyperliquid requires connected wallet or admin privilege
+      if (!session) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Vui lòng kết nối ví để thực hiện giao dịch Live' }));
+      }
+      try {
+        const result = await hyperliquidInstance.executeTrade(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: e.message }));
+      }
     }
   }
 
