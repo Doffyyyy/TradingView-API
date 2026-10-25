@@ -71,15 +71,33 @@ function getLoginPageHtml(config = {}) {
     .video-background-wrap {
       position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: 0; pointer-events: none;
     }
-    .bg-video-stream {
-      position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
-      width: auto; height: auto; transform: translate(-50%, -50%) scale(1.04);
-      object-fit: cover; opacity: 0.88; filter: saturate(1.15) contrast(1.15) brightness(0.95);
+    .bg-video-ambient {
+      position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh; min-width: 100%; min-height: 100%;
+      transform: translate(-50%, -50%) scale(1.15);
+      object-fit: cover; filter: blur(52px) saturate(1.8) brightness(0.85); opacity: 0.78;
+    }
+    .bg-video-stage {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 85px 24px 30px 24px;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    .bg-video-main {
+      height: calc(100vh - 115px); max-height: calc(100vh - 115px);
+      width: auto; max-width: 100vw;
+      aspect-ratio: 816 / 1104;
+      object-fit: contain; opacity: 0.98;
+      filter: saturate(1.2) contrast(1.18) brightness(1.02);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 80px rgba(184, 67, 46, 0.15);
+      mask-image: linear-gradient(180deg, transparent 0%, black 3.5%, black 95%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 3.5%, black 95%, transparent 100%);
     }
     .video-ambient-overlay {
       position: absolute; inset: 0;
-      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.22) 0%, rgba(7, 9, 14, 0.38) 55%, rgba(5, 7, 11, 0.72) 100%),
-                  linear-gradient(180deg, rgba(7, 9, 14, 0.18) 0%, rgba(7, 9, 14, 0.75) 100%);
+      background: radial-gradient(circle at 50% 90%, rgba(184, 67, 46, 0.12) 0%, rgba(7, 9, 14, 0.22) 55%, rgba(5, 7, 11, 0.62) 100%),
+                  linear-gradient(180deg, rgba(7, 9, 14, 0.1) 0%, rgba(7, 9, 14, 0.5) 100%);
       pointer-events: none;
     }
 
@@ -501,9 +519,14 @@ function getLoginPageHtml(config = {}) {
 <body>
   <div class="film-grain"></div>
   <div class="video-background-wrap">
-    <video class="bg-video-stream" autoplay loop muted playsinline poster="/public/sweet_dreams_hero.jpg">
+    <video class="bg-video-ambient" autoplay loop muted playsinline>
       <source src="/public/sweet_dreams_bg.mp4" type="video/mp4">
     </video>
+    <div class="bg-video-stage">
+      <video class="bg-video-main" autoplay loop muted playsinline poster="/public/sweet_dreams_hero.jpg">
+        <source src="/public/sweet_dreams_bg.mp4" type="video/mp4">
+      </video>
+    </div>
     <div class="video-ambient-overlay"></div>
   </div>
 
