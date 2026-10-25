@@ -130,6 +130,13 @@ async function runTests() {
   const toggleData = await toggleRes.json();
   console.log('  Toggle Status:', toggleRes.status);
   console.log('  Toggle Response:', toggleData);
+  // Ensure auto-trade is left enabled
+  if (!toggleData.autoTradeEnabled) {
+    await fetch('http://localhost:8095/api/paper/toggle', {
+      method: 'POST',
+      headers: { 'Cookie': adminCookie },
+    });
+  }
   if (toggleData.success) {
     console.log('  ✅ PASSED: Admin successfully authorized to operate bot.\n');
   } else {
