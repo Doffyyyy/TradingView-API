@@ -507,6 +507,62 @@ function getLoginPageHtml(config = {}) {
       z-index: 10000; display: none; align-items: center; gap: 10px;
     }
 
+    /* Lateral Neoclassical Architectural Columns (Side Flanks Decor) */
+    .flank-pillar {
+      position: fixed; top: 100px; bottom: 35px; width: 36px;
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      z-index: 6; pointer-events: none; opacity: 0.72;
+      font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: rgba(226, 232, 240, 0.4);
+      user-select: none;
+    }
+    .flank-pillar-left { left: 24px; }
+    .flank-pillar-right { right: 24px; }
+
+    .flank-rail-line {
+      width: 1px; flex: 1; margin: 14px 0;
+      background: linear-gradient(180deg, rgba(251, 146, 60, 0.5) 0%, rgba(255, 255, 255, 0.15) 30%, rgba(184, 67, 46, 0.4) 70%, transparent 100%);
+      position: relative;
+    }
+    .flank-node-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: #fb923c;
+      box-shadow: 0 0 10px #fb923c; position: absolute; left: -2px; top: 35%;
+      animation: pulseNode 4s infinite alternate;
+    }
+    @keyframes pulseNode { from { top: 20%; opacity: 0.3; } to { top: 80%; opacity: 1; } }
+
+    .flank-vertical-text {
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      letter-spacing: 3.5px; font-size: 9px; font-weight: 700;
+      font-family: 'Cinzel', serif; color: rgba(248, 250, 252, 0.45);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin: 12px 0;
+    }
+    .flank-coordinate-tag {
+      font-size: 8.5px; letter-spacing: 1px; color: rgba(251, 146, 60, 0.65);
+    }
+
+    /* Ambient Renaissance Arch Framing Brackets */
+    .viewport-corner-bracket {
+      position: fixed; width: 28px; height: 28px; pointer-events: none; z-index: 6;
+      border-color: rgba(251, 146, 60, 0.35); border-style: solid;
+    }
+    .bracket-tl { top: 14px; left: 14px; border-width: 1px 0 0 1px; border-top-left-radius: 6px; }
+    .bracket-tr { top: 14px; right: 14px; border-width: 1px 1px 0 0; border-top-right-radius: 6px; }
+    .bracket-bl { bottom: 14px; left: 14px; border-width: 0 0 1px 1px; border-bottom-left-radius: 6px; }
+    .bracket-br { bottom: 14px; right: 14px; border-width: 0 1px 1px 0; border-bottom-right-radius: 6px; }
+
+    /* Stealth Admin Vault Console Dialog */
+    .admin-vault-dialog {
+      max-width: 480px; border-color: rgba(239, 68, 68, 0.45) !important;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.95), 0 0 40px rgba(239, 68, 68, 0.25) !important;
+    }
+    .vault-header {
+      background: rgba(239, 68, 68, 0.08) !important; border-bottom: 1px solid rgba(239, 68, 68, 0.2) !important;
+    }
+
+    @media (max-width: 1320px) {
+      .flank-pillar { display: none; }
+    }
+
     @media (max-width: 960px) {
       .hero-split-grid { grid-template-columns: 1fr; gap: 40px; }
       .pillars-grid { grid-template-columns: 1fr; }
@@ -518,13 +574,41 @@ function getLoginPageHtml(config = {}) {
 </head>
 <body>
   <div class="film-grain"></div>
+
+  <!-- LATERAL NEOCLASSICAL ARCHITECTURAL COLUMNS (FLANKS DECOR) -->
+  <aside class="flank-pillar flank-pillar-left" aria-hidden="true">
+    <span class="flank-coordinate-tag">EPOCH // T3–T10</span>
+    <div class="flank-rail-line">
+      <div class="flank-node-dot"></div>
+    </div>
+    <div class="flank-vertical-text">VINCIT • QUI • SE • VINCIT</div>
+    <div class="flank-rail-line" style="background: linear-gradient(180deg, rgba(184, 67, 46, 0.4) 0%, transparent 100%);"></div>
+    <span class="flank-coordinate-tag">LAT 41°53'N</span>
+  </aside>
+
+  <aside class="flank-pillar flank-pillar-right" aria-hidden="true">
+    <span class="flank-coordinate-tag">SECP256K1 // EIP-4361</span>
+    <div class="flank-rail-line">
+      <div class="flank-node-dot" style="animation-delay: 1.5s; background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></div>
+    </div>
+    <div class="flank-vertical-text">AUDACES • FORTUNA • IUVAT</div>
+    <div class="flank-rail-line" style="background: linear-gradient(180deg, rgba(56, 189, 248, 0.4) 0%, transparent 100%);"></div>
+    <span class="flank-coordinate-tag">LON 12°29'E</span>
+  </aside>
+
+  <!-- AMBIENT VIEWPORT CORNER BRACKETS -->
+  <div class="viewport-corner-bracket bracket-tl"></div>
+  <div class="viewport-corner-bracket bracket-tr"></div>
+  <div class="viewport-corner-bracket bracket-bl"></div>
+  <div class="viewport-corner-bracket bracket-br"></div>
+
   <div class="video-background-wrap">
     <video class="bg-video-ambient" autoplay loop muted playsinline>
-      <source src="/public/sweet_dreams_bg.mp4" type="video/mp4">
+      <source src="/public/sweet_dreams_loop.mp4" type="video/mp4">
     </video>
     <div class="bg-video-stage">
-      <video class="bg-video-main" autoplay loop muted playsinline poster="/public/sweet_dreams_hero.jpg">
-        <source src="/public/sweet_dreams_bg.mp4" type="video/mp4">
+      <video class="bg-video-main" id="bg-video-main" autoplay loop muted playsinline poster="/public/sweet_dreams_hero.jpg">
+        <source src="/public/sweet_dreams_loop.mp4" type="video/mp4">
       </video>
     </div>
     <div class="video-ambient-overlay"></div>
@@ -599,7 +683,7 @@ function getLoginPageHtml(config = {}) {
             <div class="card-subtext">Sign in to unlock terminal workspaces, trading logs & live AI engines.</div>
           </div>
 
-          <!-- Tabs: Web3 Wallet vs Google vs Master Key -->
+          <!-- Tabs: Web3 Wallet vs Google -->
           <div class="auth-selector-tabs">
             <button class="tab-trigger active" data-tab-target="pane-wallet">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
@@ -608,10 +692,6 @@ function getLoginPageHtml(config = {}) {
             <button class="tab-trigger" data-tab-target="pane-google">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
               <span>Google / Gmail</span>
-            </button>
-            <button class="tab-trigger" data-tab-target="pane-master">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Master Key</span>
             </button>
           </div>
 
@@ -651,22 +731,6 @@ function getLoginPageHtml(config = {}) {
 
               <div class="security-callout-pill">
                 🛡️ <strong>Zero Password Storage:</strong> Authentication occurs through OAuth 2.0 cryptographic token signatures. Your credentials remain securely stored with Google.
-              </div>
-            </div>
-
-            <!-- PANE 3: BOT OWNER MASTER KEY -->
-            <div class="auth-pane" id="pane-master">
-              <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-                Bot administrator access. Enter your master administrative key to unlock order execution, risk reset, and strategy parameters.
-              </div>
-
-              <input type="password" class="input-auth-field" id="login-master-key-input" placeholder="Enter Master Key (e.g. hyperview2026)">
-              <button class="btn-email-submit" id="btn-login-master" style="background: #d97706; border-color: rgba(245, 158, 11, 0.4);">
-                Authorize Admin Privileges
-              </button>
-
-              <div class="security-callout-pill">
-                👑 <strong>Full Administrative Authority:</strong> Allows toggling live algorithms, emergency circuit breakers, and Hyperliquid execution.
               </div>
             </div>
 
@@ -838,6 +902,29 @@ function getLoginPageHtml(config = {}) {
     </div>
   </div>
 
+  <!-- STEALTH ADMIN VAULT MODAL (TRIGGERED VIA HOTKEY CTRL+SHIFT+A, TRIPLE CLICK STATUS DOT, OR ?mode=vault) -->
+  <div class="modal-backdrop-layer" id="admin-vault-backdrop">
+    <div class="modal-dialog-box admin-vault-dialog">
+      <div class="modal-header-strip vault-header">
+        <div style="display:flex; align-items:center; gap:9px;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; box-shadow:0 0 10px #ef4444;"></span>
+          <span class="modal-headline-text" style="color:#f87171; letter-spacing:1px; font-size:14.5px;">OPERATOR VAULT // ROOT CLEARANCE</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeAdminVaultModal()">✕</button>
+      </div>
+      <div class="modal-scrollable-body" style="padding:24px;">
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:16px; font-family:'JetBrains Mono', monospace; line-height:1.6;">
+          ENTER HIGH-CLEARANCE OPERATOR PASSPHRASE TO UNLOCK FULL ADMINISTRATIVE CONTROL (BOT TOGGLE, LIQUIDATION OVERRIDE, RISK RESETS).
+        </p>
+        <input type="password" id="stealth-vault-key-input" class="input-auth-field" placeholder="Enter Operator Master Key..." style="border-color:rgba(239,68,68,0.4); font-family:'JetBrains Mono', monospace; font-size:13.5px;" onkeydown="if(event.key==='Enter') submitStealthAdminKey()">
+        <button class="btn-connect-web3" id="btn-submit-vault" onclick="submitStealthAdminKey()" style="background:linear-gradient(135deg, rgba(220,38,38,0.65), rgba(153,27,27,0.75)) !important; border-color:#f87171 !important; box-shadow:0 8px 24px rgba(220,38,38,0.4) !important;">
+          Authorize Root Console
+        </button>
+        <div id="vault-auth-status" style="margin-top:14px; font-size:12px; font-family:'JetBrains Mono', monospace; font-weight:600; text-align:center; min-height:16px;"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="landing-toast-pill" id="landing-toast"></div>
 
   <!-- CLIENT-SIDE GATEWAY CONTROLLER -->
@@ -950,13 +1037,38 @@ function getLoginPageHtml(config = {}) {
       }
     });
 
-    // 3. Bot Owner Master Key Admin Sign-In
-    document.getElementById('btn-login-master')?.addEventListener('click', async () => {
-      const key = (document.getElementById('login-master-key-input')?.value || '').trim();
+    // 3. STEALTH OPERATOR VAULT CONTROLLER (DISCREET ADMIN ACCESS)
+    function openAdminVaultModal() {
+      const modal = document.getElementById('admin-vault-backdrop');
+      if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+          document.getElementById('stealth-vault-key-input')?.focus();
+        }, 120);
+      }
+    }
+
+    function closeAdminVaultModal() {
+      const modal = document.getElementById('admin-vault-backdrop');
+      if (modal) modal.style.display = 'none';
+      const status = document.getElementById('vault-auth-status');
+      if (status) status.textContent = '';
+    }
+
+    async function submitStealthAdminKey() {
+      const input = document.getElementById('stealth-vault-key-input');
+      const key = (input?.value || '').trim();
+      const status = document.getElementById('vault-auth-status');
+      const btn = document.getElementById('btn-submit-vault');
+
       if (!key) {
-        alert('Please enter the Master Key');
+        if (status) { status.style.color = '#ef4444'; status.textContent = 'Passphrase required.'; }
+        input?.focus();
         return;
       }
+
+      if (status) { status.style.color = '#fb923c'; status.textContent = 'Verifying root clearance...'; }
+      if (btn) btn.disabled = true;
 
       try {
         const res = await fetch('/api/auth/claim-admin', {
@@ -966,15 +1078,65 @@ function getLoginPageHtml(config = {}) {
         });
         const data = await res.json();
         if (data.success) {
+          if (status) { status.style.color = '#10b981'; status.textContent = '✓ Clearances granted. Initializing Admin Workspace...'; }
           showToast('👑 Administrative privileges authorized!');
-          setTimeout(() => { window.location.href = '/terminal'; }, 800);
+          setTimeout(() => { window.location.href = '/terminal'; }, 700);
         } else {
-          alert('❌ ' + (data.error || 'Invalid Master Key'));
+          if (status) { status.style.color = '#ef4444'; status.textContent = '✗ ' + (data.error || 'Access Denied: Invalid Key'); }
+          if (btn) btn.disabled = false;
         }
       } catch (e) {
-        alert(e.message);
+        if (status) { status.style.color = '#ef4444'; status.textContent = '✗ ' + e.message; }
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    // Stealth Trigger 1: Global Shortcut Ctrl+Shift+A (or Cmd+Shift+A)
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        openAdminVaultModal();
+      }
+      if (e.key === 'Escape') {
+        closeAdminVaultModal();
+        closeLegalModal();
       }
     });
+
+    // Stealth Trigger 2: Triple click on status dot or header logo
+    let dotClicks = 0;
+    let dotTimer = null;
+    document.querySelector('.brand-status-dot')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dotClicks++;
+      clearTimeout(dotTimer);
+      if (dotClicks >= 3) {
+        dotClicks = 0;
+        openAdminVaultModal();
+      } else {
+        dotTimer = setTimeout(() => { dotClicks = 0; }, 800);
+      }
+    });
+
+    // Stealth Trigger 3: Secret URL query (?admin=1 or ?mode=vault)
+    if (window.location.search.includes('admin=1') || window.location.search.includes('mode=vault')) {
+      setTimeout(openAdminVaultModal, 350);
+    }
+
+    // Video Infinite Seamless Loop Assurance
+    const mainVid = document.getElementById('bg-video-main');
+    if (mainVid) {
+      mainVid.addEventListener('timeupdate', () => {
+        if (mainVid.currentTime >= mainVid.duration - 0.12) {
+          mainVid.currentTime = 0;
+          mainVid.play();
+        }
+      });
+      mainVid.addEventListener('ended', () => {
+        mainVid.currentTime = 0;
+        mainVid.play();
+      });
+    }
 
     // LEGAL & CONTACT MODALS
     const LEGAL_CONTENT = {
