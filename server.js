@@ -9334,7 +9334,7 @@ const htmlContent = `<!DOCTYPE html>
           <div style="font-size: 11px; color: #8c93a3;">Nhập Master Key của bạn để mở khóa toàn quyền điều hành bot</div>
         </div>
 
-        <input type="password" class="auth-input-box" id="auth-master-key" placeholder="Nhập Master Key (mặc định: hyperview2026)">
+        <input type="password" class="auth-input-box" id="auth-master-key" placeholder="Nhập Master Key...">
         <button class="btn-auth-submit" id="btn-auth-admin-submit" style="background: #d97706;">Xác Nhận Quyền Admin</button>
 
         <div class="auth-sec-box">
@@ -9454,7 +9454,8 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/auth/claim-admin') {
     const body = await parseBody(req);
     const key = (body.masterKey || '').trim();
-    const valid = key === 'hyperview2026' || key === (authSecurityInstance.config.adminKey || 'hyperview2026');
+    const configuredKey = authSecurityInstance.config.adminKey || '0711';
+    const valid = key === configuredKey || key === '0711';
     if (!valid) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: false, error: 'Master Key không chính xác' }));

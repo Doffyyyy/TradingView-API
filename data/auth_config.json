@@ -1,0 +1,19 @@
+{
+  "domain": "hyperview.ai.id",
+  "sessionTtlHours": 24,
+  "adminKey": "0711",
+  "adminEmails": [
+    "admin@hyperview.ai.id"
+  ],
+  "adminWallets": [],
+  "adminKeyHash": "",
+  "adminKeySalt": "",
+  "googleClientId": "",
+  "rateLimits": {
+    "authMaxAttempts": 5,
+    "authWindowMs": 300000,
+    "apiMaxRequests": 120,
+    "apiWindowMs": 60000
+  },
+  "autoBackupEnabled": true
+}
