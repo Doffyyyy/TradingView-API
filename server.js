@@ -3503,7 +3503,6 @@ const htmlContent = `<!DOCTYPE html>
 
     <footer>
     <div style="display: flex; align-items: center; gap: 12px;">
-      <span>Engine: <strong>@mathieuc/tradingview</strong> (D:\\TradingView-API)</span>
       <span id="session-auto-save-badge" style="font-size: 10px; color: #38bdf8; display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2);">
         <span>💾</span> <span id="session-auto-save-text">Session Auto-Save: Active</span>
       </span>
