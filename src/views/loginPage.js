@@ -495,84 +495,80 @@ function getLoginPageHtml(config = {}) {
     }
     @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
-    /* TERMS ARTWORK THEME (CLASSIC BAROQUE CELLIST & IRIDESCENT LIGHT AURA) */
-    .modal-dialog-box.terms-art-bg {
-      background: #080b12;
-      border: 1px solid rgba(245, 158, 11, 0.55);
-      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.95), 0 0 50px rgba(245, 158, 11, 0.28), inset 0 0 40px rgba(0, 0, 0, 0.6);
+    /* TERMS FULLSCREEN ARTWORK & FROSTED SEE-THROUGH GLASS MODAL */
+    .modal-backdrop-layer.terms-fullscreen-art {
+      background: #04060a url('/public/terms_bg_art.png') center center / cover no-repeat !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .modal-dialog-box.terms-art-bg::before {
+    .modal-backdrop-layer.terms-fullscreen-art::before {
       content: '';
       position: absolute;
       inset: 0;
-      background-image: url('/public/terms_bg_art.png');
-      background-position: center right;
-      background-size: cover;
-      background-repeat: no-repeat;
-      opacity: 0.62;
-      filter: saturate(1.22) contrast(1.1);
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.28) 70%, rgba(0, 0, 0, 0.6) 100%);
       pointer-events: none;
       z-index: 0;
     }
-    .modal-dialog-box.terms-art-bg::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(8, 11, 18, 0.82) 0%, rgba(8, 11, 18, 0.5) 45%, rgba(8, 11, 18, 0.85) 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .modal-dialog-box.terms-art-bg > * {
+    .modal-dialog-box.terms-art-glass {
       position: relative;
       z-index: 1;
+      background: rgba(8, 12, 22, 0.32) !important;
+      backdrop-filter: blur(14px) saturate(1.3) !important;
+      -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
+      border: 1px solid rgba(245, 158, 11, 0.55) !important;
+      border-radius: 20px !important;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.75), 0 0 50px rgba(245, 158, 11, 0.3), inset 0 0 35px rgba(255, 255, 255, 0.08) !important;
+      max-width: 720px !important;
     }
-    .modal-dialog-box.terms-art-bg .modal-header-strip {
-      background: rgba(10, 14, 23, 0.82);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+    .modal-dialog-box.terms-art-glass .modal-header-strip {
+      background: rgba(8, 12, 22, 0.42) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.35) !important;
     }
-    .modal-dialog-box.terms-art-bg .modal-headline-text {
-      color: #fef08a;
-      text-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
-      letter-spacing: 0.5px;
+    .modal-dialog-box.terms-art-glass .modal-headline-text {
+      color: #fef08a !important;
+      text-shadow: 0 0 20px rgba(245, 158, 11, 0.75), 0 2px 6px rgba(0, 0, 0, 0.85) !important;
+      font-size: 17px !important;
+      letter-spacing: 0.8px !important;
     }
-    .modal-dialog-box.terms-art-bg .modal-scrollable-body {
-      background: transparent;
+    .modal-dialog-box.terms-art-glass .modal-scrollable-body {
+      background: transparent !important;
     }
-    .modal-dialog-box.terms-art-bg .modal-footer-strip {
-      background: rgba(10, 14, 23, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(245, 158, 11, 0.35);
+    .modal-dialog-box.terms-art-glass .modal-footer-strip {
+      background: rgba(8, 12, 22, 0.48) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-top: 1px solid rgba(245, 158, 11, 0.35) !important;
     }
-    .modal-dialog-box.terms-art-bg .btn-modal-accept {
-      background: linear-gradient(135deg, #d97706, #b45309);
-      border-color: #f59e0b;
-      color: #fff;
-      font-weight: 700;
-      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+    .modal-dialog-box.terms-art-glass .btn-modal-accept {
+      background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.98)) !important;
+      border: 1px solid #f59e0b !important;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5) !important;
+      color: #fff !important;
+      font-weight: 700 !important;
     }
-    .modal-dialog-box.terms-art-bg .btn-modal-accept:hover {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      box-shadow: 0 6px 22px rgba(245, 158, 11, 0.6);
+    .modal-dialog-box.terms-art-glass .btn-modal-accept:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.98), rgba(217, 119, 6, 1)) !important;
+      box-shadow: 0 6px 26px rgba(245, 158, 11, 0.75) !important;
       transform: translateY(-1px);
     }
     .terms-section-card {
-      background: rgba(12, 16, 26, 0.66);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: rgba(6, 9, 18, 0.38);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-left: 3px solid #f59e0b;
       border-radius: 12px;
       padding: 14px 18px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       transition: all 0.2s ease;
     }
     .terms-section-card:hover {
-      background: rgba(12, 16, 26, 0.78);
-      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(6, 9, 18, 0.55);
+      border-color: rgba(245, 158, 11, 0.45);
       transform: translateY(-1px);
     }
     .terms-section-card h3 {
@@ -580,12 +576,14 @@ function getLoginPageHtml(config = {}) {
       color: #fef08a !important;
       font-size: 13.5px !important;
       font-weight: 700 !important;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95) !important;
     }
     .terms-section-card p {
       margin: 0 !important;
-      color: #e2e8f0 !important;
+      color: #f8fafc !important;
       font-size: 12.5px !important;
       line-height: 1.65;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95) !important;
     }
 
     .modal-header-strip {
@@ -1548,11 +1546,14 @@ function getLoginPageHtml(config = {}) {
       document.getElementById('legal-modal-body').innerHTML = data.body;
       const footMeta = document.getElementById('legal-modal-foot-meta');
       const acceptBtn = document.querySelector('.btn-modal-accept');
+      const backdrop = document.getElementById('legal-modal-backdrop');
       const dialogBox = document.querySelector('#legal-modal-backdrop .modal-dialog-box');
       if (key === 'terms') {
-        dialogBox?.classList.add('terms-art-bg');
+        backdrop?.classList.add('terms-fullscreen-art');
+        dialogBox?.classList.add('terms-art-glass');
       } else {
-        dialogBox?.classList.remove('terms-art-bg');
+        backdrop?.classList.remove('terms-fullscreen-art');
+        dialogBox?.classList.remove('terms-art-glass');
       }
       if (key === 'contact') {
         if (footMeta) footMeta.innerHTML = '<span style="color:#10b981;">● Typical response within 2 hours</span>';
@@ -1565,9 +1566,11 @@ function getLoginPageHtml(config = {}) {
     }
 
     function closeLegalModal() {
-      document.getElementById('legal-modal-backdrop').style.display = 'none';
+      const backdrop = document.getElementById('legal-modal-backdrop');
       const dialogBox = document.querySelector('#legal-modal-backdrop .modal-dialog-box');
-      dialogBox?.classList.remove('terms-art-bg');
+      backdrop?.classList.remove('terms-fullscreen-art');
+      dialogBox?.classList.remove('terms-art-glass');
+      if (backdrop) backdrop.style.display = 'none';
     }
 
     document.getElementById('legal-modal-backdrop')?.addEventListener('click', (e) => {
