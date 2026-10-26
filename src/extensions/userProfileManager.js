@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { normalizeCoin } = require('./hyperliquid');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const WATCHLISTS_DIR = path.join(DATA_DIR, 'user_watchlists');
@@ -238,8 +239,9 @@ class UserProfileManager {
       realizedPnl: 0.0,
       unrealizedPnl: 0.0,
       dailyRealizedPnl: 0.0,
+      dailyTargetMin: 100.0,
       dailyTargetMax: 300.0,
-      dailyStopLossMax: 180.0,
+      dailyStopLossMax: 200.0, // Strictly 2.0% of $10,000 capital ($20 on $1,000)
       autoTradeEnabled: false,
       strategyMode: 'Oliver Kell Cycle + Astra-Supertrend',
       maxOpenPositions: 3,
@@ -296,6 +298,13 @@ class UserProfileManager {
     }
 
     // 2. Open new position
+    // Check Daily Stop Loss Circuit Breaker (strictly 2.0% of current equity)
+    const curEq = port.equity || port.balance || port.cash || 10000.0;
+    const dailyLossLimit = Math.round(curEq * 0.02 * 100) / 100;
+    if (port.dailyRealizedPnl <= -dailyLossLimit && !reduceOnly) {
+      throw new Error(`🛑 Daily Stop Loss đã chạm ngưỡng (-$${Math.abs(port.dailyRealizedPnl).toFixed(2)} / -$${dailyLossLimit.toFixed(2)} [2.0% Vốn]). Giao dịch tạm dừng đến 00:00 UTC+7 để bảo toàn tài khoản.`);
+    }
+
     if (port.openPositions.length >= (port.maxOpenPositions || 4)) {
       throw new Error(`Đã đạt giới hạn tối đa vị thế mở (${port.maxOpenPositions || 4})`);
     }
@@ -308,6 +317,12 @@ class UserProfileManager {
     const marginRequired = Math.round((notionalVal / 1.0) * 100) / 100;
     if (marginRequired > port.cash) {
       throw new Error(`Số dư khả dụng không đủ (Cần $${marginRequired.toFixed(2)}, còn $${port.cash.toFixed(2)})`);
+    }
+
+    // Max margin per position: strictly 25% of current equity
+    const maxMarginAllowed = Math.round(curEq * 0.25 * 100) / 100;
+    if (marginRequired > maxMarginAllowed && !reduceOnly) {
+      throw new Error(`Ký quỹ vị thế ($${marginRequired.toFixed(2)}) vượt quá giới hạn an toàn 25% vốn ($${maxMarginAllowed.toFixed(2)})`);
     }
 
     const calculatedSize = parseFloat(size) > 0 ? parseFloat(size) : (notionalVal / execPrice);
@@ -428,6 +443,21 @@ class UserProfileManager {
 
     totalUnrealizedPnl = Math.round(totalUnrealizedPnl * 100) / 100;
     const currentEquity = Math.round((port.balance + totalUnrealizedPnl) * 100) / 100;
+    const dailyPnl = Math.round((port.dailyRealizedPnl + totalUnrealizedPnl) * 100) / 100;
+
+    // Dynamically calculate risk limits based strictly on CURRENT EQUITY (Equity Correlation)
+    const dailyStopLossMax = Math.round(currentEquity * 0.02 * 100) / 100; // strictly 2.0% ($200 on $10k, $20 on $1k)
+    const dailyTargetMax = Math.round(currentEquity * 0.03 * 100) / 100;   // strictly 3.0% ($300 on $10k, $30 on $1k)
+    const dailyTargetMin = Math.round(currentEquity * 0.01 * 100) / 100;   // strictly 1.0% ($100 on $10k, $10 on $1k)
+
+    const isDailyStopLossHit = dailyPnl <= -dailyStopLossMax || port.dailyRealizedPnl <= -dailyStopLossMax;
+    const isTargetMaxHit = dailyPnl >= dailyTargetMax || port.dailyRealizedPnl >= dailyTargetMax;
+    const isTargetHit = dailyPnl >= dailyTargetMin || port.dailyRealizedPnl >= dailyTargetMin;
+    const targetProgress = Math.min(100, Math.max(0, Math.round((dailyPnl / dailyTargetMax) * 100)));
+
+    const totalTrades = (port.closedTrades || []).length;
+    const wins = (port.closedTrades || []).filter(t => t.pnl > 0).length;
+    const winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
 
     return {
       userId,
@@ -439,7 +469,16 @@ class UserProfileManager {
       realizedPnl: port.realizedPnl,
       unrealizedPnl: totalUnrealizedPnl,
       dailyRealizedPnl: port.dailyRealizedPnl,
-      dailyPnl: Math.round((port.dailyRealizedPnl + totalUnrealizedPnl) * 100) / 100,
+      dailyPnl: dailyPnl,
+      dailyStopLossMax: dailyStopLossMax,
+      dailyTargetMax: dailyTargetMax,
+      dailyTargetMin: dailyTargetMin,
+      dailyStopLossHit: isDailyStopLossHit,
+      dailyTargetMaxHit: isTargetMaxHit,
+      dailyTargetHit: isTargetHit,
+      dailyTargetProgressPercent: targetProgress,
+      totalTrades,
+      winRate,
       autoTradeEnabled: port.autoTradeEnabled,
       openPositions: positionsWithPnl,
       positions: positionsWithPnl,

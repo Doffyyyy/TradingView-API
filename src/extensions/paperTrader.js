@@ -86,12 +86,15 @@ class PaperTradingEngine {
       if (fs.existsSync(PORTFOLIO_PATH)) {
         const data = JSON.parse(fs.readFileSync(PORTFOLIO_PATH, 'utf8'));
 
-        // Always sync Strategy V2 safety constraints into existing portfolio data
-        data.riskPerTradePercent = DEFAULT_PORTFOLIO.riskPerTradePercent;
-        data.maxPositionMargin = DEFAULT_PORTFOLIO.maxPositionMargin;
-        data.maxLeverage = DEFAULT_PORTFOLIO.maxLeverage;
-        data.maxOpenPositions = DEFAULT_PORTFOLIO.maxOpenPositions;
-        data.dailyStopLossMax = DEFAULT_PORTFOLIO.dailyStopLossMax;
+        // Always sync Strategy V2 safety constraints dynamically relative to current equity
+        const curEq = data.equity || data.balance || data.cash || 10000.0;
+        data.riskPerTradePercent = DEFAULT_PORTFOLIO.riskPerTradePercent || 0.5;
+        data.maxPositionMargin = Math.round(curEq * 0.25 * 100) / 100; // 25% max margin per position
+        data.maxLeverage = DEFAULT_PORTFOLIO.maxLeverage || 2.0;
+        data.maxOpenPositions = DEFAULT_PORTFOLIO.maxOpenPositions || 4;
+        data.dailyStopLossMax = Math.round(curEq * 0.02 * 100) / 100; // strictly 2.0% of equity ($200 on $10k, $20 on $1k)
+        data.dailyTargetMin = Math.round(curEq * 0.01 * 100) / 100;   // 1.0% of equity
+        data.dailyTargetMax = Math.round(curEq * 0.03 * 100) / 100;   // 3.0% of equity
 
         // Check daily reset according to Vietnam Time (UTC+7)
         const today = this.getTodayDateString();
@@ -175,9 +178,10 @@ class PaperTradingEngine {
 
   async checkExitRules() {
     // 0. Portfolio-Level Emergency Circuit Breaker:
-    // If daily realized loss plus active positions floating drawdown exceeds 105% of dailyStopLossMax,
+    // If daily realized loss plus active positions floating drawdown exceeds 105% of dailyStopLossMax (2% equity),
     // immediately close all active positions to prevent catastrophic loss overshoot.
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    const dailyLossLimit = Math.round((this.portfolio.equity || 10000.0) * 0.02 * 100) / 100;
+    this.portfolio.dailyStopLossMax = dailyLossLimit;
     let totalFloatingPnl = 0;
     for (const p of this.portfolio.positions) {
       const c = this.latestPrices[p.symbol]?.price;
@@ -404,9 +408,10 @@ class PaperTradingEngine {
   }
 
   async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null, customSl = null) {
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    const dailyLossLimit = Math.round((this.portfolio.equity || 10000.0) * 0.02 * 100) / 100;
+    this.portfolio.dailyStopLossMax = dailyLossLimit;
     if (this.portfolio.dailyRealizedPnl <= -dailyLossLimit) {
-      this.log(`🛑 Cannot open position on ${symbol}: Daily Stop Loss already reached (-$${Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2)} <= -$${dailyLossLimit}).`);
+      this.log(`🛑 Cannot open position on ${symbol}: Daily Stop Loss already reached (-$${Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2)} <= -$${dailyLossLimit.toFixed(2)} [2% Equity]).`);
       return null;
     }
 
@@ -567,9 +572,10 @@ class PaperTradingEngine {
 
       // Recalculate dynamic daily targets & stop loss from starting equity:
       const eq = this.portfolio.equity || 10000.0;
-      this.portfolio.dailyTargetMin = Math.round(eq * 0.01); // 1% ($100 at $10k)
-      this.portfolio.dailyTargetMax = Math.round(eq * 0.03); // 3% ($300 at $10k - Profit Lock)
-      this.portfolio.dailyStopLossMax = Math.round(eq * 0.018); // 1.8% ($180 at $10k - Circuit Breaker)
+      this.portfolio.dailyTargetMin = Math.round(eq * 0.01 * 100) / 100; // 1.0% ($100 at $10k, $10 at $1k)
+      this.portfolio.dailyTargetMax = Math.round(eq * 0.03 * 100) / 100; // 3.0% ($300 at $10k, $30 at $1k - Profit Lock)
+      this.portfolio.dailyStopLossMax = Math.round(eq * 0.02 * 100) / 100; // strictly 2.0% ($200 at $10k, $20 at $1k - Circuit Breaker)
+      this.portfolio.maxPositionMargin = Math.round(eq * 0.25 * 100) / 100; // 25% max margin ($2,500 at $10k, $250 at $1k)
 
       this.hasLoggedDailyMin = false;
       this.hasLoggedDailyMax = false;
@@ -580,20 +586,22 @@ class PaperTradingEngine {
   }
 
   async scanOpportunities() {
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    const curEq = this.portfolio.equity || 10000.0;
+    const dailyLossLimit = Math.round(curEq * 0.02 * 100) / 100; // strictly 2.0% of equity
+    this.portfolio.dailyStopLossMax = dailyLossLimit;
     const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
 
-    // 1. Daily Circuit Breaker / Daily Stop Loss (1.8% = -$180)
+    // 1. Daily Circuit Breaker / Daily Stop Loss (2.0% of current equity)
     if (isDailyStopLossHit) {
       if (!this.hasLoggedDailyStopLoss) {
         const lossAmount = Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2);
-        this.log(`🛑 DAILY STOP LOSS REACHED (-$${lossAmount} <= -$${dailyLossLimit}). All new trades halted for today to protect capital until 00:00 UTC+7.`);
+        this.log(`🛑 DAILY STOP LOSS REACHED (-$${lossAmount} <= -$${dailyLossLimit.toFixed(2)} [2.0% Equity]). All new trades halted for today to protect capital until 00:00 UTC+7.`);
         this.hasLoggedDailyStopLoss = true;
 
         try {
           sendTelegramAlert({
             instrument: 'PORTFOLIO_RISK',
-            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached limit of -$${dailyLossLimit} [1.8%]). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached limit of -$${dailyLossLimit.toFixed(2)} [2.0%]). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
             accountEquity: this.portfolio.equity,
           }).catch(() => {});
         } catch (e) {}
@@ -908,14 +916,21 @@ class PaperTradingEngine {
 
   getStatus() {
     this.updateEquity();
+    const curEq = this.portfolio.equity || 10000.0;
+    const dailyLossLimit = Math.round(curEq * 0.02 * 100) / 100; // strictly 2.0% of current equity
+    const dailyTargetMax = Math.round(curEq * 0.03 * 100) / 100; // strictly 3.0% of current equity
+    const dailyTargetMin = Math.round(curEq * 0.01 * 100) / 100; // strictly 1.0% of current equity
+    this.portfolio.dailyStopLossMax = dailyLossLimit;
+    this.portfolio.dailyTargetMax = dailyTargetMax;
+    this.portfolio.dailyTargetMin = dailyTargetMin;
+
     const totalTrades = this.portfolio.trades.length;
     const wins = this.portfolio.trades.filter(t => t.pnl > 0).length;
     const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-    const targetProgress = Math.min(100, Math.max(0, (this.portfolio.dailyRealizedPnl / this.portfolio.dailyTargetMax) * 100));
-    const isTargetHit = this.portfolio.dailyRealizedPnl >= (this.portfolio.dailyTargetMin || 100.0);
-    const dailyLossLimit = this.portfolio.dailyStopLossMax || 180.0;
+    const targetProgress = Math.min(100, Math.max(0, (this.portfolio.dailyRealizedPnl / dailyTargetMax) * 100));
+    const isTargetHit = this.portfolio.dailyRealizedPnl >= dailyTargetMin;
     const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
-    const isTargetMaxHit = this.portfolio.dailyRealizedPnl >= (this.portfolio.dailyTargetMax || 300.0);
+    const isTargetMaxHit = this.portfolio.dailyRealizedPnl >= dailyTargetMax;
 
     let tradingMode = 'ACTIVE (Normal Confluence)';
     if (!this.portfolio.defensiveDisabled && isDailyStopLossHit) {
@@ -933,8 +948,8 @@ class PaperTradingEngine {
       equity: Math.round(this.portfolio.equity * 100) / 100,
       initialBalance: this.portfolio.initialBalance,
       dailyPnl: Math.round(this.portfolio.dailyRealizedPnl * 100) / 100,
-      dailyTargetMin: this.portfolio.dailyTargetMin || 100.0,
-      dailyTargetMax: this.portfolio.dailyTargetMax || 300.0,
+      dailyTargetMin: dailyTargetMin,
+      dailyTargetMax: dailyTargetMax,
       dailyStopLossMax: dailyLossLimit,
       dailyTargetProgressPercent: Math.round(targetProgress * 10) / 10,
       dailyTargetHit: isTargetHit,

@@ -11281,8 +11281,9 @@ const server = http.createServer(async (req, res) => {
         realizedPnl: 0.0,
         unrealizedPnl: 0.0,
         dailyRealizedPnl: 0.0,
+        dailyTargetMin: 100.0,
         dailyTargetMax: 300.0,
-        dailyStopLossMax: 180.0,
+        dailyStopLossMax: 200.0, // Strictly 2.0% of $10,000 ($20 on $1,000)
         autoTradeEnabled: false,
         strategyMode: 'Oliver Kell Cycle + Astra-Supertrend',
         maxOpenPositions: 3,
