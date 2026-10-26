@@ -11,6 +11,8 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { ethers } = require('ethers');
+const axios = require('axios');
 const { normalizeCoin } = require('./hyperliquid');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
@@ -18,9 +20,10 @@ const WATCHLISTS_DIR = path.join(DATA_DIR, 'user_watchlists');
 const PORTFOLIOS_DIR = path.join(DATA_DIR, 'user_portfolios');
 const TELEGRAMS_DIR = path.join(DATA_DIR, 'user_telegrams');
 const STRATEGIES_DIR = path.join(DATA_DIR, 'user_strategies');
+const HL_AGENTS_DIR = path.join(DATA_DIR, 'user_hl_agents');
 
 // Ensure storage directories exist
-[WATCHLISTS_DIR, PORTFOLIOS_DIR, TELEGRAMS_DIR, STRATEGIES_DIR].forEach(dir => {
+[WATCHLISTS_DIR, PORTFOLIOS_DIR, TELEGRAMS_DIR, STRATEGIES_DIR, HL_AGENTS_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
   }
@@ -702,6 +705,147 @@ class UserProfileManager {
       return res || null;
     } catch (err) {
       return { error: err.message };
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 5. HYPERLIQUID DELEGATED AGENT SIGNER CONFIGURATION
+  // --------------------------------------------------------------------------
+  getUserHlAgent(userId) {
+    const safeId = sanitizeUserId(userId);
+    const filePath = path.join(HL_AGENTS_DIR, `${safeId}.json`);
+    if (fs.existsSync(filePath)) {
+      try {
+        const raw = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(raw);
+        const hasKey = Boolean(data.agentPrivateKey && data.agentPrivateKey.length > 10);
+        const maskedKey = hasKey
+          ? `${data.agentPrivateKey.slice(0, 6)}••••••••••••••••••••••••••••••••${data.agentPrivateKey.slice(-4)}`
+          : '';
+        return {
+          configured: hasKey,
+          userAddress: data.userAddress || '',
+          agentAddress: data.agentAddress || '',
+          maskedPrivateKey: maskedKey,
+          network: data.network || 'mainnet',
+          updatedAt: data.updatedAt || null,
+        };
+      } catch (e) {}
+    }
+    return {
+      configured: false,
+      userAddress: '',
+      agentAddress: '',
+      maskedPrivateKey: '',
+      network: 'mainnet',
+      updatedAt: null,
+    };
+  }
+
+  saveUserHlAgent(userId, { userAddress = '', agentPrivateKey = '', network = 'mainnet' }) {
+    if (!agentPrivateKey || !agentPrivateKey.trim()) {
+      throw new Error('Vui lòng nhập API Secret (Private Key của Agent Wallet)');
+    }
+
+    let cleanKey = agentPrivateKey.trim();
+    if (!cleanKey.startsWith('0x')) cleanKey = '0x' + cleanKey;
+
+    let derivedAddress = '';
+    try {
+      const wallet = new ethers.Wallet(cleanKey);
+      derivedAddress = wallet.address;
+    } catch (err) {
+      throw new Error('Khóa bí mật không hợp lệ (Phải là chuỗi hex 32 bytes 0x...)');
+    }
+
+    let cleanUserAddr = (userAddress || '').trim();
+    if (cleanUserAddr && !ethers.isAddress(cleanUserAddr)) {
+      throw new Error('Địa chỉ ví chính không hợp lệ (Phải là địa chỉ Ethereum 0x...)');
+    }
+
+    const safeId = sanitizeUserId(userId);
+    const filePath = path.join(HL_AGENTS_DIR, `${safeId}.json`);
+    const record = {
+      userId,
+      userAddress: cleanUserAddr,
+      agentAddress: derivedAddress,
+      agentPrivateKey: cleanKey,
+      network: network === 'testnet' ? 'testnet' : 'mainnet',
+      updatedAt: new Date().toISOString(),
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(record, null, 2), 'utf8');
+
+    return {
+      success: true,
+      configured: true,
+      userAddress: cleanUserAddr,
+      agentAddress: derivedAddress,
+      maskedPrivateKey: `${cleanKey.slice(0, 6)}••••••••••••••••••••••••••••••••${cleanKey.slice(-4)}`,
+      network: record.network,
+      message: 'Đã lưu cấu hình Hyperliquid Agent Wallet thành công!',
+    };
+  }
+
+  deleteUserHlAgent(userId) {
+    const safeId = sanitizeUserId(userId);
+    const filePath = path.join(HL_AGENTS_DIR, `${safeId}.json`);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) {}
+    }
+    return { success: true, message: 'Đã xóa cấu hình khóa Agent khỏi hệ thống' };
+  }
+
+  async verifyUserHlAgentOnChain(userId) {
+    const safeId = sanitizeUserId(userId);
+    const filePath = path.join(HL_AGENTS_DIR, `${safeId}.json`);
+    if (!fs.existsSync(filePath)) {
+      throw new Error('Chưa cấu hình khóa Agent Wallet');
+    }
+
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!data.agentPrivateKey) throw new Error('Không tìm thấy Private Key của Agent');
+
+    const wallet = new ethers.Wallet(data.agentPrivateKey);
+    const agentAddr = wallet.address;
+    const targetUser = data.userAddress || userId;
+
+    const baseUrl = data.network === 'testnet'
+      ? 'https://api.hyperliquid-testnet.xyz'
+      : 'https://api.hyperliquid.xyz';
+
+    try {
+      // 1. Query extraAgents on Hyperliquid L1
+      const res = await axios.post(`${baseUrl}/info`, {
+        type: 'extraAgents',
+        user: targetUser
+      }, { timeout: 6000 });
+
+      const approvedAgents = Array.isArray(res.data) ? res.data : [];
+      const isApproved = approvedAgents.some(a => (a.address || a).toLowerCase() === agentAddr.toLowerCase());
+
+      return {
+        verified: isApproved,
+        agentAddress: agentAddr,
+        userAddress: targetUser,
+        network: data.network || 'mainnet',
+        approvedCount: approvedAgents.length,
+        status: isApproved
+          ? 'ACTIVE_AND_AUTHORIZED'
+          : 'AGENT_KEY_VALID_PENDING_ONCHAIN_APPROVAL',
+        message: isApproved
+          ? `✅ ĐÃ ỦY QUYỀN HỢP LỆ TRÊN L1: Agent ${agentAddr.slice(0, 6)}...${agentAddr.slice(-4)} sẵn sàng tự động ký lệnh thay mặt ví ${targetUser.slice(0, 6)}...${targetUser.slice(-4)}.`
+          : `⚠️ KHÓA HỢP LỆ NHƯNG CHƯA ĐƯỢC ỦY QUYỀN: Agent ${agentAddr.slice(0, 6)}...${agentAddr.slice(-4)} chưa có trong danh sách Approved Agents của ví ${targetUser.slice(0, 6)}...${targetUser.slice(-4)} trên Hyperliquid. Vui lòng vào Hyperliquid -> Settings -> API để Approve Agent.`,
+      };
+    } catch (err) {
+      return {
+        verified: false,
+        agentAddress: agentAddr,
+        userAddress: targetUser,
+        network: data.network || 'mainnet',
+        status: 'NETWORK_CHECK_FAILED',
+        message: `Khóa hợp lệ cục bộ (${agentAddr.slice(0, 6)}...${agentAddr.slice(-4)}), nhưng không thể kiểm tra L1: ${err.message}`,
+      };
     }
   }
 }

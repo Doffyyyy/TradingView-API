@@ -1790,12 +1790,16 @@ const htmlContent = `<!DOCTYPE html>
                     </div>
                   </div>
 
-                  <!-- 7. Bottom Section: Add / Manage Strategy Button -->
-                  <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(168, 85, 247, 0.25);">
+                  <!-- 7. Bottom Section: Add / Manage Strategy & Hyperliquid Agent Button -->
+                  <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(168, 85, 247, 0.25); display: flex; flex-direction: column; gap: 6px;">
                     <button class="btn" id="btn-indicators-add-strategy" style="width: 100%; padding: 8px 10px; background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(79, 70, 229, 0.3)); border: 1px solid #a855f7; color: #fff; font-weight: 700; font-size: 11px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);">
                       <span>🧠</span>
                       <span>➕ Add Strategy (Code Engine)</span>
                       <span style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #9333ea; color: #fff; font-weight: 800;">CUSTOM</span>
+                    </button>
+                    <button class="btn" id="btn-indicators-hl-agent" style="width: 100%; padding: 7px 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 700; font-size: 10.5px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <span>🔑</span>
+                      <span>Cấu Hình API Bot (Hyperliquid Agent)</span>
                     </button>
                   </div>
                 </div>
@@ -2321,6 +2325,9 @@ const htmlContent = `<!DOCTYPE html>
               <button class="strat-tab-btn" id="tab-strat-editor" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
                 ✍️ Tự Thêm / Dán Source Code (Code Studio)
               </button>
+              <button class="strat-tab-btn" id="tab-strat-agent" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
+                🔑 Cấu Hình API Bot (Hyperliquid Agent)
+              </button>
             </div>
 
             <!-- Modal Body (Scrollable) -->
@@ -2403,6 +2410,86 @@ const htmlContent = `<!DOCTYPE html>
                   </div>
                 </div>
               </div>
+
+              <!-- VIEW 3: Hyperliquid Agent Key Configuration -->
+              <div id="strat-view-agent" style="display: none;">
+                <!-- Header Banner -->
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #38bdf8; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                      <span>🔑 Cấu Hình Hyperliquid Delegated Agent Signer (Auto-Trading Bot)</span>
+                    </strong>
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 3px; line-height: 1.5;">
+                      Ủy quyền khóa Agent phụ để bot tự động ký mở/đóng lệnh trên Hyperliquid L1. Agent Wallet bị cấm rút tiền (Withdrawal Forbidden), bảo vệ an toàn 100% cho số dư ví chính.
+                    </div>
+                  </div>
+                  <a href="https://app.hyperliquid.xyz/trade" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
+                    ↗ Mở Hyperliquid API Settings
+                  </a>
+                </div>
+
+                <!-- Input Fields Grid -->
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
+                  <!-- Main User Address -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ CHÍNH CỦA BẠN (VAULT / USER MASTER ADDRESS) *</label>
+                      <button type="button" class="btn" id="btn-hl-agent-use-current-wallet" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví Kết Nối</button>
+                    </div>
+                    <input type="text" id="hl-agent-input-user-addr" placeholder="0x... Địa chỉ ví Ethereum chính giữ tài sản ký quỹ" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
+                  </div>
+
+                  <!-- Agent Private Key (Secret) -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">HYPERLIQUID AGENT API SECRET (PRIVATE KEY CỦA AGENT WALLET) *</label>
+                      <span id="btn-toggle-agent-key-vis" style="cursor: pointer; font-size: 10px; color: #38bdf8; font-weight: 600;">👁️ Hiện Khóa</span>
+                    </div>
+                    <input type="password" id="hl-agent-input-key" placeholder="0x... Dán API Secret (Private Key của Agent Wallet cấp từ sàn)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #38bdf8; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
+                    <div style="font-size: 9.5px; color: #f59e0b; margin-top: 4px;">
+                      ⚠️ LƯU Ý BẢO MẬT: Tuyệt đối KHÔNG dán Private Key của ví chính! Chỉ dán Private Key của Agent Wallet phụ được tạo từ Hyperliquid (Settings -> API).
+                    </div>
+                  </div>
+
+                  <!-- Network Selection -->
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔI TRƯỜNG / MẠNG LƯỚI (NETWORK)</label>
+                    <select id="hl-agent-select-network" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                      <option value="mainnet" selected>Hyperliquid Mainnet L1 (https://api.hyperliquid.xyz)</option>
+                      <option value="testnet">Hyperliquid Testnet L1 (https://api.hyperliquid-testnet.xyz)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- On-Chain Verification Status Card -->
+                <div id="hl-agent-status-panel" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #94a3b8;">TRẠNG THÁI KHÓA AGENT:</span>
+                    <span id="hl-agent-state-pill" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 700;">● CHƯA CẤU HÌNH</span>
+                  </div>
+                  <div id="hl-agent-details-text" style="font-size: 11px; color: #cbd5e1; line-height: 1.5; font-family: monospace;">
+                    Chưa phát hiện cấu hình Agent Wallet. Vui lòng dán khóa để bot có thể tự động ký lệnh trên Hyperliquid L1.
+                  </div>
+                </div>
+
+                <!-- 4 Steps Quick Instructions Box -->
+                <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 10.5px; color: #94a3b8; line-height: 1.6;">
+                  <strong style="color: #cbd5e1;">📋 Cách lấy Agent Key trong 1 phút:</strong><br>
+                  1. Vào <a href="https://app.hyperliquid.xyz/trade" target="_blank" style="color: #38bdf8;">app.hyperliquid.xyz/trade</a> kết nối ví chính.<br>
+                  2. Bấm vào biểu tượng <strong>Cài Đặt (⚙️ Settings)</strong> ở góc trên bên phải -> Chọn tab <strong>API</strong>.<br>
+                  3. Đặt tên gợi nhớ (vd: <code>HyperviewBot</code>) -> Bấm nút <strong>Create API Key / Approve Agent</strong> và ký trên ví Web3.<br>
+                  4. Sao chép chuỗi <strong>API Secret (bắt đầu bằng 0x...)</strong> dán vào ô trên và bấm nút <strong>Lưu Cấu Hình</strong>.
+                </div>
+
+                <!-- Action Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+                  <button class="btn" id="btn-del-hl-agent" style="padding: 7px 14px; font-size: 11px; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️ Xóa Khóa</button>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btn-verify-hl-agent" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra L1 (Verify On-Chain)</button>
+                    <button class="btn active" id="btn-save-hl-agent" style="padding: 7px 18px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình Khóa Agent</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2481,9 +2568,10 @@ const htmlContent = `<!DOCTYPE html>
     <!-- VIEW PAPER TRADE ($10K) -->
     <div class="view-panel" id="view-paper">
       <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <button class="btn active" id="btn-toggle-auto-trade" style="background: #22c55e; color: #fff; font-weight: 700;">🟢 Auto-Trade: ACTIVE</button>
           <button class="btn" id="btn-open-strategy-studio" style="background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); color: #d8b4fe; font-weight: 700;" title="Quản lý chiến lược có sẵn & Tự viết code chiến lược mới">🧠 Chiến Lược: <span id="paper-active-strat-lbl">Oliver Kell Cycle</span> ▾</button>
+          <button class="btn" id="btn-open-hl-agent-modal" style="background: rgba(56, 189, 248, 0.18); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-weight: 700;" title="Cấu hình Hyperliquid Agent Wallet để Bot tự động ký lệnh">🔑 API Bot Key (Hyperliquid) <span id="hl-agent-status-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Chưa Cài</span></button>
           <button class="btn" id="btn-paper-refresh">🔄 Refresh Status</button>
           <button class="btn" id="btn-paper-close-all" style="background: rgba(239, 83, 80, 0.15); color: #ef5350;">Close All Positions</button>
           <button class="btn" id="btn-paper-reset" style="background: rgba(140, 147, 163, 0.15);">Reset $10k Fund</button>
@@ -9479,19 +9567,28 @@ const htmlContent = `<!DOCTYPE html>
     function switchStratTab(tab) {
       const btnList = document.getElementById('tab-strat-list');
       const btnEditor = document.getElementById('tab-strat-editor');
+      const btnAgent = document.getElementById('tab-strat-agent');
       const viewList = document.getElementById('strat-view-list');
       const viewEditor = document.getElementById('strat-view-editor');
+      const viewAgent = document.getElementById('strat-view-agent');
+
+      [btnList, btnEditor, btnAgent].forEach(b => {
+        if (b) { b.style.color = '#8c93a3'; b.style.borderBottomColor = 'transparent'; }
+      });
+      if (viewList) viewList.style.display = 'none';
+      if (viewEditor) viewEditor.style.display = 'none';
+      if (viewAgent) viewAgent.style.display = 'none';
 
       if (tab === 'list') {
         if (btnList) { btnList.style.color = '#fff'; btnList.style.borderBottomColor = '#a855f7'; }
-        if (btnEditor) { btnEditor.style.color = '#8c93a3'; btnEditor.style.borderBottomColor = 'transparent'; }
         if (viewList) viewList.style.display = 'block';
-        if (viewEditor) viewEditor.style.display = 'none';
-      } else {
+      } else if (tab === 'editor') {
         if (btnEditor) { btnEditor.style.color = '#fff'; btnEditor.style.borderBottomColor = '#a855f7'; }
-        if (btnList) { btnList.style.color = '#8c93a3'; btnList.style.borderBottomColor = 'transparent'; }
         if (viewEditor) viewEditor.style.display = 'block';
-        if (viewList) viewList.style.display = 'none';
+      } else if (tab === 'agent') {
+        if (btnAgent) { btnAgent.style.color = '#fff'; btnAgent.style.borderBottomColor = '#38bdf8'; }
+        if (viewAgent) viewAgent.style.display = 'block';
+        loadUserHlAgentData();
       }
     }
 
@@ -9500,6 +9597,7 @@ const htmlContent = `<!DOCTYPE html>
       if (stratModal) stratModal.style.display = 'flex';
       switchStratTab(tab);
       loadStrategiesData();
+      loadUserHlAgentData();
     }
     function closeStrategyModal() {
       if (stratModal) stratModal.style.display = 'none';
@@ -9512,9 +9610,11 @@ const htmlContent = `<!DOCTYPE html>
 
     document.getElementById('tab-strat-list')?.addEventListener('click', () => switchStratTab('list'));
     document.getElementById('tab-strat-editor')?.addEventListener('click', () => openStrategyEditor());
+    document.getElementById('tab-strat-agent')?.addEventListener('click', () => switchStratTab('agent'));
     document.getElementById('btn-studio-goto-add')?.addEventListener('click', () => openStrategyEditor());
     document.getElementById('btn-studio-back-list')?.addEventListener('click', () => switchStratTab('list'));
     document.getElementById('btn-open-strategy-studio')?.addEventListener('click', () => openStrategyModal('list'));
+    document.getElementById('btn-open-hl-agent-modal')?.addEventListener('click', () => openStrategyModal('agent'));
     document.getElementById('btn-dock-open-studio')?.addEventListener('click', () => openStrategyModal('list'));
     document.getElementById('btn-dock-code-studio')?.addEventListener('click', () => openStrategyModal('editor'));
     document.getElementById('btn-indicators-add-strategy')?.addEventListener('click', (e) => {
@@ -9524,6 +9624,14 @@ const htmlContent = `<!DOCTYPE html>
       if (indDrop) indDrop.style.display = 'none';
       document.getElementById('btn-indicators-menu')?.classList.remove('active');
       openStrategyModal('list');
+    });
+    document.getElementById('btn-indicators-hl-agent')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const indDrop = document.getElementById('indicators-dropdown');
+      if (indDrop) indDrop.style.display = 'none';
+      document.getElementById('btn-indicators-menu')?.classList.remove('active');
+      openStrategyModal('agent');
     });
 
     // Template buttons
@@ -9654,8 +9762,155 @@ const htmlContent = `<!DOCTYPE html>
       await setActiveStrategy(sid);
     });
 
-    // Initial load of strategies
+    // ========================================================
+    // HYPERLIQUID DELEGATED AGENT SIGNER CLIENT CONTROLLER
+    // ========================================================
+    async function loadUserHlAgentData() {
+      try {
+        const res = await fetch('/api/user/hl-agent');
+        if (res.ok) {
+          const d = await res.json();
+          const ag = d.agent || {};
+          const pill = document.getElementById('hl-agent-state-pill');
+          const details = document.getElementById('hl-agent-details-text');
+          const badgeOnBar = document.getElementById('hl-agent-status-badge');
+          const inUserAddr = document.getElementById('hl-agent-input-user-addr');
+          const selNet = document.getElementById('hl-agent-select-network');
+
+          if (ag.configured) {
+            if (pill) {
+              pill.textContent = '● ĐÃ CẤU HÌNH AGENT';
+              pill.style.background = 'rgba(16, 185, 129, 0.15)';
+              pill.style.borderColor = '#10b981';
+              pill.style.color = '#10b981';
+            }
+            if (badgeOnBar) {
+              badgeOnBar.textContent = 'Đã Cài';
+              badgeOnBar.style.background = 'rgba(16, 185, 129, 0.2)';
+              badgeOnBar.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+              badgeOnBar.style.color = '#4ade80';
+            }
+            if (details) {
+              details.innerHTML = '✅ <strong>Agent Address:</strong> <code>' + (ag.agentAddress || '--') + '</code><br>' +
+                '👤 <strong>Ví Chính Ủy Quyền:</strong> <code>' + (ag.userAddress || 'Mặc định ví kết nối') + '</code><br>' +
+                '🔐 <strong>Masked Secret:</strong> <code>' + (ag.maskedPrivateKey || '••••••••') + '</code> | 🌐 Mạng: ' + (ag.network || 'mainnet').toUpperCase();
+            }
+            if (inUserAddr && ag.userAddress) inUserAddr.value = ag.userAddress;
+            if (selNet && ag.network) selNet.value = ag.network;
+          } else {
+            if (pill) {
+              pill.textContent = '● CHƯA CẤU HÌNH';
+              pill.style.background = 'rgba(239, 68, 68, 0.15)';
+              pill.style.borderColor = '#ef4444';
+              pill.style.color = '#f87171';
+            }
+            if (badgeOnBar) {
+              badgeOnBar.textContent = 'Chưa Cài';
+              badgeOnBar.style.background = 'rgba(239, 68, 68, 0.2)';
+              badgeOnBar.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+              badgeOnBar.style.color = '#f87171';
+            }
+            if (details) {
+              details.textContent = 'Chưa phát hiện cấu hình Agent Wallet. Vui lòng dán khóa để bot có thể tự động ký lệnh trên Hyperliquid L1.';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error loading HL agent config:', e);
+      }
+    }
+
+    // Toggle password visibility
+    document.getElementById('btn-toggle-agent-key-vis')?.addEventListener('click', () => {
+      const inp = document.getElementById('hl-agent-input-key');
+      const btn = document.getElementById('btn-toggle-agent-key-vis');
+      if (!inp || !btn) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = '🙈 Ẩn Khóa';
+      } else {
+        inp.type = 'password';
+        btn.textContent = '👁️ Hiện Khóa';
+      }
+    });
+
+    // Fill current connected wallet
+    document.getElementById('btn-hl-agent-use-current-wallet')?.addEventListener('click', () => {
+      if (currentAuthUser && currentAuthUser.address) {
+        document.getElementById('hl-agent-input-user-addr').value = currentAuthUser.address;
+      } else {
+        alert('Chưa kết nối ví Web3. Vui lòng kết nối ví hoặc nhập địa chỉ thủ công.');
+      }
+    });
+
+    // Save HL Agent
+    document.getElementById('btn-save-hl-agent')?.addEventListener('click', async () => {
+      const userAddress = document.getElementById('hl-agent-input-user-addr').value.trim();
+      const agentPrivateKey = document.getElementById('hl-agent-input-key').value.trim();
+      const network = document.getElementById('hl-agent-select-network').value;
+
+      if (!agentPrivateKey) {
+        alert('Vui lòng dán API Secret (Private Key của Agent Wallet)');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/user/hl-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userAddress, agentPrivateKey, network })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('🎉 ' + data.message + ' | Địa chỉ Agent: ' + data.agentAddress);
+          document.getElementById('hl-agent-input-key').value = '';
+          loadUserHlAgentData();
+        } else {
+          alert('❌ Lỗi: ' + (data.error || 'Không thể lưu khóa'));
+        }
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    });
+
+    // Verify On-Chain
+    document.getElementById('btn-verify-hl-agent')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-verify-hl-agent');
+      if (!btn) return;
+      btn.textContent = '⏳ Đang kiểm tra L1...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/user/hl-agent/verify', { method: 'POST' });
+        const data = await res.json();
+        alert((data.verified ? '✅ ' : '⚠️ ') + (data.message || data.error));
+        loadUserHlAgentData();
+      } catch (err) {
+        alert('Lỗi kiểm tra: ' + err.message);
+      } finally {
+        btn.textContent = '⚡ Kiểm Tra L1 (Verify On-Chain)';
+        btn.disabled = false;
+      }
+    });
+
+    // Delete HL Agent
+    document.getElementById('btn-del-hl-agent')?.addEventListener('click', async () => {
+      if (!confirm('Bạn có chắc muốn xóa cấu hình khóa Agent Wallet này khỏi hệ thống?')) return;
+      try {
+        const res = await fetch('/api/user/hl-agent', { method: 'DELETE' });
+        const data = await res.json();
+        alert(data.message || 'Đã xóa cấu hình');
+        document.getElementById('hl-agent-input-key').value = '';
+        document.getElementById('hl-agent-input-user-addr').value = '';
+        loadUserHlAgentData();
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    });
+
+    // Initial load of strategies & agent data
     loadStrategiesData();
+    loadUserHlAgentData();
 
     // ========================================================
     // AUTHENTICATION & WEB3 WALLET CLIENT CONTROLLER
@@ -11110,6 +11365,46 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+  }
+
+  // --- User Hyperliquid Delegated Agent Key Endpoints ---
+  if (pathname === '/api/user/hl-agent') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    if (req.method === 'GET') {
+      const cfg = userProfileManager.getUserHlAgent(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, agent: cfg }));
+    }
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      try {
+        const saved = userProfileManager.saveUserHlAgent(userId, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(saved));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+    if (req.method === 'DELETE') {
+      const del = userProfileManager.deleteUserHlAgent(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(del));
+    }
+  }
+
+  if (pathname === '/api/user/hl-agent/verify') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    try {
+      const v = await userProfileManager.verifyUserHlAgentOnChain(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(v));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ verified: false, error: err.message }));
     }
   }
 
