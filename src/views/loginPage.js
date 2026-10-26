@@ -491,8 +491,102 @@ function getLoginPageHtml(config = {}) {
       width: 100%; max-width: 680px; max-height: 86vh; display: flex; flex-direction: column;
       box-shadow: 0 32px 80px rgba(0, 0, 0, 0.95), 0 0 36px rgba(184, 67, 46, 0.15); overflow: hidden;
       animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
     @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+    /* TERMS ARTWORK THEME (CLASSIC BAROQUE CELLIST & IRIDESCENT LIGHT AURA) */
+    .modal-dialog-box.terms-art-bg {
+      background: #080b12;
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.95), 0 0 50px rgba(245, 158, 11, 0.28), inset 0 0 40px rgba(0, 0, 0, 0.6);
+    }
+    .modal-dialog-box.terms-art-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url('/public/terms_bg_art.png');
+      background-position: center right;
+      background-size: cover;
+      background-repeat: no-repeat;
+      opacity: 0.62;
+      filter: saturate(1.22) contrast(1.1);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .modal-dialog-box.terms-art-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(8, 11, 18, 0.82) 0%, rgba(8, 11, 18, 0.5) 45%, rgba(8, 11, 18, 0.85) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .modal-dialog-box.terms-art-bg > * {
+      position: relative;
+      z-index: 1;
+    }
+    .modal-dialog-box.terms-art-bg .modal-header-strip {
+      background: rgba(10, 14, 23, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .modal-dialog-box.terms-art-bg .modal-headline-text {
+      color: #fef08a;
+      text-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+      letter-spacing: 0.5px;
+    }
+    .modal-dialog-box.terms-art-bg .modal-scrollable-body {
+      background: transparent;
+    }
+    .modal-dialog-box.terms-art-bg .modal-footer-strip {
+      background: rgba(10, 14, 23, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .modal-dialog-box.terms-art-bg .btn-modal-accept {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: #f59e0b;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+    }
+    .modal-dialog-box.terms-art-bg .btn-modal-accept:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 6px 22px rgba(245, 158, 11, 0.6);
+      transform: translateY(-1px);
+    }
+    .terms-section-card {
+      background: rgba(12, 16, 26, 0.66);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-left: 3px solid #f59e0b;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+    .terms-section-card:hover {
+      background: rgba(12, 16, 26, 0.78);
+      border-color: rgba(245, 158, 11, 0.35);
+      transform: translateY(-1px);
+    }
+    .terms-section-card h3 {
+      margin: 0 0 6px 0 !important;
+      color: #fef08a !important;
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+    }
+    .terms-section-card p {
+      margin: 0 !important;
+      color: #e2e8f0 !important;
+      font-size: 12.5px !important;
+      line-height: 1.65;
+    }
 
     .modal-header-strip {
       padding: 18px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -1344,14 +1438,22 @@ function getLoginPageHtml(config = {}) {
     const LEGAL_CONTENT = {
       terms: {
         title: 'Terms of Service',
-        body: '<h3>1. Acceptance of Terms</h3>'
+        body: '<div class="terms-section-card">'
+          + '<h3>1. Acceptance of Terms</h3>'
           + '<p>By accessing Hyperview (the "Platform") at ' + '${domain}' + ', you agree to comply with and be bound by these Terms of Service. If you do not agree, you must immediately cease accessing the platform.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
           + '<h3>2. Informational & Educational Software</h3>'
           + '<p>Hyperview provides automated market indicators, technical pattern detection, and simulation journals. None of the materials or automated outputs constitute personalized investment or financial advice.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
           + '<h3>3. Non-Custodial Operation</h3>'
           + '<p>The Platform operates on a 100% non-custodial framework. Hyperview never retains custody of your private keys or cryptographic assets. All live trade routing via Hyperliquid is signed directly by the user environment.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
           + '<h3>4. Prohibited Activities</h3>'
           + '<p>Users shall not attempt denial-of-service attacks, reverse engineer proprietary algorithmic modules, or bypass security rate limiters. Violations result in permanent IP blacklisting.</p>'
+          + '</div>'
       },
       privacy: {
         title: 'Privacy & Data Protection Policy',
@@ -1446,6 +1548,12 @@ function getLoginPageHtml(config = {}) {
       document.getElementById('legal-modal-body').innerHTML = data.body;
       const footMeta = document.getElementById('legal-modal-foot-meta');
       const acceptBtn = document.querySelector('.btn-modal-accept');
+      const dialogBox = document.querySelector('#legal-modal-backdrop .modal-dialog-box');
+      if (key === 'terms') {
+        dialogBox?.classList.add('terms-art-bg');
+      } else {
+        dialogBox?.classList.remove('terms-art-bg');
+      }
       if (key === 'contact') {
         if (footMeta) footMeta.innerHTML = '<span style="color:#10b981;">● Typical response within 2 hours</span>';
         if (acceptBtn) acceptBtn.textContent = 'Close Directory';
@@ -1458,6 +1566,8 @@ function getLoginPageHtml(config = {}) {
 
     function closeLegalModal() {
       document.getElementById('legal-modal-backdrop').style.display = 'none';
+      const dialogBox = document.querySelector('#legal-modal-backdrop .modal-dialog-box');
+      dialogBox?.classList.remove('terms-art-bg');
     }
 
     document.getElementById('legal-modal-backdrop')?.addEventListener('click', (e) => {
