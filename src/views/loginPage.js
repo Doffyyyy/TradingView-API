@@ -495,25 +495,68 @@ function getLoginPageHtml(config = {}) {
     }
     @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
-    /* TERMS FULLSCREEN ARTWORK & FROSTED SEE-THROUGH GLASS MODAL */
-    .modal-backdrop-layer.terms-fullscreen-art {
-      background: #04060a url('/public/terms_bg_art.png') center center / cover no-repeat !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .modal-backdrop-layer.terms-fullscreen-art::before {
-      content: '';
+    /* TERMS AMBIENT FULLSCREEN CANVAS & UNCROPPED ARTWORK */
+    .terms-ambient-layer {
       position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.28) 70%, rgba(0, 0, 0, 0.6) 100%);
+      inset: -40px;
+      background-image: url('/public/terms_bg_art.png');
+      background-position: center center;
+      background-size: cover;
+      filter: blur(55px) brightness(0.55) saturate(1.5);
+      opacity: 0;
+      transform: scale(1.08);
       pointer-events: none;
       z-index: 0;
+      transition: opacity 0.3s ease;
+      display: none;
     }
+    .terms-ambient-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.05) 0%, rgba(3, 5, 8, 0.45) 70%, rgba(3, 5, 8, 0.85) 100%);
+      pointer-events: none;
+      z-index: 1;
+      display: none;
+    }
+    .terms-art-center-canvas {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .terms-full-art-img {
+      max-width: 98vw;
+      max-height: 98vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.18);
+    }
+    .modal-backdrop-layer.terms-fullscreen-art {
+      background: #030508 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .modal-backdrop-layer.terms-fullscreen-art .terms-ambient-layer {
+      display: block;
+      opacity: 0.85;
+    }
+    .modal-backdrop-layer.terms-fullscreen-art .terms-ambient-vignette {
+      display: block;
+    }
+    .modal-backdrop-layer.terms-fullscreen-art .terms-art-center-canvas {
+      display: flex;
+    }
+
     .modal-dialog-box.terms-art-glass {
       position: relative;
-      z-index: 1;
-      background: rgba(8, 12, 22, 0.32) !important;
+      z-index: 3;
+      background: rgba(8, 12, 22, 0.35) !important;
       backdrop-filter: blur(14px) saturate(1.3) !important;
       -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
       border: 1px solid rgba(245, 158, 11, 0.55) !important;
@@ -1055,6 +1098,11 @@ function getLoginPageHtml(config = {}) {
 
   <!-- INTERACTIVE MODAL DIALOG (TERMS, PRIVACY, CONTACT) -->
   <div class="modal-backdrop-layer" id="legal-modal-backdrop">
+    <div class="terms-ambient-layer" id="terms-ambient-bg"></div>
+    <div class="terms-ambient-vignette" id="terms-ambient-vignette"></div>
+    <div class="terms-art-center-canvas" id="terms-art-canvas">
+      <img src="/public/terms_bg_art.png" alt="Baroque Allegory of Music" class="terms-full-art-img" id="terms-art-img">
+    </div>
     <div class="modal-dialog-box">
       <div class="modal-header-strip">
         <div class="modal-headline-text" id="legal-modal-title">Terms of Service</div>
