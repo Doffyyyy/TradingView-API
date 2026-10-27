@@ -495,25 +495,25 @@ function getLoginPageHtml(config = {}) {
     }
     @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
-    /* TERMS AMBIENT FULLSCREEN CANVAS & UNCROPPED ARTWORK */
+    /* TERMS AMBIENT FULLSCREEN CANVAS & FULL-HEIGHT ARTWORK */
     .terms-ambient-layer {
       position: absolute;
-      inset: -40px;
-      background-image: url('/public/terms_art_user_v3.png');
+      inset: -50px;
+      background-image: url('/public/terms_art_v1_1536x1024.png');
       background-position: center center;
       background-size: cover;
-      filter: blur(55px) brightness(0.55) saturate(1.5);
+      filter: blur(65px) brightness(0.5) saturate(1.6);
       opacity: 0;
-      transform: scale(1.08);
+      transform: scale(1.1);
       pointer-events: none;
       z-index: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.4s ease;
       display: none;
     }
     .terms-ambient-vignette {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.05) 0%, rgba(3, 5, 8, 0.45) 70%, rgba(3, 5, 8, 0.85) 100%);
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.02) 0%, rgba(3, 5, 8, 0.4) 65%, rgba(3, 5, 8, 0.92) 100%);
       pointer-events: none;
       z-index: 1;
       display: none;
@@ -526,25 +526,111 @@ function getLoginPageHtml(config = {}) {
       justify-content: center;
       pointer-events: none;
       z-index: 2;
+      overflow: hidden;
+    }
+    .terms-canvas-frame {
+      position: relative;
+      height: 100vh;
+      max-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .terms-full-art-img {
-      max-width: 98vw;
-      max-height: 98vh;
+      height: 100vh;
+      max-height: 100vh;
       width: auto;
-      height: auto;
       object-fit: contain;
-      border-radius: 12px;
-      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.18);
+      box-shadow: 0 0 70px rgba(0, 0, 0, 0.95), 0 0 45px rgba(245, 158, 11, 0.2);
+      border-left: 1px solid rgba(245, 158, 11, 0.35);
+      border-right: 1px solid rgba(245, 158, 11, 0.35);
+      display: block;
     }
+
+    /* ORNAMENTAL NEOCLASSICAL SIDE WINGS (ELIMINATING SIDE VOID) */
+    .terms-side-wing {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 14vw;
+      min-width: 110px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 12px;
+      z-index: 2;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+    .terms-side-wing.left-wing {
+      left: 0;
+      background: linear-gradient(90deg, rgba(3, 5, 8, 0.85) 0%, rgba(3, 5, 8, 0.35) 80%, transparent 100%);
+      border-right: 1px dashed rgba(245, 158, 11, 0.25);
+    }
+    .terms-side-wing.right-wing {
+      right: 0;
+      background: linear-gradient(270deg, rgba(3, 5, 8, 0.85) 0%, rgba(3, 5, 8, 0.35) 80%, transparent 100%);
+      border-left: 1px dashed rgba(245, 158, 11, 0.25);
+    }
+    .wing-emblem-top, .wing-emblem-bottom {
+      width: 32px;
+      height: 32px;
+      opacity: 0.65;
+      color: #f59e0b;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+    }
+    .wing-vertical-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 5px;
+      color: #fef08a;
+      opacity: 0.5;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      user-select: none;
+    }
+    .left-wing .wing-vertical-text {
+      transform: rotate(180deg);
+    }
+    .wing-astrolabe-ring {
+      width: 58px;
+      height: 58px;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+      animation: slowSpin 35s linear infinite;
+    }
+    .wing-astrolabe-ring::before {
+      content: '';
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border: 1px dashed rgba(245, 158, 11, 0.4);
+      border-radius: 50%;
+    }
+    .wing-astrolabe-ring::after {
+      content: '✦';
+      font-size: 11px;
+      color: #fef08a;
+      text-shadow: 0 0 8px #f59e0b;
+    }
+    @keyframes slowSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
     .modal-backdrop-layer.terms-fullscreen-art {
-      background: #030508 !important;
+      background: #020407 !important;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
     .modal-backdrop-layer.terms-fullscreen-art .terms-ambient-layer {
       display: block;
-      opacity: 0.85;
+      opacity: 0.88;
     }
     .modal-backdrop-layer.terms-fullscreen-art .terms-ambient-vignette {
       display: block;
@@ -553,75 +639,81 @@ function getLoginPageHtml(config = {}) {
       display: flex;
     }
 
-    /* ULTRA-TRANSLUCENT FROSTED GLASS MODAL (SEE-THROUGH ARTWORK) */
+    /* COMPACT & ULTRA-TRANSLUCENT FROSTED GLASS MODAL */
     .modal-dialog-box.terms-art-glass {
       position: relative;
-      z-index: 3;
-      background: rgba(10, 14, 24, 0.12) !important;
-      backdrop-filter: blur(3px) saturate(1.15) !important;
-      -webkit-backdrop-filter: blur(3px) saturate(1.15) !important;
-      border: 1px solid rgba(245, 158, 11, 0.55) !important;
-      border-radius: 20px !important;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.65), 0 0 50px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 25px rgba(245, 158, 11, 0.06) !important;
-      max-width: 720px !important;
+      z-index: 4;
+      background: rgba(6, 9, 18, 0.08) !important;
+      backdrop-filter: blur(2px) saturate(1.1) !important;
+      -webkit-backdrop-filter: blur(2px) saturate(1.1) !important;
+      border: 1px solid rgba(245, 158, 11, 0.45) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(245, 158, 11, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 20px rgba(245, 158, 11, 0.05) !important;
+      max-width: 530px !important;
+      max-height: 88vh !important;
     }
     .modal-dialog-box.terms-art-glass .modal-header-strip {
-      background: rgba(10, 14, 24, 0.2) !important;
-      border-bottom: 1px solid rgba(245, 158, 11, 0.35) !important;
+      background: rgba(6, 9, 18, 0.18) !important;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.28) !important;
+      padding: 13px 18px !important;
     }
     .modal-dialog-box.terms-art-glass .modal-headline-text {
       color: #fef08a !important;
-      text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 2px 8px rgba(0, 0, 0, 0.95) !important;
-      font-size: 17px !important;
-      letter-spacing: 0.8px !important;
+      text-shadow: 0 0 16px rgba(245, 158, 11, 0.8), 0 2px 6px rgba(0, 0, 0, 0.95) !important;
+      font-size: 15px !important;
+      letter-spacing: 0.6px !important;
     }
     .modal-dialog-box.terms-art-glass .modal-scrollable-body {
       background: transparent !important;
+      padding: 14px 18px !important;
     }
     .modal-dialog-box.terms-art-glass .modal-footer-strip {
-      background: rgba(10, 14, 24, 0.25) !important;
-      border-top: 1px solid rgba(245, 158, 11, 0.35) !important;
+      background: rgba(6, 9, 18, 0.22) !important;
+      border-top: 1px solid rgba(245, 158, 11, 0.28) !important;
+      padding: 11px 18px !important;
     }
     .modal-dialog-box.terms-art-glass .btn-modal-accept {
       background: linear-gradient(135deg, rgba(217, 119, 6, 0.92), rgba(180, 83, 9, 0.98)) !important;
       border: 1px solid #f59e0b !important;
-      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5) !important;
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45) !important;
       color: #fff !important;
       font-weight: 700 !important;
+      padding: 6px 14px !important;
+      font-size: 11px !important;
     }
     .modal-dialog-box.terms-art-glass .btn-modal-accept:hover {
       background: linear-gradient(135deg, rgba(245, 158, 11, 0.98), rgba(217, 119, 6, 1)) !important;
-      box-shadow: 0 6px 26px rgba(245, 158, 11, 0.75) !important;
+      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.7) !important;
       transform: translateY(-1px);
     }
     .terms-section-card {
-      background: rgba(8, 12, 22, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(6, 9, 18, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-left: 3px solid #f59e0b;
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 9px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
       transition: all 0.2s ease;
     }
     .terms-section-card:hover {
-      background: rgba(8, 12, 22, 0.24);
-      border-color: rgba(245, 158, 11, 0.45);
+      background: rgba(6, 9, 18, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
       transform: translateY(-1px);
     }
     .terms-section-card h3 {
-      margin: 0 0 6px 0 !important;
+      margin: 0 0 4px 0 !important;
       color: #fef08a !important;
-      font-size: 13.5px !important;
+      font-size: 12px !important;
       font-weight: 700 !important;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95), 0 0 12px rgba(245, 158, 11, 0.5) !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(245, 158, 11, 0.5) !important;
     }
     .terms-section-card p {
       margin: 0 !important;
       color: #ffffff !important;
-      font-size: 12.5px !important;
-      line-height: 1.65;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.9) !important;
+      font-size: 11.5px !important;
+      line-height: 1.55;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.98), 0 2px 6px rgba(0, 0, 0, 0.9) !important;
       font-weight: 500;
     }
 
@@ -1097,7 +1189,23 @@ function getLoginPageHtml(config = {}) {
     <div class="terms-ambient-layer" id="terms-ambient-bg"></div>
     <div class="terms-ambient-vignette" id="terms-ambient-vignette"></div>
     <div class="terms-art-center-canvas" id="terms-art-canvas">
-      <img src="/public/terms_art_user_v3.png" alt="Baroque Allegory of Music" class="terms-full-art-img" id="terms-art-img">
+      <div class="terms-side-wing left-wing">
+        <svg class="wing-emblem-top" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        <div class="wing-astrolabe-ring"></div>
+        <div class="wing-vertical-text">HYPERVIEW // ALLEGRO SYNESTHESIA • OP. 26</div>
+        <svg class="wing-emblem-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+      </div>
+
+      <div class="terms-canvas-frame">
+        <img src="/public/terms_art_v1_1536x1024.png" alt="Baroque Allegory of Music" class="terms-full-art-img" id="terms-art-img">
+      </div>
+
+      <div class="terms-side-wing right-wing">
+        <svg class="wing-emblem-top" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        <div class="wing-astrolabe-ring"></div>
+        <div class="wing-vertical-text">NON-CUSTODIAL TRADING • EIP-4361 VERIFIED</div>
+        <svg class="wing-emblem-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+      </div>
     </div>
     <div class="modal-dialog-box">
       <div class="modal-header-strip">
