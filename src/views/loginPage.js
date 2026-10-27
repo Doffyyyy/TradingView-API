@@ -499,7 +499,7 @@ function getLoginPageHtml(config = {}) {
     .terms-ambient-layer {
       position: absolute;
       inset: -40px;
-      background-image: url('/public/terms_bg_art.png');
+      background-image: url('/public/terms_art_user_v3.png');
       background-position: center center;
       background-size: cover;
       filter: blur(55px) brightness(0.55) saturate(1.5);
@@ -553,26 +553,25 @@ function getLoginPageHtml(config = {}) {
       display: flex;
     }
 
+    /* ULTRA-TRANSLUCENT FROSTED GLASS MODAL (SEE-THROUGH ARTWORK) */
     .modal-dialog-box.terms-art-glass {
       position: relative;
       z-index: 3;
-      background: rgba(8, 12, 22, 0.35) !important;
-      backdrop-filter: blur(14px) saturate(1.3) !important;
-      -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
+      background: rgba(10, 14, 24, 0.12) !important;
+      backdrop-filter: blur(3px) saturate(1.15) !important;
+      -webkit-backdrop-filter: blur(3px) saturate(1.15) !important;
       border: 1px solid rgba(245, 158, 11, 0.55) !important;
       border-radius: 20px !important;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.75), 0 0 50px rgba(245, 158, 11, 0.3), inset 0 0 35px rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.65), 0 0 50px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 25px rgba(245, 158, 11, 0.06) !important;
       max-width: 720px !important;
     }
     .modal-dialog-box.terms-art-glass .modal-header-strip {
-      background: rgba(8, 12, 22, 0.42) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
+      background: rgba(10, 14, 24, 0.2) !important;
       border-bottom: 1px solid rgba(245, 158, 11, 0.35) !important;
     }
     .modal-dialog-box.terms-art-glass .modal-headline-text {
       color: #fef08a !important;
-      text-shadow: 0 0 20px rgba(245, 158, 11, 0.75), 0 2px 6px rgba(0, 0, 0, 0.85) !important;
+      text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 2px 8px rgba(0, 0, 0, 0.95) !important;
       font-size: 17px !important;
       letter-spacing: 0.8px !important;
     }
@@ -580,13 +579,11 @@ function getLoginPageHtml(config = {}) {
       background: transparent !important;
     }
     .modal-dialog-box.terms-art-glass .modal-footer-strip {
-      background: rgba(8, 12, 22, 0.48) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
+      background: rgba(10, 14, 24, 0.25) !important;
       border-top: 1px solid rgba(245, 158, 11, 0.35) !important;
     }
     .modal-dialog-box.terms-art-glass .btn-modal-accept {
-      background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.98)) !important;
+      background: linear-gradient(135deg, rgba(217, 119, 6, 0.92), rgba(180, 83, 9, 0.98)) !important;
       border: 1px solid #f59e0b !important;
       box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5) !important;
       color: #fff !important;
@@ -598,19 +595,17 @@ function getLoginPageHtml(config = {}) {
       transform: translateY(-1px);
     }
     .terms-section-card {
-      background: rgba(6, 9, 18, 0.38);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(8, 12, 22, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-left: 3px solid #f59e0b;
       border-radius: 12px;
       padding: 14px 18px;
       margin-bottom: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
       transition: all 0.2s ease;
     }
     .terms-section-card:hover {
-      background: rgba(6, 9, 18, 0.55);
+      background: rgba(8, 12, 22, 0.24);
       border-color: rgba(245, 158, 11, 0.45);
       transform: translateY(-1px);
     }
@@ -619,14 +614,15 @@ function getLoginPageHtml(config = {}) {
       color: #fef08a !important;
       font-size: 13.5px !important;
       font-weight: 700 !important;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95) !important;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95), 0 0 12px rgba(245, 158, 11, 0.5) !important;
     }
     .terms-section-card p {
       margin: 0 !important;
-      color: #f8fafc !important;
+      color: #ffffff !important;
       font-size: 12.5px !important;
       line-height: 1.65;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95) !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.9) !important;
+      font-weight: 500;
     }
 
     .modal-header-strip {
@@ -1101,7 +1097,7 @@ function getLoginPageHtml(config = {}) {
     <div class="terms-ambient-layer" id="terms-ambient-bg"></div>
     <div class="terms-ambient-vignette" id="terms-ambient-vignette"></div>
     <div class="terms-art-center-canvas" id="terms-art-canvas">
-      <img src="/public/terms_bg_art.png" alt="Baroque Allegory of Music" class="terms-full-art-img" id="terms-art-img">
+      <img src="/public/terms_art_user_v3.png" alt="Baroque Allegory of Music" class="terms-full-art-img" id="terms-art-img">
     </div>
     <div class="modal-dialog-box">
       <div class="modal-header-strip">
