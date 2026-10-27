@@ -2716,14 +2716,6 @@ const htmlContent = `<!DOCTYPE html>
         <div class="ts-toolbar">
           <div class="ts-pill-group">
             <button class="ts-pill-btn active" data-ts-source="all">All Journals</button>
-            <button class="ts-pill-btn" data-ts-source="verified">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-              Verified
-            </button>
-            <button class="ts-pill-btn" data-ts-source="manual">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              Manual
-            </button>
           </div>
           <div class="ts-dropdowns">
             <select class="ts-select" id="ts-filter-account">
@@ -2752,12 +2744,7 @@ const htmlContent = `<!DOCTYPE html>
 
         <!-- Action Toolbar (Row 2) -->
         <div class="ts-toolbar" style="margin-bottom: 16px;">
-          <div class="ts-subtabs">
-            <button class="ts-subtab-btn active" data-ts-view="journal">📋 Journal</button>
-            <button class="ts-subtab-btn" data-ts-view="comparison">⚖️ Comparison</button>
-            <button class="ts-subtab-btn" data-ts-view="analysis">📈 Analysis</button>
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
             <button class="ts-btn-outline" id="btn-ts-export-excel" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #10b981; font-weight: 600;" title="Tải File Excel Kẻ Bảng Đẹp (.xlsx)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               📊 Export Excel (.xlsx)
@@ -2765,10 +2752,6 @@ const htmlContent = `<!DOCTYPE html>
             <button class="ts-btn-outline" id="btn-ts-send-tele" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 600;" title="Gửi File Báo Cáo Excel (.xlsx) Kèm Tổng Kết Sang Telegram Ngay Lập Tức">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               📲 Gửi Báo Cáo Tele
-            </button>
-            <button class="ts-btn-outline" id="btn-ts-export" title="Export CSV Report">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Export CSV
             </button>
             <button class="ts-btn-outline" id="btn-ts-import">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
