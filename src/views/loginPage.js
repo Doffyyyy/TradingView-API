@@ -1192,7 +1192,7 @@ function getLoginPageHtml(config = {}) {
       <div class="terms-side-wing left-wing">
         <svg class="wing-emblem-top" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         <div class="wing-astrolabe-ring"></div>
-        <div class="wing-vertical-text">HYPERVIEW // ALLEGRO SYNESTHESIA • OP. 26</div>
+        <div class="wing-vertical-text" id="terms-wing-left-text">HYPERVIEW // ALLEGRO SYNESTHESIA • OP. 26</div>
         <svg class="wing-emblem-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
       </div>
 
@@ -1203,7 +1203,7 @@ function getLoginPageHtml(config = {}) {
       <div class="terms-side-wing right-wing">
         <svg class="wing-emblem-top" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         <div class="wing-astrolabe-ring"></div>
-        <div class="wing-vertical-text">NON-CUSTODIAL TRADING • EIP-4361 VERIFIED</div>
+        <div class="wing-vertical-text" id="terms-wing-right-text">NON-CUSTODIAL TRADING • EIP-4361 VERIFIED</div>
         <svg class="wing-emblem-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
       </div>
     </div>
@@ -1607,14 +1607,22 @@ function getLoginPageHtml(config = {}) {
       },
       privacy: {
         title: 'Privacy & Data Protection Policy',
-        body: '<h3>1. Data We Collect</h3>'
-          + '<p>We believe in radical data minimization. When you connect via Web3 wallet, we collect only your public EVM address. When you sign in via Google, we collect only your verified email and display name for session identification.</p>'
+        body: '<div class="terms-section-card">'
+          + '<h3>1. Radical Data Minimization</h3>'
+          + '<p>When you connect via Web3 wallet, we collect only your public EVM address. When signing in via Google, we collect only your verified email and display name for session authentication.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
           + '<h3>2. Cryptographic Security Standards</h3>'
           + '<p>Authentication utilizes EIP-4361 (Sign-In with Ethereum). Sessions are bound to 256-bit cryptographically random tokens stored in HttpOnly, SameSite=Strict cookies. No private keys or passwords ever touch our infrastructure.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
           + '<h3>3. Zero Third-Party Monetization</h3>'
-          + '<p>We do not sell, rent, or monetize your trading journals, simulated strategies, or browsing activities. All analytical caching is localized.</p>'
-          + '<h3>4. Data Removal</h3>'
-          + '<p>You may request deletion of all server-side session logs at any time by contacting admin@hyperview.ai.id.</p>'
+          + '<p>We do not sell, rent, or monetize your trading journals, simulated strategies, or browsing activities. All analytical caching is localized and encrypted.</p>'
+          + '</div>'
+          + '<div class="terms-section-card">'
+          + '<h3>4. Data Removal & Self-Sovereignty</h3>'
+          + '<p>You may request immediate deletion of all server-side session logs at any time by contacting admin@hyperview.ai.id or disconnecting your Web3 identity.</p>'
+          + '</div>'
       },
       disclaimer: {
         title: 'Risk Disclaimer & Disclosure',
@@ -1700,9 +1708,25 @@ function getLoginPageHtml(config = {}) {
       const acceptBtn = document.querySelector('.btn-modal-accept');
       const backdrop = document.getElementById('legal-modal-backdrop');
       const dialogBox = document.querySelector('#legal-modal-backdrop .modal-dialog-box');
+      const ambientBg = document.getElementById('terms-ambient-bg');
+      const artImg = document.getElementById('terms-art-img');
+      const wingLeft = document.getElementById('terms-wing-left-text');
+      const wingRight = document.getElementById('terms-wing-right-text');
+
       if (key === 'terms') {
         backdrop?.classList.add('terms-fullscreen-art');
         dialogBox?.classList.add('terms-art-glass');
+        if (ambientBg) ambientBg.style.backgroundImage = "url('/public/terms_art_v1_1536x1024.png')";
+        if (artImg) artImg.src = "/public/terms_art_v1_1536x1024.png";
+        if (wingLeft) wingLeft.textContent = "HYPERVIEW // ALLEGRO SYNESTHESIA • OP. 26";
+        if (wingRight) wingRight.textContent = "NON-CUSTODIAL TRADING • EIP-4361 VERIFIED";
+      } else if (key === 'privacy') {
+        backdrop?.classList.add('terms-fullscreen-art');
+        dialogBox?.classList.add('terms-art-glass');
+        if (ambientBg) ambientBg.style.backgroundImage = "url('/public/privacy_bg_art.png')";
+        if (artImg) artImg.src = "/public/privacy_bg_art.png";
+        if (wingLeft) wingLeft.textContent = "HYPERVIEW // CRYPTOGRAPHIC PRIVACY • ZERO-KNOWLEDGE";
+        if (wingRight) wingRight.textContent = "DATA MINIMIZATION • EIP-4361 VERIFIED • SECP256K1";
       } else {
         backdrop?.classList.remove('terms-fullscreen-art');
         dialogBox?.classList.remove('terms-art-glass');
