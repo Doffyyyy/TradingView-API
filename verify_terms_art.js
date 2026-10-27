@@ -40,5 +40,20 @@ const puppeteer = require('D:/AutocmtX/twitter-comment-pack-v2/node_modules/pupp
   await page.screenshot({ path: 'public/screen_privacy_with_art_bg.png' });
   console.log('Saved public/screen_privacy_with_art_bg.png');
 
+  // Close and Open Contact modal
+  console.log('Triggering openLegalModal("contact")...');
+  await page.evaluate(() => {
+    closeLegalModal();
+  });
+  await new Promise(r => setTimeout(r, 400));
+
+  await page.evaluate(() => {
+    openLegalModal('contact');
+  });
+  await new Promise(r => setTimeout(r, 800));
+
+  await page.screenshot({ path: 'public/screen_contact_with_art_bg.png' });
+  console.log('Saved public/screen_contact_with_art_bg.png');
+
   await browser.close();
 })();

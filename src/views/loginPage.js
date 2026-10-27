@@ -764,6 +764,20 @@ function getLoginPageHtml(config = {}) {
       background: rgba(255, 255, 255, 0.08); border-color: rgba(184, 67, 46, 0.45);
       transform: translateY(-1px);
     }
+    .modal-dialog-box.terms-art-glass .contact-channel-pill {
+      background: rgba(6, 9, 18, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-left: 3px solid #f59e0b !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      padding: 11px 16px !important;
+      border-radius: 10px !important;
+    }
+    .modal-dialog-box.terms-art-glass .contact-channel-pill:hover {
+      background: rgba(6, 9, 18, 0.28) !important;
+      border-color: rgba(245, 158, 11, 0.5) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.2) !important;
+    }
     .channel-icon-bg {
       width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
     }
@@ -1727,12 +1741,19 @@ function getLoginPageHtml(config = {}) {
         if (artImg) artImg.src = "/public/privacy_bg_art.png";
         if (wingLeft) wingLeft.textContent = "HYPERVIEW // CRYPTOGRAPHIC PRIVACY • ZERO-KNOWLEDGE";
         if (wingRight) wingRight.textContent = "DATA MINIMIZATION • EIP-4361 VERIFIED • SECP256K1";
+      } else if (key === 'contact') {
+        backdrop?.classList.add('terms-fullscreen-art');
+        dialogBox?.classList.add('terms-art-glass');
+        if (ambientBg) ambientBg.style.backgroundImage = "url('/public/contact_bg_art.png')";
+        if (artImg) artImg.src = "/public/contact_bg_art.png";
+        if (wingLeft) wingLeft.textContent = "HYPERVIEW // GLOBAL LIAISON • TACTICAL DESK";
+        if (wingRight) wingRight.textContent = "DIRECT SUPPORT CHANNELS • OPERATOR CLEARANCE";
       } else {
         backdrop?.classList.remove('terms-fullscreen-art');
         dialogBox?.classList.remove('terms-art-glass');
       }
       if (key === 'contact') {
-        if (footMeta) footMeta.innerHTML = '<span style="color:#10b981;">● Typical response within 2 hours</span>';
+        if (footMeta) footMeta.innerHTML = '<span style="color:#10b981; font-weight:700;">● Typical response within 2 hours</span>';
         if (acceptBtn) acceptBtn.textContent = 'Close Directory';
       } else {
         if (footMeta) footMeta.textContent = 'Effective Date: October 2026 • Compliance v2.4';
