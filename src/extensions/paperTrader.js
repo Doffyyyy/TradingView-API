@@ -4,6 +4,7 @@ const { computeAllIndicators, getMultiTimeframeAnalysis, getBtcMarketRegime, fet
 const { validateSymbol } = require('./validation');
 const { sendTelegramAlert } = require('./alert');
 const axios = require('axios');
+const WebSocket = require('ws');
 
 const PORTFOLIO_PATH = path.join(__dirname, '../../data/paper_portfolio.json');
 
@@ -69,6 +70,147 @@ class PaperTradingEngine {
     this.hasLoggedDailyMin = false;
     this.hasLoggedDailyMax = false;
     this.hasLoggedDailyStopLoss = false;
+    this.hlWs = null;
+    this.hlWsPingTimer = null;
+    this.isCheckingExits = false;
+  }
+
+  cleanCoinFromSymbol(symbol) {
+    if (!symbol) return '';
+    let s = symbol.toUpperCase();
+    if (s.includes(':')) s = s.split(':')[1];
+    return s.replace(/\.P$/i, '').replace(/[-_]?(USDT|USDC|USD|FDUSD)$/i, '').trim();
+  }
+
+  connectHyperliquidWs() {
+    if (this.hlWs && (this.hlWs.readyState === WebSocket.OPEN || this.hlWs.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    try {
+      this.hlWs = new WebSocket('wss://api.hyperliquid.xyz/ws');
+
+      this.hlWs.on('open', () => {
+        this.log('⚡ Hyperliquid L1 WebSocket Feed connected (allMids & activeAssetCtx).');
+        if (this.hlWsPingTimer) clearInterval(this.hlWsPingTimer);
+        this.hlWsPingTimer = setInterval(() => {
+          if (this.hlWs && this.hlWs.readyState === WebSocket.OPEN) {
+            this.hlWs.send(JSON.stringify({ method: 'ping' }));
+          }
+        }, 30000);
+
+        // 1. Subscribe to allMids for instant mark prices across all pairs
+        this.hlWs.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'allMids' } }));
+
+        // 2. Subscribe activeAssetCtx for active positions and key coins (BTC, ETH, etc.)
+        const coins = new Set(['BTC', 'ETH', 'SOL', 'HYPE', 'ARB']);
+        if (this.portfolio && this.portfolio.positions) {
+          this.portfolio.positions.forEach(p => {
+            const c = this.cleanCoinFromSymbol(p.symbol);
+            if (c) coins.add(c);
+          });
+        }
+        coins.forEach(coin => {
+          this.hlWs.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'activeAssetCtx', coin } }));
+        });
+      });
+
+      this.hlWs.on('message', async (data) => {
+        try {
+          const msg = JSON.parse(data.toString());
+          if (!msg || !msg.channel) return;
+
+          let priceUpdated = false;
+
+          // Stream 1: allMids
+          if (msg.channel === 'allMids' && msg.data && msg.data.mids) {
+            const mids = msg.data.mids;
+            this.monitoredSymbols.forEach(sym => {
+              const coin = this.cleanCoinFromSymbol(sym);
+              if (mids[coin]) {
+                const markPx = parseFloat(mids[coin]);
+                if (markPx > 0) {
+                  if (!this.latestPrices[sym]) this.latestPrices[sym] = {};
+                  this.latestPrices[sym].price = markPx;
+                  this.latestPrices[sym].lastHlUpdate = Date.now();
+                  priceUpdated = true;
+                }
+              }
+            });
+            if (this.portfolio && this.portfolio.positions) {
+              this.portfolio.positions.forEach(p => {
+                const coin = this.cleanCoinFromSymbol(p.symbol);
+                if (mids[coin]) {
+                  const markPx = parseFloat(mids[coin]);
+                  if (markPx > 0) {
+                    if (!this.latestPrices[p.symbol]) this.latestPrices[p.symbol] = {};
+                    this.latestPrices[p.symbol].price = markPx;
+                    this.latestPrices[p.symbol].lastHlUpdate = Date.now();
+                    priceUpdated = true;
+                  }
+                }
+              });
+            }
+          }
+
+          // Stream 2: activeAssetCtx
+          if (msg.channel === 'activeAssetCtx' && msg.data && msg.data.ctx) {
+            const coin = msg.data.coin;
+            const ctx = msg.data.ctx;
+            const markPx = parseFloat(ctx.markPx || ctx.midPx);
+            if (markPx > 0) {
+              this.monitoredSymbols.forEach(sym => {
+                if (this.cleanCoinFromSymbol(sym) === coin) {
+                  if (!this.latestPrices[sym]) this.latestPrices[sym] = {};
+                  this.latestPrices[sym].price = markPx;
+                  this.latestPrices[sym].markPx = markPx;
+                  this.latestPrices[sym].oraclePx = parseFloat(ctx.oraclePx) || markPx;
+                  this.latestPrices[sym].funding = parseFloat(ctx.funding) || 0;
+                  this.latestPrices[sym].lastHlUpdate = Date.now();
+                  priceUpdated = true;
+                }
+              });
+              if (this.portfolio && this.portfolio.positions) {
+                this.portfolio.positions.forEach(p => {
+                  if (this.cleanCoinFromSymbol(p.symbol) === coin) {
+                    if (!this.latestPrices[p.symbol]) this.latestPrices[p.symbol] = {};
+                    this.latestPrices[p.symbol].price = markPx;
+                    this.latestPrices[p.symbol].markPx = markPx;
+                    this.latestPrices[p.symbol].lastHlUpdate = Date.now();
+                    priceUpdated = true;
+                  }
+                });
+              }
+            }
+          }
+
+          // Realtime Exit evaluation (Check TP / SL on every HL L1 mark price tick)
+          if (priceUpdated && this.portfolio && this.portfolio.positions && this.portfolio.positions.length > 0) {
+            if (!this.isCheckingExits) {
+              this.isCheckingExits = true;
+              this.updateEquity();
+              try {
+                await this.checkExitRules();
+              } catch (err) {
+                // Log non-fatal check error
+              } finally {
+                this.isCheckingExits = false;
+              }
+            }
+          }
+        } catch (e) {}
+      });
+
+      this.hlWs.on('close', () => {
+        if (this.hlWsPingTimer) clearInterval(this.hlWsPingTimer);
+        setTimeout(() => this.connectHyperliquidWs(), 3000);
+      });
+
+      this.hlWs.on('error', () => {
+        try { this.hlWs.close(); } catch (e) {}
+      });
+    } catch (err) {
+      console.error('[PaperTrader] Hyperliquid WS error:', err.message);
+    }
   }
 
   getTodayDateString() {
@@ -893,6 +1035,8 @@ class PaperTradingEngine {
     if (this.isRunning) return;
     this.isRunning = true;
     this.log(`Engine started. Initial Fund: $${this.portfolio.initialBalance.toFixed(2)}, Target: $50-$100/day.`);
+    // Connect Hyperliquid L1 realtime WebSocket
+    this.connectHyperliquidWs();
     // Run offline catch-up simulation first, then start loop
     this.simulateOfflinePeriod().catch(err => {
       console.error('[PaperTrader] Error during initial offline simulation:', err.message);
@@ -904,6 +1048,11 @@ class PaperTradingEngine {
 
   stop() {
     if (this.loopTimer) clearInterval(this.loopTimer);
+    if (this.hlWsPingTimer) clearInterval(this.hlWsPingTimer);
+    if (this.hlWs) {
+      try { this.hlWs.close(); } catch (e) {}
+      this.hlWs = null;
+    }
     this.isRunning = false;
     this.log('Engine stopped.');
   }

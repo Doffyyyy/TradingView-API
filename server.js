@@ -6848,6 +6848,51 @@ const htmlContent = `<!DOCTYPE html>
       updateExecutionLabels();
     }
 
+    function extractCoinName(symbol) {
+      if (!symbol) return '';
+      let s = symbol.toUpperCase();
+      if (s.includes(':')) s = s.split(':')[1];
+      return s.replace(/\.P$/i, '').replace(/[-_]?(USDT|USDC|USD|FDUSD)$/i, '').trim();
+    }
+
+    function updatePositionRowLivePrice(coin, livePx) {
+      if (!livePx || livePx <= 0) return;
+      const cUpper = coin.toUpperCase();
+      const rows = document.querySelectorAll('#table-paper-positions tr[data-coin="' + cUpper + '"]');
+      if (!rows || rows.length === 0) return;
+
+      rows.forEach(row => {
+        const posId = row.getAttribute('data-pos-id');
+        const side = row.getAttribute('data-side');
+        const entry = parseFloat(row.getAttribute('data-entry')) || livePx;
+        const size = parseFloat(row.getAttribute('data-size')) || 0;
+        const margin = parseFloat(row.getAttribute('data-margin')) || 1;
+
+        const markEl = document.getElementById('pos-mark-' + posId);
+        if (markEl) {
+          const oldPx = parseFloat(markEl.getAttribute('data-last-px')) || livePx;
+          markEl.textContent = '$' + (livePx >= 1000 ? livePx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : (livePx >= 1 ? livePx.toFixed(2) : livePx.toFixed(4)));
+          markEl.setAttribute('data-last-px', livePx);
+
+          if (livePx > oldPx) {
+            markEl.style.color = '#4ade80';
+            setTimeout(() => { if (markEl) markEl.style.color = '#fff'; }, 300);
+          } else if (livePx < oldPx) {
+            markEl.style.color = '#f87171';
+            setTimeout(() => { if (markEl) markEl.style.color = '#fff'; }, 300);
+          }
+        }
+
+        const pnlEl = document.getElementById('pos-pnl-' + posId);
+        if (pnlEl) {
+          const upnl = side === 'LONG' ? (livePx - entry) * size : (entry - livePx) * size;
+          const upnlPct = (upnl / margin) * 100;
+          pnlEl.textContent = (upnl >= 0 ? '+' : '') + '$' + upnl.toFixed(2) + ' (' + (upnlPct >= 0 ? '+' : '') + upnlPct.toFixed(2) + '% ROE)';
+          pnlEl.className = upnl >= 0 ? 'val-green' : 'val-red';
+        }
+      });
+    }
+
     function connectHlWebSocket() {
       if (typeof WebSocket === 'undefined') return;
       if (hlWs && (hlWs.readyState === WebSocket.OPEN || hlWs.readyState === WebSocket.CONNECTING)) {
@@ -6863,6 +6908,11 @@ const htmlContent = `<!DOCTYPE html>
               hlWs.send(JSON.stringify({ method: 'ping' }));
             }
           }, 30000);
+
+          // Subscribe allMids (hyper-fast mark price stream across all Hyperliquid pairs)
+          try {
+            hlWs.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'allMids' } }));
+          } catch(e) {}
 
           if (currentDockCoin) {
             subscribeHlWebSocket(currentDockCoin);
@@ -6945,6 +6995,54 @@ const htmlContent = `<!DOCTYPE html>
                 }
               }
             }
+
+            // 4. Realtime allMids stream: Hyperliquid global mark price stream
+            if (msg.channel === 'allMids' && msg.data && msg.data.mids) {
+              const mids = msg.data.mids;
+              for (const [coin, pxStr] of Object.entries(mids)) {
+                const px = parseFloat(pxStr);
+                if (px > 0) {
+                  updatePositionRowLivePrice(coin, px);
+                  if (coin === currentDockCoin) {
+                    currentDockPrice = px;
+                    const mktPriceEl = document.getElementById('dock-market-price');
+                    if (mktPriceEl) mktPriceEl.textContent = '$' + (px >= 1 ? px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : px.toFixed(4));
+                    const lastEl = document.getElementById('hl-stat-last');
+                    if (lastEl) lastEl.textContent = '$' + (px >= 1 ? px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatTokenPrice(px));
+                  }
+                }
+              }
+            }
+
+            // 5. Realtime activeAssetCtx stream: Hyperliquid L1 Mark Price, Oracle & Funding
+            if (msg.channel === 'activeAssetCtx' && msg.data && msg.data.ctx) {
+              const coin = msg.data.coin;
+              const ctx = msg.data.ctx;
+              const markPx = parseFloat(ctx.markPx || ctx.midPx);
+              if (markPx > 0) {
+                updatePositionRowLivePrice(coin, markPx);
+                if (coin === currentDockCoin) {
+                  currentDockPrice = markPx;
+                  const mktPriceEl = document.getElementById('dock-market-price');
+                  if (mktPriceEl) mktPriceEl.textContent = '$' + (markPx >= 1 ? markPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : markPx.toFixed(4));
+                  const lastEl = document.getElementById('hl-stat-last');
+                  if (lastEl) lastEl.textContent = '$' + (markPx >= 1 ? markPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatTokenPrice(markPx));
+                  const idxEl = document.getElementById('hl-stat-index');
+                  if (idxEl && ctx.oraclePx) {
+                    const orc = parseFloat(ctx.oraclePx);
+                    idxEl.textContent = '$' + (orc >= 1 ? orc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatTokenPrice(orc));
+                  }
+                  if (ctx.funding) {
+                    const fundEl = document.getElementById('hl-stat-funding');
+                    if (fundEl) {
+                      const fVal = (parseFloat(ctx.funding) || 0) * 100;
+                      fundEl.textContent = fVal.toFixed(4) + '%';
+                      fundEl.className = fVal >= 0 ? 'val-red' : 'val-green';
+                    }
+                  }
+                }
+              }
+            }
           } catch (e) {}
         };
 
@@ -6968,6 +7066,7 @@ const htmlContent = `<!DOCTYPE html>
           try {
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'l2Book', coin: hlWsActiveCoin } }));
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'trades', coin: hlWsActiveCoin } }));
+            hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'activeAssetCtx', coin: hlWsActiveCoin } }));
             if (hlWsActiveInterval) {
               hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'candle', coin: hlWsActiveCoin, interval: hlWsActiveInterval } }));
             }
@@ -6995,6 +7094,10 @@ const htmlContent = `<!DOCTYPE html>
             method: 'unsubscribe',
             subscription: { type: 'trades', coin: hlWsActiveCoin }
           }));
+          hlWs.send(JSON.stringify({
+            method: 'unsubscribe',
+            subscription: { type: 'activeAssetCtx', coin: hlWsActiveCoin }
+          }));
           if (hlWsActiveInterval) {
             hlWs.send(JSON.stringify({
               method: 'unsubscribe',
@@ -7013,6 +7116,10 @@ const htmlContent = `<!DOCTYPE html>
         hlWs.send(JSON.stringify({
           method: 'subscribe',
           subscription: { type: 'trades', coin }
+        }));
+        hlWs.send(JSON.stringify({
+          method: 'subscribe',
+          subscription: { type: 'activeAssetCtx', coin }
         }));
         hlWs.send(JSON.stringify({
           method: 'subscribe',
@@ -9206,25 +9313,28 @@ const htmlContent = `<!DOCTYPE html>
         if (!data.openPositions || data.openPositions.length === 0) {
           posBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">No open positions. Monitoring market for next high-confluence entry...</td></tr>';
         } else {
-          posBody.innerHTML = data.openPositions.map(p => \`
-            <tr>
+          posBody.innerHTML = data.openPositions.map(p => {
+            const coin = extractCoinName(p.symbol);
+            return \`
+            <tr id="pos-row-\${p.id}" data-pos-id="\${p.id}" data-coin="\${coin}" data-side="\${p.side}" data-entry="\${p.entryPrice}" data-size="\${p.size}" data-margin="\${p.margin || p.notional}">
               <td><strong>\${p.symbol}</strong></td>
               <td><span class="action-badge \${p.side === 'LONG' ? 'action-buy' : 'action-sell'}">\${p.side}</span></td>
               <td><span class="action-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">\${p.leverage || 1}x</span></td>
               <td>$\${fmtP(p.entryPrice)}</td>
-              <td>$\${fmtP(p.currentPrice || p.entryPrice)}</td>
+              <td id="pos-mark-\${p.id}" style="font-weight: 700; color: #fff; transition: color 0.15s ease;" data-last-px="\${p.currentPrice || p.entryPrice}">$\${fmtP(p.currentPrice || p.entryPrice)}</td>
               <td class="val-green">$\${fmtP(p.takeProfit)}</td>
               <td class="val-red">$\${fmtP(p.stopLoss)}</td>
               <td style="color: #e4e7eb;">$\${fmtP(p.margin || p.notional)}</td>
               <td style="color: var(--text-secondary);">$\${fmtP(p.notional)}</td>
-              <td class="\${p.unrealizedPnl >= 0 ? 'val-green' : 'val-red'}">
+              <td id="pos-pnl-\${p.id}" class="\${p.unrealizedPnl >= 0 ? 'val-green' : 'val-red'}" style="font-weight: 700;">
                 \${p.unrealizedPnl >= 0 ? '+' : ''}$\${p.unrealizedPnl} (\${p.unrealizedPnlPercent}% ROE)
               </td>
               <td>
                 <button class="btn" onclick="closePaperPosition('\${p.id}')" style="padding: 2px 8px; font-size: 11px; background: rgba(239, 83, 80, 0.2); color: #ef5350;">Close</button>
               </td>
             </tr>
-          \`).join('');
+          \`;
+          }).join('');
         }
 
         // Recent trades table
@@ -9346,8 +9456,8 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    // Auto-poll paper trader status every 3 seconds
-    setInterval(refreshPaperStatus, 3000);
+    // Auto-poll paper trader status every 1.5 seconds (in addition to real-time WebSocket ticks)
+    setInterval(refreshPaperStatus, 1500);
     refreshPaperStatus();
 
     // ========================================================
@@ -11456,20 +11566,11 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(userStatus));
     } else {
+      const botStatus = paperTraderInstance.getStatus();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({
+        ...botStatus,
         guest: true,
-        autoTradeEnabled: false,
-        initialBalance: 10000.0,
-        balance: 10000.0,
-        equity: 10000.0,
-        realizedPnl: 0,
-        unrealizedPnl: 0,
-        dailyRealizedPnl: 0,
-        dailyPnl: 0,
-        openPositions: [],
-        closedTrades: [],
-        allTrades: [],
       }));
     }
   }
