@@ -1031,19 +1031,27 @@ class PaperTradingEngine {
     }
   }
 
-  start() {
+  async start() {
     if (this.isRunning) return;
     this.isRunning = true;
+    this.isCheckingExits = true; // Lock exits during startup simulation to prevent race conditions
     this.log(`Engine started. Initial Fund: $${this.portfolio.initialBalance.toFixed(2)}, Target: $50-$100/day.`);
-    // Connect Hyperliquid L1 realtime WebSocket
-    this.connectHyperliquidWs();
-    // Run offline catch-up simulation first, then start loop
-    this.simulateOfflinePeriod().catch(err => {
+
+    // 1. Run offline catch-up simulation FIRST to process planned SL/TP during machine shutdown
+    try {
+      await this.simulateOfflinePeriod();
+    } catch (err) {
       console.error('[PaperTrader] Error during initial offline simulation:', err.message);
-    }).finally(() => {
-      this.tick();
-      this.loopTimer = setInterval(() => this.tick(), 8000);
-    });
+    } finally {
+      this.isCheckingExits = false;
+    }
+
+    // 2. Only after historical offline catch-up is complete, connect live L1 WebSocket
+    this.connectHyperliquidWs();
+
+    // 3. Start live tick cycle
+    this.tick();
+    this.loopTimer = setInterval(() => this.tick(), 8000);
   }
 
   stop() {
