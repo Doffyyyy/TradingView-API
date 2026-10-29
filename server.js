@@ -435,6 +435,53 @@ const htmlContent = `<!DOCTYPE html>
     th { text-align: left; padding: 8px; background: var(--bg-tertiary); color: var(--text-secondary); }
     td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
+    /* Active Paper Positions Table - Fixed Layout & Zero-Jitter */
+    #table-paper-positions {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
+      min-width: 980px;
+    }
+    #table-paper-positions th {
+      padding: 9px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      user-select: none;
+      box-sizing: border-box;
+    }
+    #table-paper-positions td {
+      padding: 9px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
+      vertical-align: middle;
+      box-sizing: border-box;
+    }
+    #table-paper-positions .pos-col-symbol   { width: 16%; min-width: 140px; }
+    #table-paper-positions .pos-col-side     { width: 6.5%; min-width: 55px; text-align: center; }
+    #table-paper-positions .pos-col-lev      { width: 5.5%; min-width: 48px; text-align: center; }
+    #table-paper-positions .pos-col-entry    { width: 9%; min-width: 80px; }
+    #table-paper-positions .pos-col-mark     { width: 10%; min-width: 95px; }
+    #table-paper-positions .pos-col-tp       { width: 9%; min-width: 80px; }
+    #table-paper-positions .pos-col-sl       { width: 9%; min-width: 80px; }
+    #table-paper-positions .pos-col-margin   { width: 8.5%; min-width: 75px; }
+    #table-paper-positions .pos-col-notional { width: 8.5%; min-width: 75px; }
+    #table-paper-positions .pos-col-pnl      { width: 13.5%; min-width: 155px; }
+    #table-paper-positions .pos-col-action   { width: 4.5%; min-width: 50px; text-align: center; }
+
     .action-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     .action-buy { background: rgba(38, 166, 154, 0.2); color: var(--accent-green); }
     .action-sell { background: rgba(239, 83, 80, 0.2); color: var(--accent-red); }
@@ -2622,26 +2669,28 @@ const htmlContent = `<!DOCTYPE html>
         <!-- Open Positions -->
         <div class="card">
           <div class="card-title">Active Paper Positions (Max 2 Concurrent | Leverage up to 3x)</div>
-          <table id="table-paper-positions">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Side</th>
-                <th>Lev</th>
-                <th>Entry</th>
-                <th>Mark Price</th>
-                <th>TP</th>
-                <th>SL</th>
-                <th>Margin</th>
-                <th>Notional</th>
-                <th>Unrealized PnL</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Scanning for high-confluence entry setups...</td></tr>
-            </tbody>
-          </table>
+          <div style="overflow-x: auto; width: 100%;">
+            <table id="table-paper-positions">
+              <thead>
+                <tr>
+                  <th class="pos-col-symbol">Symbol</th>
+                  <th class="pos-col-side">Side</th>
+                  <th class="pos-col-lev">Lev</th>
+                  <th class="pos-col-entry">Entry</th>
+                  <th class="pos-col-mark">Mark Price</th>
+                  <th class="pos-col-tp">TP</th>
+                  <th class="pos-col-sl">SL</th>
+                  <th class="pos-col-margin">Margin</th>
+                  <th class="pos-col-notional">Notional</th>
+                  <th class="pos-col-pnl">Unrealized PnL</th>
+                  <th class="pos-col-action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">Scanning for high-confluence entry setups...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Recent Completed Trades -->
@@ -6887,7 +6936,7 @@ const htmlContent = `<!DOCTYPE html>
         if (pnlEl) {
           const upnl = side === 'LONG' ? (livePx - entry) * size : (entry - livePx) * size;
           const upnlPct = (upnl / margin) * 100;
-          pnlEl.textContent = (upnl >= 0 ? '+' : '') + '$' + upnl.toFixed(2) + ' (' + (upnlPct >= 0 ? '+' : '') + upnlPct.toFixed(2) + '% ROE)';
+          pnlEl.textContent = (upnl >= 0 ? '+$' : '-$') + Math.abs(upnl).toFixed(2) + ' (' + (upnlPct >= 0 ? '+' : '') + upnlPct.toFixed(2) + '% ROE)';
           pnlEl.className = upnl >= 0 ? 'val-green' : 'val-red';
         }
       });
@@ -9315,21 +9364,25 @@ const htmlContent = `<!DOCTYPE html>
         } else {
           posBody.innerHTML = data.openPositions.map(p => {
             const coin = extractCoinName(p.symbol);
+            const upnl = p.unrealizedPnl || 0;
+            const upnlPct = p.unrealizedPnlPercent !== undefined ? p.unrealizedPnlPercent : (p.margin ? ((upnl / p.margin) * 100).toFixed(2) : '0.00');
             return \`
             <tr id="pos-row-\${p.id}" data-pos-id="\${p.id}" data-coin="\${coin}" data-side="\${p.side}" data-entry="\${p.entryPrice}" data-size="\${p.size}" data-margin="\${p.margin || p.notional}">
-              <td><strong>\${p.symbol}</strong></td>
-              <td><span class="action-badge \${p.side === 'LONG' ? 'action-buy' : 'action-sell'}">\${p.side}</span></td>
-              <td><span class="action-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">\${p.leverage || 1}x</span></td>
-              <td>$\${fmtP(p.entryPrice)}</td>
-              <td id="pos-mark-\${p.id}" style="font-weight: 700; color: #fff; transition: color 0.15s ease;" data-last-px="\${p.currentPrice || p.entryPrice}">$\${fmtP(p.currentPrice || p.entryPrice)}</td>
-              <td class="val-green">$\${fmtP(p.takeProfit)}</td>
-              <td class="val-red">$\${fmtP(p.stopLoss)}</td>
-              <td style="color: #e4e7eb;">$\${fmtP(p.margin || p.notional)}</td>
-              <td style="color: var(--text-secondary);">$\${fmtP(p.notional)}</td>
-              <td id="pos-pnl-\${p.id}" class="\${p.unrealizedPnl >= 0 ? 'val-green' : 'val-red'}" style="font-weight: 700;">
-                \${p.unrealizedPnl >= 0 ? '+' : ''}$\${p.unrealizedPnl} (\${p.unrealizedPnlPercent}% ROE)
+              <td class="pos-col-symbol"><strong>\${p.symbol}</strong></td>
+              <td class="pos-col-side" style="text-align: center;"><span class="action-badge \${p.side === 'LONG' ? 'action-buy' : 'action-sell'}">\${p.side}</span></td>
+              <td class="pos-col-lev" style="text-align: center;"><span class="action-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">\${p.leverage || 1}x</span></td>
+              <td class="pos-col-entry">$\${fmtP(p.entryPrice)}</td>
+              <td class="pos-col-mark"><span id="pos-mark-\${p.id}" style="font-weight: 700; color: #fff; transition: color 0.15s ease;" data-last-px="\${p.currentPrice || p.entryPrice}">$\${fmtP(p.currentPrice || p.entryPrice)}</span></td>
+              <td class="pos-col-tp val-green">$\${fmtP(p.takeProfit)}</td>
+              <td class="pos-col-sl val-red">$\${fmtP(p.stopLoss)}</td>
+              <td class="pos-col-margin" style="color: #e4e7eb;">$\${fmtP(p.margin || p.notional)}</td>
+              <td class="pos-col-notional" style="color: var(--text-secondary);">$\${fmtP(p.notional)}</td>
+              <td class="pos-col-pnl">
+                <span id="pos-pnl-\${p.id}" class="\${upnl >= 0 ? 'val-green' : 'val-red'}" style="font-weight: 700;">
+                  \${upnl >= 0 ? '+$' : '-$'}\${Math.abs(upnl).toFixed(2)} (\${upnlPct >= 0 ? '+' : ''}\${upnlPct}% ROE)
+                </span>
               </td>
-              <td>
+              <td class="pos-col-action" style="text-align: center;">
                 <button class="btn" onclick="closePaperPosition('\${p.id}')" style="padding: 2px 8px; font-size: 11px; background: rgba(239, 83, 80, 0.2); color: #ef5350;">Close</button>
               </td>
             </tr>
