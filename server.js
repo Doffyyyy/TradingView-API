@@ -1618,7 +1618,7 @@ const htmlContent = `<!DOCTYPE html>
                   <span>Draw Tools</span>
                   <span style="font-size: 8px; color: #8c93a3;">⌄</span>
                 </button>
-                <div id="draw-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; width: 220px; padding: 10px 12px; background: rgba(13, 17, 28, 0.96) !important; backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 10px !important; box-shadow: 0 16px 40px rgba(0,0,0,0.75) !important;">
+                <div id="draw-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; min-width: 220px; width: max-content; max-width: 240px; padding: 10px 12px; background: rgba(13, 17, 28, 0.96) !important; backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 10px !important; box-shadow: 0 16px 40px rgba(0,0,0,0.75) !important;">
                   <div style="font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>DRAWING TOOLS</span>
                     <span id="active-draw-tool-label" style="font-size: 9.5px; color: #38bdf8; font-weight: 700;">Crosshair</span>
@@ -1656,7 +1656,7 @@ const htmlContent = `<!DOCTYPE html>
                         <line x1="12" y1="12" x2="14.5" y2="9.5"/>
                         <line x1="15" y1="15" x2="17.5" y2="12.5"/>
                       </svg>
-                      <span style="font-weight: 600;">📏 Thước Kẻ (Ruler / Đo Giá & %)</span>
+                      <span style="font-weight: 600;">Thước Kẻ (Ruler / Đo Giá & %)</span>
                     </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
                     <button type="button" class="draw-dropdown-item" data-tool="long_pos" style="background: transparent !important; color: #34d399 !important;">
