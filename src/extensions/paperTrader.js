@@ -34,6 +34,7 @@ const DEFAULT_PORTFOLIO = {
   dailyRealizedPnl: 0.0,
   lastResetDate: new Date().toISOString().slice(0, 10),
   autoTradeEnabled: true,
+  isDailyHalted: false,
   riskPerTradePercent: 0.5, // Strategy V2: 0.5% risk per trade ($50 on $10k)
   maxPositionMargin: 2500.0,
   maxLeverage: 2, // Strategy V2: Max 2x leverage
@@ -214,13 +215,10 @@ class PaperTradingEngine {
   }
 
   getTodayDateString() {
-    // Return YYYY-MM-DD in UTC+7 (Vietnam Time)
-    const now = new Date();
-    const vnTime = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
-    const y = vnTime.getFullYear();
-    const m = String(vnTime.getMonth() + 1).padStart(2, '0');
-    const d = String(vnTime.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    // International Crypto Daily Reset Standard:
+    // Daily candle closes and resets at 00:00:00 UTC = 07:00:00 AM Vietnam Time (UTC+7).
+    // The trading day runs from 07:00 AM VN of day T to 06:59:59 AM VN of day T+1.
+    return new Date().toISOString().slice(0, 10);
   }
 
   loadPortfolio() {
@@ -238,7 +236,7 @@ class PaperTradingEngine {
         data.dailyTargetMin = Math.round(curEq * 0.01 * 100) / 100;   // 1.0% of equity
         data.dailyTargetMax = Math.round(curEq * 0.03 * 100) / 100;   // 3.0% of equity
 
-        // Check daily reset according to Vietnam Time (UTC+7)
+        // Check daily reset according to International Crypto Reset (07:00 AM UTC+7 / 00:00 UTC)
         const today = this.getTodayDateString();
         if (data.lastResetDate !== today) {
           if (!data.dailyHistory) data.dailyHistory = [];
@@ -249,6 +247,7 @@ class PaperTradingEngine {
           });
           data.dailyRealizedPnl = 0.0;
           data.lastResetDate = today;
+          data.isDailyHalted = false;
           fs.writeFileSync(PORTFOLIO_PATH, JSON.stringify(data, null, 2));
         }
         return data;
@@ -332,12 +331,15 @@ class PaperTradingEngine {
       }
     }
     if ((this.portfolio.dailyRealizedPnl + totalFloatingPnl) <= -(dailyLossLimit * 1.05)) {
-      this.log(`🚨 EMERGENCY CIRCUIT BREAKER ACTIVATED: Total daily loss + floating drawdown (-$${Math.abs(this.portfolio.dailyRealizedPnl + totalFloatingPnl).toFixed(2)}) reached hard limit. Closing all remaining open positions.`);
-      for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
-        const p = this.portfolio.positions[i];
-        const c = this.latestPrices[p.symbol]?.price || p.entryPrice;
-        await this.closePosition(p.id, c, 'EMERGENCY_DAILY_CIRCUIT_BREAKER');
+      if (this.portfolio.positions.length > 0) {
+        this.log(`🚨 EMERGENCY CIRCUIT BREAKER ACTIVATED: Total daily loss + floating drawdown (-$${Math.abs(this.portfolio.dailyRealizedPnl + totalFloatingPnl).toFixed(2)}) reached hard limit. Closing all remaining open positions.`);
+        for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
+          const p = this.portfolio.positions[i];
+          const c = this.latestPrices[p.symbol]?.price || p.entryPrice;
+          await this.closePosition(p.id, c, 'EMERGENCY_DAILY_CIRCUIT_BREAKER');
+        }
       }
+      this.portfolio.isDailyHalted = true;
       return;
     }
 
@@ -552,8 +554,38 @@ class PaperTradingEngine {
   async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null, customSl = null) {
     const dailyLossLimit = Math.round((this.portfolio.equity || 10000.0) * 0.02 * 100) / 100;
     this.portfolio.dailyStopLossMax = dailyLossLimit;
+
+    if (this.portfolio.isDailyHalted) {
+      this.log(`🛑 Cannot open position on ${symbol}: Daily trading is halted due to Emergency Circuit Breaker until 07:00 AM UTC+7.`);
+      return null;
+    }
+
     if (this.portfolio.dailyRealizedPnl <= -dailyLossLimit) {
-      this.log(`🛑 Cannot open position on ${symbol}: Daily Stop Loss already reached (-$${Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2)} <= -$${dailyLossLimit.toFixed(2)} [2% Equity]).`);
+      this.log(`🛑 Cannot open position on ${symbol}: Daily Stop Loss already reached (-$${Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2)} <= -$${dailyLossLimit.toFixed(2)} [2% Equity]). Halted until 07:00 AM UTC+7.`);
+      return null;
+    }
+
+    // Committed Daily Risk Guard: Calculate worst-case loss if all currently open positions hit Stop Loss
+    let openPositionsMaxRisk = 0;
+    for (const p of this.portfolio.positions) {
+      const slDist = p.stopLoss > 0 ? Math.abs(p.entryPrice - p.stopLoss) : (p.entryPrice * 0.015);
+      openPositionsMaxRisk += (slDist * p.size);
+    }
+    const currentRealizedLoss = Math.max(0, -this.portfolio.dailyRealizedPnl);
+    const estimatedNewTradeRisk = this.portfolio.equity * ((this.portfolio.riskPerTradePercent || 0.5) / 100);
+
+    if ((currentRealizedLoss + openPositionsMaxRisk + estimatedNewTradeRisk) > dailyLossLimit) {
+      this.log(`🛑 Cannot open position on ${symbol}: Committed daily risk budget reached (Loss so far: -$${currentRealizedLoss.toFixed(2)}, Open positions SL risk: -$${openPositionsMaxRisk.toFixed(2)}, New trade risk: -$${estimatedNewTradeRisk.toFixed(2)} > Max Daily SL: -$${dailyLossLimit.toFixed(2)}). Preserving daily stop loss.`);
+      return null;
+    }
+
+    // Rolling 24-Hour Max Loss Guard (safety net across daily boundaries)
+    const oneDayAgo = Date.now() - 24 * 3600 * 1000;
+    const rolling24hLoss = (this.portfolio.trades || [])
+      .filter(t => new Date(t.exitTime || t.entryTime).getTime() >= oneDayAgo)
+      .reduce((acc, t) => acc + (t.pnl < 0 ? t.pnl : 0), 0);
+    if (Math.abs(rolling24hLoss) >= dailyLossLimit * 1.5) {
+      this.log(`🛑 Cannot open position on ${symbol}: Rolling 24h loss (-$${Math.abs(rolling24hLoss).toFixed(2)}) exceeded maximum safety cap (-$${(dailyLossLimit * 1.5).toFixed(2)}). Cooldown active.`);
       return null;
     }
 
@@ -702,7 +734,7 @@ class PaperTradingEngine {
   checkDailyRollover() {
     const today = this.getTodayDateString();
     if (this.portfolio.lastResetDate !== today) {
-      this.log(`🌅 New trading day detected (${today} UTC+7). Previous day realized PnL: $${(this.portfolio.dailyRealizedPnl || 0).toFixed(2)}. Resetting daily target & stop loss counter.`);
+      this.log(`🌅 New trading day detected (${today} - Daily Cycle Reset at 07:00 AM UTC+7 / 00:00 UTC). Previous day realized PnL: $${(this.portfolio.dailyRealizedPnl || 0).toFixed(2)}. Resetting daily target & stop loss counter.`);
       if (!this.portfolio.dailyHistory) this.portfolio.dailyHistory = [];
       this.portfolio.dailyHistory.unshift({
         date: this.portfolio.lastResetDate,
@@ -711,6 +743,7 @@ class PaperTradingEngine {
       });
       this.portfolio.dailyRealizedPnl = 0.0;
       this.portfolio.lastResetDate = today;
+      this.portfolio.isDailyHalted = false;
 
       // Recalculate dynamic daily targets & stop loss from starting equity:
       const eq = this.portfolio.equity || 10000.0;
@@ -734,16 +767,16 @@ class PaperTradingEngine {
     const isDailyStopLossHit = this.portfolio.dailyRealizedPnl <= -dailyLossLimit;
 
     // 1. Daily Circuit Breaker / Daily Stop Loss (2.0% of current equity)
-    if (isDailyStopLossHit) {
+    if (isDailyStopLossHit || this.portfolio.isDailyHalted) {
       if (!this.hasLoggedDailyStopLoss) {
         const lossAmount = Math.abs(this.portfolio.dailyRealizedPnl).toFixed(2);
-        this.log(`🛑 DAILY STOP LOSS REACHED (-$${lossAmount} <= -$${dailyLossLimit.toFixed(2)} [2.0% Equity]). All new trades halted for today to protect capital until 00:00 UTC+7.`);
+        this.log(`🛑 DAILY STOP LOSS REACHED (-$${lossAmount} <= -$${dailyLossLimit.toFixed(2)} [2.0% Equity]). All new trades halted for today to protect capital until 07:00 AM UTC+7.`);
         this.hasLoggedDailyStopLoss = true;
 
         try {
           sendTelegramAlert({
             instrument: 'PORTFOLIO_RISK',
-            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached limit of -$${dailyLossLimit.toFixed(2)} [2.0%]). Auto-Trade halted until tomorrow (00:00 UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
+            customMessage: `🛑 DAILY STOP LOSS HIT (-$${lossAmount} reached limit of -$${dailyLossLimit.toFixed(2)} [2.0%]). Auto-Trade halted until tomorrow (07:00 AM UTC+7) to preserve account equity. Current Equity: $${this.portfolio.equity.toFixed(2)}`,
             accountEquity: this.portfolio.equity,
           }).catch(() => {});
         } catch (e) {}
