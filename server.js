@@ -760,6 +760,12 @@ const htmlContent = `<!DOCTYPE html>
     .draw-dropdown-item.active span {
       color: #38bdf8 !important;
     }
+    .draw-dropdown-item[data-tool="ruler"] {
+      color: #38bdf8 !important;
+    }
+    .draw-dropdown-item[data-tool="ruler"] svg, .draw-dropdown-item[data-tool="ruler"] span {
+      color: #38bdf8 !important;
+    }
     .draw-dropdown-item[data-tool="long_pos"] {
       color: #34d399 !important;
     }
@@ -1642,6 +1648,15 @@ const htmlContent = `<!DOCTYPE html>
                     <button type="button" class="draw-dropdown-item" data-tool="fib" style="background: transparent !important; color: #94a3b8 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="19" x2="21" y2="19"/></svg>
                       <span>Fibonacci Retracement</span>
+                    </button>
+                    <button type="button" class="draw-dropdown-item" data-tool="ruler" style="background: transparent !important; color: #38bdf8 !important;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+                        <path d="M21.3 8.7 8.7 21.3c-1 1-2.5 1-3.5 0l-2.5-2.5c-1-1-1-2.5 0-3.5L15.3 2.7c1-1 2.5-1 3.5 0l2.5 2.5c1 1 1 2.5 0 3.5z"/>
+                        <line x1="9" y1="9" x2="11.5" y2="6.5"/>
+                        <line x1="12" y1="12" x2="14.5" y2="9.5"/>
+                        <line x1="15" y1="15" x2="17.5" y2="12.5"/>
+                      </svg>
+                      <span style="font-weight: 600;">📏 Thước Kẻ (Ruler / Đo Giá & %)</span>
                     </button>
                     <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 3px 0;"></div>
                     <button type="button" class="draw-dropdown-item" data-tool="long_pos" style="background: transparent !important; color: #34d399 !important;">
@@ -7867,6 +7882,7 @@ const htmlContent = `<!DOCTYPE html>
       'horizontal': 'Horizontal',
       'box': 'S/R Box',
       'fib': 'Fibonacci',
+      'ruler': 'Thước Đo (Ruler)',
       'long_pos': 'Long Pos ▲R',
       'short_pos': 'Short Pos ▼R',
     };

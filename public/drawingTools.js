@@ -14,7 +14,7 @@
       this.canvas = null;
       this.ctx = null;
       this.currentSymbol = 'BTC';
-      this.activeTool = 'cursor'; // 'cursor', 'trendline', 'ray', 'horizontal', 'box', 'fib', 'long_pos', 'short_pos'
+      this.activeTool = 'cursor'; // 'cursor', 'trendline', 'ray', 'horizontal', 'box', 'fib', 'ruler', 'long_pos', 'short_pos'
       this.isMagnetActive = false;
       this.drawings = []; // Array of drawing objects
       this.inProgressDrawing = null;
@@ -116,6 +116,31 @@
       let time = this.chart.timeScale().coordinateToTime(x);
       let price = this.candleSeries.coordinateToPrice(y);
 
+      // Fallback for right margin whitespace or out-of-bounds time
+      if (time === null && typeof currentCandlesCache !== 'undefined' && currentCandlesCache.length > 0) {
+        const lastCandle = currentCandlesCache[currentCandlesCache.length - 1];
+        const timeScale = this.chart.timeScale();
+        const lastX = timeScale.timeToCoordinate(lastCandle.time);
+
+        if (lastX !== null && x > lastX && currentCandlesCache.length > 1) {
+          const prevCandle = currentCandlesCache[currentCandlesCache.length - 2];
+          const prevX = timeScale.timeToCoordinate(prevCandle.time);
+          const barWidth = Math.max(2, Math.abs(lastX - (prevX !== null ? prevX : lastX - 10)));
+          const extraBars = Math.round((x - lastX) / barWidth);
+          const getTs = (t) => (typeof t === 'number' ? (t > 1e11 ? Math.floor(t / 1000) : t) : Math.floor(new Date(t).getTime() / 1000));
+          const stepSec = Math.max(60, Math.abs(getTs(lastCandle.time) - getTs(prevCandle.time)));
+          time = getTs(lastCandle.time) + extraBars * stepSec;
+        } else {
+          time = lastCandle.time;
+        }
+      }
+
+      // If price is null (clicked outside price axis), estimate from top/bottom
+      if (price === null && typeof currentCandlesCache !== 'undefined' && currentCandlesCache.length > 0) {
+        const lastCandle = currentCandlesCache[currentCandlesCache.length - 1];
+        price = lastCandle.close;
+      }
+
       // If magnet is active, snap to nearest candle OHLC
       if (this.isMagnetActive && typeof currentCandlesCache !== 'undefined' && currentCandlesCache.length > 0) {
         const timeScale = this.chart.timeScale();
@@ -156,8 +181,25 @@
     // Convert { time, price } to screen (x, y)
     chartToScreen(pt) {
       if (!this.chart || !this.candleSeries || !pt) return null;
-      const x = this.chart.timeScale().timeToCoordinate(pt.time);
-      const y = this.candleSeries.priceToCoordinate(pt.price);
+      let x = this.chart.timeScale().timeToCoordinate(pt.time);
+      let y = this.candleSeries.priceToCoordinate(pt.price);
+
+      // Handle future / right margin timestamps
+      if (x === null && typeof currentCandlesCache !== 'undefined' && currentCandlesCache.length > 1) {
+        const lastCandle = currentCandlesCache[currentCandlesCache.length - 1];
+        const prevCandle = currentCandlesCache[currentCandlesCache.length - 2];
+        const timeScale = this.chart.timeScale();
+        const lastX = timeScale.timeToCoordinate(lastCandle.time);
+        const prevX = timeScale.timeToCoordinate(prevCandle.time);
+        if (lastX !== null && prevX !== null) {
+          const barWidth = Math.max(2, Math.abs(lastX - prevX));
+          const getTs = (t) => (typeof t === 'number' ? (t > 1e11 ? Math.floor(t / 1000) : t) : Math.floor(new Date(t).getTime() / 1000));
+          const stepSec = Math.max(60, Math.abs(getTs(lastCandle.time) - getTs(prevCandle.time)));
+          const ptTs = getTs(pt.time);
+          x = lastX + ((ptTs - getTs(lastCandle.time)) / stepSec) * barWidth;
+        }
+      }
+
       if (x === null || y === null || isNaN(x) || isNaN(y)) return null;
       return { x, y };
     }
@@ -185,6 +227,18 @@
           this.setActiveTool('cursor');
         }
       });
+
+      // Shift + Click shortcut on chart container: Instant Ruler (TradingView standard)
+      if (this.container) {
+        this.container.addEventListener('mousedown', (e) => {
+          if (e.shiftKey && this.activeTool === 'cursor') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.setActiveTool('ruler');
+            this.handleMouseDown(e);
+          }
+        }, true);
+      }
     }
 
     handleMouseDown(e) {
@@ -289,6 +343,7 @@
         case 'horizontal': return '#f59e0b'; // Amber
         case 'box': return 'rgba(56, 189, 248, 0.2)'; // Blue zone
         case 'fib': return '#c084fc'; // Violet
+        case 'ruler': return '#38bdf8'; // Ruler cyan
         case 'long_pos': return '#10b981'; // Emerald green
         case 'short_pos': return '#ef4444'; // Red
         default: return '#38bdf8';
@@ -445,6 +500,165 @@
             ctx.fillText(`${lv.lbl} ($${lPrice.toFixed(2)})`, leftX + 4, ly - 3);
           }
         });
+
+      } else if (d.type === 'ruler') {
+        if (!s1 || !s2) { ctx.restore(); return; }
+        const minX = Math.min(s1.x, s2.x);
+        const maxX = Math.max(s1.x, s2.x);
+        const minY = Math.min(s1.y, s2.y);
+        const maxY = Math.max(s1.y, s2.y);
+        const boxW = Math.max(1, maxX - minX);
+        const boxH = Math.max(1, maxY - minY);
+
+        const diffPrice = p2.price - p1.price;
+        const pctChange = p1.price ? (diffPrice / p1.price) * 100 : 0;
+        const isUp = diffPrice >= 0;
+        const themeColor = isUp ? '#10b981' : '#ef4444';
+        const fillColor = isUp ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+
+        // Calculate bar count and elapsed time
+        let barsCount = 0;
+        let timeDiffSec = 0;
+        const getTs = (t) => {
+          if (!t) return 0;
+          if (typeof t === 'number') return t > 1e11 ? Math.floor(t / 1000) : t;
+          if (typeof t === 'string') return Math.floor(new Date(t).getTime() / 1000);
+          if (typeof t === 'object' && t.year) {
+            return Math.floor(new Date(t.year, (t.month || 1) - 1, t.day || 1).getTime() / 1000);
+          }
+          return 0;
+        };
+
+        const t1 = getTs(p1.time);
+        const t2 = getTs(p2.time);
+        if (t1 && t2) {
+          timeDiffSec = Math.abs(t2 - t1);
+        }
+
+        if (typeof currentCandlesCache !== 'undefined' && Array.isArray(currentCandlesCache) && currentCandlesCache.length > 0 && t1 && t2) {
+          let idx1 = -1, idx2 = -1;
+          let minD1 = Infinity, minD2 = Infinity;
+          for (let i = 0; i < currentCandlesCache.length; i++) {
+            const cTs = getTs(currentCandlesCache[i].time);
+            const d1 = Math.abs(cTs - t1);
+            const d2 = Math.abs(cTs - t2);
+            if (d1 < minD1) { minD1 = d1; idx1 = i; }
+            if (d2 < minD2) { minD2 = d2; idx2 = i; }
+          }
+          if (idx1 !== -1 && idx2 !== -1) {
+            barsCount = Math.abs(idx2 - idx1);
+          }
+        }
+
+        const formatDuration = (sec) => {
+          if (!sec || isNaN(sec)) return '';
+          const days = Math.floor(sec / 86400);
+          const hours = Math.floor((sec % 86400) / 3600);
+          const mins = Math.floor((sec % 3600) / 60);
+          if (days > 0) return `${days}d ${hours}h`;
+          if (hours > 0) return `${hours}h ${mins}m`;
+          return `${mins}m`;
+        };
+
+        // 1. Shaded measurement rectangle
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(minX, minY, boxW, boxH);
+
+        // 2. Dashed rectangle border
+        ctx.strokeStyle = themeColor;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(minX, minY, boxW, boxH);
+
+        // 3. Diagonal line connecting start to end point
+        ctx.beginPath();
+        ctx.moveTo(s1.x, s1.y);
+        ctx.lineTo(s2.x, s2.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 4. Ruler tick marks along edges
+        const tickSpacing = 16;
+        const horizTicks = Math.min(24, Math.floor(boxW / tickSpacing));
+        if (horizTicks > 1) {
+          ctx.strokeStyle = themeColor;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let i = 1; i < horizTicks; i++) {
+            const tx = minX + (boxW / horizTicks) * i;
+            const tLen = (i % 2 === 0) ? 6 : 3;
+            ctx.moveTo(tx, minY);
+            ctx.lineTo(tx, minY + tLen);
+            ctx.moveTo(tx, maxY);
+            ctx.lineTo(tx, maxY - tLen);
+          }
+          ctx.stroke();
+        }
+
+        const vertTicks = Math.min(18, Math.floor(boxH / tickSpacing));
+        if (vertTicks > 1) {
+          ctx.strokeStyle = themeColor;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let i = 1; i < vertTicks; i++) {
+            const ty = minY + (boxH / vertTicks) * i;
+            const tLen = (i % 2 === 0) ? 6 : 3;
+            ctx.moveTo(minX, ty);
+            ctx.lineTo(minX + tLen, ty);
+            ctx.moveTo(maxX, ty);
+            ctx.lineTo(maxX - tLen, ty);
+          }
+          ctx.stroke();
+        }
+
+        // 5. Handles at points
+        this.drawHandle(s1.x, s1.y, isSelected);
+        this.drawHandle(s2.x, s2.y, isSelected);
+
+        // 6. Floating Ruler Badge (TradingView Style)
+        const badgeW = 158;
+        const badgeH = 46;
+        let badgeX = (minX + maxX) / 2 - badgeW / 2;
+        badgeX = Math.max(10, Math.min(this.canvas.clientWidth - badgeW - 10, badgeX));
+
+        let badgeY = (minY + maxY) / 2 - badgeH / 2;
+        if (boxH < 55) {
+          badgeY = minY - badgeH - 10;
+          if (badgeY < 10) badgeY = maxY + 10;
+        }
+        badgeY = Math.max(10, Math.min(this.canvas.clientHeight - badgeH - 10, badgeY));
+
+        ctx.fillStyle = 'rgba(13, 17, 28, 0.94)';
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+        } else {
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+        ctx.fill();
+        ctx.strokeStyle = themeColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Formatted price difference text
+        const sign = isUp ? '+' : '';
+        const absDiff = Math.abs(diffPrice);
+        const diffStr = absDiff >= 1000 ? absDiff.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : absDiff >= 1 ? absDiff.toFixed(2) : absDiff.toFixed(4);
+        const line1 = `${sign}$${diffStr} (${sign}${pctChange.toFixed(2)}%)`;
+
+        // Formatted bars and duration text
+        const durStr = formatDuration(timeDiffSec);
+        let line2 = `📏 ${barsCount} bars`;
+        if (durStr) line2 += ` (${durStr})`;
+
+        ctx.fillStyle = themeColor;
+        ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(line1, badgeX + badgeW / 2, badgeY + 18);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(line2, badgeX + badgeW / 2, badgeY + 34);
 
       } else if (d.type === 'long_pos' || d.type === 'short_pos') {
         if (!s1) { ctx.restore(); return; }
