@@ -1675,6 +1675,10 @@ const htmlContent = `<!DOCTYPE html>
                       </div>
                       <span id="magnet-mode-badge" style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,0.08); color: #94a3b8; font-weight: 700;">OFF</span>
                     </button>
+                    <button type="button" class="draw-dropdown-item" id="draw-tool-del-selected" data-tool="del_selected" style="background: transparent !important; color: #f87171 !important;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      <span>Xóa Nét Vẽ Đang Chọn (Del)</span>
+                    </button>
                     <button type="button" class="draw-dropdown-item" id="draw-tool-trash" data-tool="trash" style="background: transparent !important; color: #ef4444 !important;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       <span>Clear All Drawings</span>
@@ -7900,6 +7904,14 @@ const htmlContent = `<!DOCTYPE html>
             badge.style.background = isMag ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)';
             badge.style.color = isMag ? '#38bdf8' : '#94a3b8';
           }
+        } else if (tool === 'del_selected') {
+          if (window.drawingEngineInstance?.selectedDrawing) {
+            window.drawingEngineInstance.removeDrawing(window.drawingEngineInstance.selectedDrawing);
+          } else if (window.drawingEngineInstance?.drawings?.length > 0) {
+            window.drawingEngineInstance.removeDrawing(window.drawingEngineInstance.drawings[window.drawingEngineInstance.drawings.length - 1]);
+          }
+          if (drawDropdown) drawDropdown.style.display = 'none';
+          btnDrawMenu?.classList.remove('active');
         } else if (tool === 'trash') {
           window.drawingEngineInstance?.clearAllDrawings();
           if (drawDropdown) drawDropdown.style.display = 'none';

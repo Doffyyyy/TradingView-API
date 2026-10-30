@@ -20,6 +20,7 @@
       this.inProgressDrawing = null;
       this.selectedDrawing = null;
       this.hoveredDrawing = null;
+      this.selectedDeleteButtonRect = null;
       this.mousePos = { x: 0, y: 0 };
       this.isDrawing = false;
       this.dpr = window.devicePixelRatio || 1;
@@ -78,10 +79,13 @@
       this.loadDrawingsForSymbol(newSymbol);
     }
 
-    setActiveTool(tool) {
+    setActiveTool(tool, keepSelection = false) {
       this.activeTool = tool;
       this.inProgressDrawing = null;
-      this.selectedDrawing = null;
+      if (!keepSelection) {
+        this.selectedDrawing = null;
+        this.selectedDeleteButtonRect = null;
+      }
       if (this.canvas) {
         if (tool === 'cursor') {
           this.canvas.style.pointerEvents = 'none';
@@ -219,25 +223,97 @@
         window.resetLegendOHLC?.();
       });
 
-      // Key listener for Delete
+      // Key listener for Delete / Backspace
       window.addEventListener('keydown', (e) => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedDrawing) {
-          this.removeDrawing(this.selectedDrawing);
-        } else if (e.key === 'Escape') {
-          this.setActiveTool('cursor');
+        const isDel = e.key === 'Delete' || e.key === 'Backspace' || e.code === 'Delete' || e.code === 'Backspace';
+        if (isDel) {
+          const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+          if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable) {
+            return;
+          }
+
+          if (this.selectedDrawing) {
+            e.preventDefault();
+            this.removeDrawing(this.selectedDrawing);
+          } else if (this.drawings && this.drawings.length > 0) {
+            e.preventDefault();
+            this.removeDrawing(this.drawings[this.drawings.length - 1]);
+          }
+        } else if (e.key === 'Escape' || e.code === 'Escape') {
+          if (this.selectedDrawing) {
+            this.selectedDrawing = null;
+            this.selectedDeleteButtonRect = null;
+            this.render();
+          } else if (this.activeTool !== 'cursor') {
+            this.setActiveTool('cursor');
+          }
         }
       });
 
-      // Shift + Click shortcut on chart container: Instant Ruler (TradingView standard)
+      // Mouse listener on chart container for Selection, Quick Delete, and Shift+Click
       if (this.container) {
         this.container.addEventListener('mousedown', (e) => {
+          // 1. Shift + Click shortcut for instant Ruler
           if (e.shiftKey && this.activeTool === 'cursor') {
             e.preventDefault();
             e.stopPropagation();
             this.setActiveTool('ruler');
             this.handleMouseDown(e);
+            return;
+          }
+
+          // 2. Click on the Quick Delete Button [ 🗑️ Xóa (Del) ]
+          if (this.selectedDeleteButtonRect) {
+            const rect = this.canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const b = this.selectedDeleteButtonRect;
+            if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (this.selectedDrawing) {
+                this.removeDrawing(this.selectedDrawing);
+              }
+              return;
+            }
+          }
+
+          // 3. Click to select a drawing in cursor mode
+          if (this.activeTool === 'cursor') {
+            const rect = this.canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const hit = this.getDrawingAt(cx, cy);
+            if (hit) {
+              this.selectedDrawing = hit;
+              this.render();
+            } else if (this.selectedDrawing) {
+              this.selectedDrawing = null;
+              this.selectedDeleteButtonRect = null;
+              this.render();
+            }
           }
         }, true);
+
+        // Hover detection on container in cursor mode
+        this.container.addEventListener('mousemove', (e) => {
+          if (this.activeTool === 'cursor') {
+            const rect = this.canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+
+            if (this.selectedDeleteButtonRect) {
+              const b = this.selectedDeleteButtonRect;
+              if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+                this.container.style.cursor = 'pointer';
+                return;
+              }
+            }
+
+            const hit = this.getDrawingAt(cx, cy);
+            this.container.style.cursor = hit ? 'pointer' : 'default';
+          }
+        });
       }
     }
 
@@ -309,19 +385,22 @@
     finishDrawing() {
       if (!this.inProgressDrawing) return;
       delete this.inProgressDrawing.tempPoint;
-      this.drawings.push(this.inProgressDrawing);
-      this.selectedDrawing = this.inProgressDrawing;
+      const finished = this.inProgressDrawing;
+      this.drawings.push(finished);
+      this.selectedDrawing = finished;
       this.inProgressDrawing = null;
       this.isDrawing = false;
       this.saveDrawingsForSymbol(this.currentSymbol);
-      this.setActiveTool('cursor');
+      this.setActiveTool('cursor', true); // Keep selection so Del key works immediately!
     }
 
     removeDrawing(d) {
+      if (!d) return;
       const idx = this.drawings.indexOf(d);
       if (idx !== -1) {
         this.drawings.splice(idx, 1);
         this.selectedDrawing = null;
+        this.selectedDeleteButtonRect = null;
         this.saveDrawingsForSymbol(this.currentSymbol);
         this.render();
       }
@@ -331,6 +410,7 @@
       if (confirm('Clear all drawings on ' + this.currentSymbol + '?')) {
         this.drawings = [];
         this.selectedDrawing = null;
+        this.selectedDeleteButtonRect = null;
         this.saveDrawingsForSymbol(this.currentSymbol);
         this.render();
       }
@@ -366,12 +446,159 @@
       this.render();
     }
 
+    getDrawingAt(cx, cy) {
+      if (!this.drawings || this.drawings.length === 0) return null;
+
+      const distToSegment = (px, py, x1, y1, x2, y2) => {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const l2 = dx * dx + dy * dy;
+        if (l2 === 0) return Math.hypot(px - x1, py - y1);
+        let t = ((px - x1) * dx + (py - y1) * dy) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+      };
+
+      // Check reverse order (topmost first)
+      for (let i = this.drawings.length - 1; i >= 0; i--) {
+        const d = this.drawings[i];
+        const p1 = d.points[0];
+        const p2 = d.points[1] || p1;
+        const s1 = this.chartToScreen(p1);
+        const s2 = this.chartToScreen(p2);
+        if (!s1) continue;
+
+        if (d.type === 'trendline') {
+          if (s1 && s2 && distToSegment(cx, cy, s1.x, s1.y, s2.x, s2.y) <= 12) return d;
+        } else if (d.type === 'ray') {
+          if (s1 && s2) {
+            const dx = s2.x - s1.x;
+            const dy = s2.y - s1.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const extX = s1.x + (dx / len) * 3000;
+            const extY = s1.y + (dy / len) * 3000;
+            if (distToSegment(cx, cy, s1.x, s1.y, extX, extY) <= 12) return d;
+          }
+        } else if (d.type === 'horizontal') {
+          if (Math.abs(cy - s1.y) <= 12) return d;
+        } else if (d.type === 'box') {
+          if (s1 && s2) {
+            const minX = Math.min(s1.x, s2.x) - 6;
+            const maxX = Math.max(s1.x, s2.x) + 6;
+            const minY = Math.min(s1.y, s2.y) - 6;
+            const maxY = Math.max(s1.y, s2.y) + 6;
+            if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) return d;
+          }
+        } else if (d.type === 'fib') {
+          if (s1 && s2) {
+            const minX = Math.min(s1.x, s2.x) - 10;
+            const maxX = Math.max(s1.x, s2.x) + 60;
+            const minY = Math.min(s1.y, s2.y) - 10;
+            const maxY = Math.max(s1.y, s2.y) + 10;
+            if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) return d;
+          }
+        } else if (d.type === 'ruler') {
+          if (s1 && s2) {
+            const minX = Math.min(s1.x, s2.x) - 8;
+            const maxX = Math.max(s1.x, s2.x) + 8;
+            const minY = Math.min(s1.y, s2.y) - 8;
+            const maxY = Math.max(s1.y, s2.y) + 8;
+            if ((cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) || distToSegment(cx, cy, s1.x, s1.y, s2.x, s2.y) <= 14) {
+              return d;
+            }
+          }
+        } else if (d.type === 'long_pos' || d.type === 'short_pos') {
+          const entryPx = d.entryPrice || p1.price;
+          const tpPx = d.takeProfit;
+          const slPx = d.stopLoss;
+          const entryY = this.candleSeries.priceToCoordinate(entryPx);
+          const tpY = tpPx ? this.candleSeries.priceToCoordinate(tpPx) : null;
+          const slY = slPx ? this.candleSeries.priceToCoordinate(slPx) : null;
+          if (entryY !== null && tpY !== null && slY !== null) {
+            const boxLeft = Math.max(10, s1.x - 20);
+            const boxRight = boxLeft + 140;
+            const topY = Math.min(entryY, tpY, slY) - 5;
+            const botY = Math.max(entryY, tpY, slY) + 5;
+            if (cx >= boxLeft && cx <= boxRight && cy >= topY && cy <= botY) return d;
+          }
+        }
+      }
+      return null;
+    }
+
+    renderSelectionToolbar(d) {
+      const ctx = this.ctx;
+      if (!ctx || !d) return;
+
+      const p1 = d.points[0];
+      const p2 = d.points[1] || p1;
+      const s1 = this.chartToScreen(p1);
+      const s2 = this.chartToScreen(p2);
+      if (!s1) return;
+
+      let anchorX = s1.x;
+      let anchorY = s1.y;
+
+      if (d.type === 'trendline' || d.type === 'ray') {
+        anchorX = (s1.x + (s2 ? s2.x : s1.x)) / 2;
+        anchorY = Math.min(s1.y, s2 ? s2.y : s1.y);
+      } else if (d.type === 'horizontal') {
+        anchorX = this.canvas.clientWidth / 2;
+        anchorY = s1.y;
+      } else if (d.type === 'box' || d.type === 'ruler' || d.type === 'fib') {
+        anchorX = (Math.min(s1.x, s2 ? s2.x : s1.x) + Math.max(s1.x, s2 ? s2.x : s1.x)) / 2;
+        anchorY = Math.min(s1.y, s2 ? s2.y : s1.y);
+      } else if (d.type === 'long_pos' || d.type === 'short_pos') {
+        anchorX = s1.x + 50;
+        anchorY = s1.y - 25;
+      }
+
+      const btnW = 92;
+      const btnH = 26;
+      let btnX = Math.max(10, Math.min(this.canvas.clientWidth - btnW - 10, anchorX - btnW / 2));
+      let btnY = anchorY - btnH - 10;
+      if (btnY < 10) btnY = anchorY + 16;
+
+      this.selectedDeleteButtonRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+
+      ctx.save();
+      // Drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 3;
+
+      // Red Pill Button
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.95)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(btnX, btnY, btnW, btnH, 6);
+      } else {
+        ctx.rect(btnX, btnY, btnW, btnH);
+      }
+      ctx.fill();
+
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = '#fca5a5';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🗑️ Xóa (Del)', btnX + btnW / 2, btnY + btnH / 2);
+      ctx.restore();
+    }
+
     // --- Main Canvas Render Loop ---
     render() {
       if (!this.ctx || !this.canvas) return;
       const w = this.canvas.clientWidth;
       const h = this.canvas.clientHeight;
       this.ctx.clearRect(0, 0, w, h);
+
+      this.selectedDeleteButtonRect = null;
 
       // Render completed drawings
       for (const d of this.drawings) {
@@ -381,6 +608,11 @@
       // Render drawing in progress
       if (this.inProgressDrawing) {
         this.renderDrawing(this.inProgressDrawing, true);
+      }
+
+      // Render floating Quick Delete Toolbar on selected drawing
+      if (this.selectedDrawing) {
+        this.renderSelectionToolbar(this.selectedDrawing);
       }
     }
 
