@@ -20,6 +20,7 @@ const { macroCalendarInstance } = require('./src/extensions/macroCalendar');
 const { startMonthlyReportScheduler, dispatchMonthlyReport } = require('./src/extensions/monthlyReportScheduler');
 const { authSecurityInstance } = require('./src/extensions/authSecurity');
 const { userProfileManager } = require('./src/extensions/userProfileManager');
+const { variationalConnector } = require('./src/extensions/variational');
 const { getLoginPageHtml } = require('./src/views/loginPage');
 
 const PORT = process.env.PORT || 8095;
@@ -2368,267 +2369,7 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Quant Strategy Studio & Custom Code Modal -->
-        <div id="strategy-studio-modal" class="web3-modal-overlay" style="display: none; z-index: 10050;">
-          <div class="web3-modal-card" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; background: #0b0f19; border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.15); border-radius: 14px;">
-            <!-- Modal Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); flex-shrink: 0;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; font-size: 16px;">🧠</div>
-                <div>
-                  <div style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.3px;">QUANT STRATEGY STUDIO & CODE ENGINE</div>
-                  <div style="font-size: 11px; color: #94a3b8;">Chọn chiến lược định lượng có sẵn hoặc tự viết / dán mã nguồn JavaScript cá nhân</div>
-                </div>
               </div>
-              <button id="btn-close-strat-modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
-            </div>
-
-            <!-- Modal Subtabs Bar -->
-            <div style="display: flex; gap: 4px; padding: 10px 20px 0 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: #080c14; flex-shrink: 0;">
-              <button class="strat-tab-btn active" id="tab-strat-list" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #fff; background: transparent; border: none; border-bottom: 2px solid #a855f7; cursor: pointer;">
-                📋 Danh Sách Chiến Lược (<span id="strat-count-badge">4</span>)
-              </button>
-              <button class="strat-tab-btn" id="tab-strat-editor" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
-                ✍️ Tự Thêm / Dán Source Code (Code Studio)
-              </button>
-              <button class="strat-tab-btn" id="tab-strat-agent" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
-                🔑 Cấu Hình API Bot (Hyperliquid Agent)
-              </button>
-            </div>
-
-            <!-- Modal Body (Scrollable) -->
-            <div style="padding: 18px 20px; overflow-y: auto; flex: 1; min-height: 0;">
-              <!-- VIEW 1: Available Strategies List -->
-              <div id="strat-view-list">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                  <div>
-                    <span style="font-size: 12px; font-weight: 800; color: #fff;">CHIẾN LƯỢC ĐANG ÁP DỤNG:</span>
-                    <span id="studio-active-pill" style="margin-left: 8px; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700;">● Oliver Kell Price Cycle</span>
-                  </div>
-                  <button class="btn active" id="btn-studio-goto-add" style="padding: 6px 14px; font-size: 11px; background: #9333ea; color: #fff; font-weight: 700;">➕ Thêm Chiến Lược Mới (Dán Code)</button>
-                </div>
-
-                <div id="strat-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                  <!-- Dynamically rendered cards -->
-                </div>
-              </div>
-
-              <!-- VIEW 2: Custom Code Editor -->
-              <div id="strat-view-editor" style="display: none;">
-                <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong style="color: #c084fc; font-size: 11.5px;">💻 Trình Biên Soạn & Nạp Mã Nguồn Chiến Lược</strong>
-                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px;">Dán trực tiếp code JavaScript của bạn hoặc nạp nhanh từ các mẫu dựng sẵn</div>
-                  </div>
-                  <!-- Quick Templates -->
-                  <div style="display: flex; gap: 6px;">
-                    <span style="font-size: 10px; color: #94a3b8; align-self: center; font-weight: 700;">NẠP MẪU:</span>
-                    <button class="btn" id="btn-load-tpl-rsi" style="padding: 4px 8px; font-size: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8;">📋 RSI Scalp</button>
-                    <button class="btn" id="btn-load-tpl-ema" style="padding: 4px 8px; font-size: 10px; background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #4ade80;">📋 EMA Trend</button>
-                    <button class="btn" id="btn-load-tpl-breakout" style="padding: 4px 8px; font-size: 10px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24;">📋 Breakout</button>
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 12px;">
-                  <div>
-                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TÊN CHIẾN LƯỢC *</label>
-                    <input type="text" id="strat-input-name" placeholder="Ví dụ: My MACD Scalp Pro" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                  </div>
-                  <div>
-                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">KHUNG THỜI GIAN (TIMEFRAME)</label>
-                    <select id="strat-input-tf" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                      <option value="1m">1m (Scalping siêu ngắn)</option>
-                      <option value="5m">5m (Scalping nhanh)</option>
-                      <option value="15m" selected>15m (Intraday chuẩn)</option>
-                      <option value="1h">1H (Swing Trader)</option>
-                      <option value="4h">4H (Xu hướng vĩ mô)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style="margin-bottom: 12px;">
-                  <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔ TẢ CHIẾN LƯỢC / GHI CHÚ QUY TẮC VÀO LỆNH</label>
-                  <input type="text" id="strat-input-desc" placeholder="Ví dụ: Đánh theo phân kỳ RSI khung 15m, chốt lời +3%, cắt lỗ -1.5%" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                </div>
-
-                <div style="margin-bottom: 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">MÃ NGUỒN JAVASCRIPT (HÀM onTick) *</label>
-                    <span style="font-size: 10px; color: #64748b; font-family: monospace;">function onTick(market, portfolio)</span>
-                  </div>
-                  <textarea id="strat-input-code" spellcheck="false" style="width: 100%; height: 260px; background: #05070c; border: 1px solid #1e2433; color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; line-height: 1.6; padding: 12px; border-radius: 8px; outline: none; resize: vertical; tab-size: 2;"></textarea>
-                </div>
-
-                <!-- API Reference cheatsheet -->
-                <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 10px; color: #94a3b8; line-height: 1.6;">
-                  <strong style="color: #cbd5e1;">📌 Biến đầu vào:</strong> <code>market: { symbol, price, high, low, volume, rsi, ema10, ema20, ema50, supertrend, macd }</code> | <code>portfolio: { balance, cash, equity, openPositions }</code><br>
-                  <strong style="color: #cbd5e1;">📌 Giá trị trả về:</strong> <code>return { action: 'BUY'|'SELL'|'CLOSE', symbol, sizePct: 20, tp: 85000, sl: 82000, reason: 'Lý do' }</code> hoặc <code>return null;</code>
-                </div>
-
-                <!-- Validation Status Banner -->
-                <div id="strat-val-msg" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 12px;"></div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <button class="btn" id="btn-studio-back-list" style="padding: 7px 14px; font-size: 11px;">← Quay Lại Danh Sách</button>
-                  <div style="display: flex; gap: 8px;">
-                    <button class="btn" id="btn-studio-test-syntax" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra Cú Pháp</button>
-                    <button class="btn active" id="btn-studio-save-strat" style="padding: 7px 18px; font-size: 11px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu & Kích Hoạt Chiến Lược</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- VIEW 3: Hyperliquid Agent Key Configuration -->
-              <div id="strat-view-agent" style="display: none;">
-                <!-- Header Banner -->
-                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong style="color: #38bdf8; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                      <span>🔑 Cấu Hình Hyperliquid Delegated Agent Signer (Auto-Trading Bot)</span>
-                    </strong>
-                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 3px; line-height: 1.5;">
-                      Ủy quyền khóa Agent phụ để bot tự động ký mở/đóng lệnh trên Hyperliquid L1. Agent Wallet bị cấm rút tiền (Withdrawal Forbidden), bảo vệ an toàn 100% cho số dư ví chính.
-                    </div>
-                  </div>
-                  <a href="https://app.hyperliquid.xyz/trade" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
-                    ↗ Mở Hyperliquid API Settings
-                  </a>
-                </div>
-
-                <!-- Input Fields Grid -->
-                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
-                  <!-- Main User Address -->
-                  <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ CHÍNH CỦA BẠN (VAULT / USER MASTER ADDRESS) *</label>
-                      <button type="button" class="btn" id="btn-hl-agent-use-current-wallet" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví Kết Nối</button>
-                    </div>
-                    <input type="text" id="hl-agent-input-user-addr" placeholder="0x... Địa chỉ ví Ethereum chính giữ tài sản ký quỹ" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
-                  </div>
-
-                  <!-- Agent Private Key (Secret) -->
-                  <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">HYPERLIQUID AGENT API SECRET (PRIVATE KEY CỦA AGENT WALLET) *</label>
-                      <span id="btn-toggle-agent-key-vis" style="cursor: pointer; font-size: 10px; color: #38bdf8; font-weight: 600;">👁️ Hiện Khóa</span>
-                    </div>
-                    <input type="password" id="hl-agent-input-key" placeholder="0x... Dán API Secret (Private Key của Agent Wallet cấp từ sàn)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #38bdf8; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
-                    <div style="font-size: 9.5px; color: #f59e0b; margin-top: 4px;">
-                      ⚠️ LƯU Ý BẢO MẬT: Tuyệt đối KHÔNG dán Private Key của ví chính! Chỉ dán Private Key của Agent Wallet phụ được tạo từ Hyperliquid (Settings -> API).
-                    </div>
-                  </div>
-
-                  <!-- Network Selection -->
-                  <div>
-                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔI TRƯỜNG / MẠNG LƯỚI (NETWORK)</label>
-                    <select id="hl-agent-select-network" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                      <option value="mainnet" selected>Hyperliquid Mainnet L1 (https://api.hyperliquid.xyz)</option>
-                      <option value="testnet">Hyperliquid Testnet L1 (https://api.hyperliquid-testnet.xyz)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- On-Chain Verification Status Card -->
-                <div id="hl-agent-status-panel" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 10.5px; font-weight: 700; color: #94a3b8;">TRẠNG THÁI KHÓA AGENT:</span>
-                    <span id="hl-agent-state-pill" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 700;">● CHƯA CẤU HÌNH</span>
-                  </div>
-                  <div id="hl-agent-details-text" style="font-size: 11px; color: #cbd5e1; line-height: 1.5; font-family: monospace;">
-                    Chưa phát hiện cấu hình Agent Wallet. Vui lòng dán khóa để bot có thể tự động ký lệnh trên Hyperliquid L1.
-                  </div>
-                </div>
-
-                <!-- 4 Steps Quick Instructions Box -->
-                <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 10.5px; color: #94a3b8; line-height: 1.6;">
-                  <strong style="color: #cbd5e1;">📋 Cách lấy Agent Key trong 1 phút:</strong><br>
-                  1. Vào <a href="https://app.hyperliquid.xyz/trade" target="_blank" style="color: #38bdf8;">app.hyperliquid.xyz/trade</a> kết nối ví chính.<br>
-                  2. Bấm vào biểu tượng <strong>Cài Đặt (⚙️ Settings)</strong> ở góc trên bên phải -> Chọn tab <strong>API</strong>.<br>
-                  3. Đặt tên gợi nhớ (vd: <code>HyperviewBot</code>) -> Bấm nút <strong>Create API Key / Approve Agent</strong> và ký trên ví Web3.<br>
-                  4. Sao chép chuỗi <strong>API Secret (bắt đầu bằng 0x...)</strong> dán vào ô trên và bấm nút <strong>Lưu Cấu Hình</strong>.
-                </div>
-
-                <!-- Action Controls -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
-                  <button class="btn" id="btn-del-hl-agent" style="padding: 7px 14px; font-size: 11px; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️ Xóa Khóa</button>
-                  <div style="display: flex; gap: 8px;">
-                    <button class="btn" id="btn-verify-hl-agent" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra L1 (Verify On-Chain)</button>
-                    <button class="btn active" id="btn-save-hl-agent" style="padding: 7px 18px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình Khóa Agent</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Web3 Wallet Selection Modal -->
-        <div id="web3-wallet-modal" class="web3-modal-overlay" style="display: none;">
-          <div class="web3-modal-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1f2536;">
-              <div>
-                <div style="font-size: 13px; font-weight: 800; color: #fff;">Connect to Hyperliquid</div>
-                <div style="font-size: 10px; color: #8c93a3;">Select your Web3 wallet provider or enter read-only address</div>
-              </div>
-              <button id="btn-close-web3-modal" style="background: none; border: none; color: #8c93a3; font-size: 16px; cursor: pointer; padding: 4px;">✕</button>
-            </div>
-
-            <div style="padding: 14px 16px;">
-              <!-- 1. MetaMask -->
-              <div class="web3-wallet-option" id="btn-connect-metamask">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="font-size: 22px;">🦊</span>
-                  <div>
-                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">MetaMask</div>
-                    <div style="font-size: 9.5px; color: #8c93a3;">Connect browser extension (EVM)</div>
-                  </div>
-                </div>
-                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
-              </div>
-
-              <!-- 2. Rabby Wallet -->
-              <div class="web3-wallet-option" id="btn-connect-rabby">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="font-size: 22px;">🐰</span>
-                  <div>
-                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Rabby Wallet</div>
-                    <div style="font-size: 9.5px; color: #8c93a3;">Game-changing wallet for Hyperliquid</div>
-                  </div>
-                </div>
-                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
-              </div>
-
-              <!-- 3. Phantom -->
-              <div class="web3-wallet-option" id="btn-connect-phantom">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="font-size: 22px;">👻</span>
-                  <div>
-                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Phantom</div>
-                    <div style="font-size: 9.5px; color: #8c93a3;">Multi-chain EVM & Solana wallet</div>
-                  </div>
-                </div>
-                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
-                <div style="flex: 1; height: 1px; background: #222736;"></div>
-                <span style="font-size: 9px; color: #64748b; font-weight: 700;">OR MANUAL ADDRESS</span>
-                <div style="flex: 1; height: 1px; background: #222736;"></div>
-              </div>
-
-              <!-- 4. Manual Address Input -->
-              <div>
-                <input type="text" id="input-hl-wallet" placeholder="0x... Enter Hyperliquid address (Read-only)" style="width: 100%; background: #161a24; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none; margin-bottom: 8px;">
-                <div style="display: flex; gap: 6px;">
-                  <button class="btn active" id="btn-save-hl-wallet" style="flex: 1; padding: 6px; font-size: 10.5px; font-weight: 700;">Watch Address</button>
-                  <button class="btn" id="btn-switch-paper-modal" style="padding: 6px 12px; font-size: 10.5px; background: rgba(34, 197, 94, 0.15); color: #4ade80;">Use Paper ($10k)</button>
-                </div>
-              </div>
-
-              <!-- Status / Error message -->
-              <div id="web3-status-msg" style="display: none; margin-top: 10px; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 600;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- VIEW PAPER TRADE ($10K) -->
@@ -2638,6 +2379,7 @@ const htmlContent = `<!DOCTYPE html>
           <button class="btn active" id="btn-toggle-auto-trade" style="background: #22c55e; color: #fff; font-weight: 700;">🟢 Auto-Trade: ACTIVE</button>
           <button class="btn" id="btn-open-strategy-studio" style="background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); color: #d8b4fe; font-weight: 700;" title="Quản lý chiến lược có sẵn & Tự viết code chiến lược mới">🧠 Chiến Lược: <span id="paper-active-strat-lbl">Oliver Kell Cycle</span> ▾</button>
           <button class="btn" id="btn-open-hl-agent-modal" style="background: rgba(56, 189, 248, 0.18); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-weight: 700;" title="Cấu hình Hyperliquid Agent Wallet để Bot tự động ký lệnh">🔑 API Bot Key (Hyperliquid) <span id="hl-agent-status-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Chưa Cài</span></button>
+          <button class="btn" id="btn-open-vario-modal" style="background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399; font-weight: 700;" title="Cấu hình kết nối Variational (Omni DEX) để bot chạy chiến lược & cày Airdrop $VAR">🌐 Sàn Variational (Omni) <span id="vario-agent-status-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Chưa Cài</span></button>
           <button class="btn" id="btn-paper-refresh">🔄 Refresh Status</button>
           <button class="btn" id="btn-paper-close-all" style="background: rgba(239, 83, 80, 0.15); color: #ef5350;">Close All Positions</button>
           <button class="btn" id="btn-paper-reset" style="background: rgba(140, 147, 163, 0.15);">Reset $10k Fund</button>
@@ -3639,6 +3381,395 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
   </div>
+
+<!-- Quant Strategy Studio & Custom Code Modal -->
+        <div id="strategy-studio-modal" class="web3-modal-overlay" style="display: none; z-index: 10050;">
+          <div class="web3-modal-card" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; background: #0b0f19; border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.15); border-radius: 14px;">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; font-size: 16px;">🧠</div>
+                <div>
+                  <div style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.3px;">QUANT STRATEGY STUDIO & CODE ENGINE</div>
+                  <div style="font-size: 11px; color: #94a3b8;">Chọn chiến lược định lượng có sẵn hoặc tự viết / dán mã nguồn JavaScript cá nhân</div>
+                </div>
+              </div>
+              <button id="btn-close-strat-modal" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Modal Subtabs Bar -->
+            <div style="display: flex; gap: 4px; padding: 10px 20px 0 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: #080c14; flex-shrink: 0;">
+              <button class="strat-tab-btn active" id="tab-strat-list" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #fff; background: transparent; border: none; border-bottom: 2px solid #a855f7; cursor: pointer;">
+                📋 Danh Sách Chiến Lược (<span id="strat-count-badge">4</span>)
+              </button>
+              <button class="strat-tab-btn" id="tab-strat-editor" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
+                ✍️ Tự Thêm / Dán Source Code (Code Studio)
+              </button>
+              <button class="strat-tab-btn" id="tab-strat-agent" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
+                🔑 Cấu Hình API Bot (Hyperliquid Agent)
+              </button>
+              <button class="strat-tab-btn" id="tab-strat-vario" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
+                🌐 Sàn Variational (Omni RFQ Airdrop)
+              </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div style="padding: 18px 20px; overflow-y: auto; flex: 1; min-height: 0;">
+              <!-- VIEW 1: Available Strategies List -->
+              <div id="strat-view-list">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <div>
+                    <span style="font-size: 12px; font-weight: 800; color: #fff;">CHIẾN LƯỢC ĐANG ÁP DỤNG:</span>
+                    <span id="studio-active-pill" style="margin-left: 8px; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700;">● Oliver Kell Price Cycle</span>
+                  </div>
+                  <button class="btn active" id="btn-studio-goto-add" style="padding: 6px 14px; font-size: 11px; background: #9333ea; color: #fff; font-weight: 700;">➕ Thêm Chiến Lược Mới (Dán Code)</button>
+                </div>
+
+                <div id="strat-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <!-- Dynamically rendered cards -->
+                </div>
+              </div>
+
+              <!-- VIEW 2: Custom Code Editor -->
+              <div id="strat-view-editor" style="display: none;">
+                <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #c084fc; font-size: 11.5px;">💻 Trình Biên Soạn & Nạp Mã Nguồn Chiến Lược</strong>
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px;">Dán trực tiếp code JavaScript của bạn hoặc nạp nhanh từ các mẫu dựng sẵn</div>
+                  </div>
+                  <!-- Quick Templates -->
+                  <div style="display: flex; gap: 6px;">
+                    <span style="font-size: 10px; color: #94a3b8; align-self: center; font-weight: 700;">NẠP MẪU:</span>
+                    <button class="btn" id="btn-load-tpl-rsi" style="padding: 4px 8px; font-size: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8;">📋 RSI Scalp</button>
+                    <button class="btn" id="btn-load-tpl-ema" style="padding: 4px 8px; font-size: 10px; background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #4ade80;">📋 EMA Trend</button>
+                    <button class="btn" id="btn-load-tpl-breakout" style="padding: 4px 8px; font-size: 10px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24;">📋 Breakout</button>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TÊN CHIẾN LƯỢC *</label>
+                    <input type="text" id="strat-input-name" placeholder="Ví dụ: My MACD Scalp Pro" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">KHUNG THỜI GIAN (TIMEFRAME)</label>
+                    <select id="strat-input-tf" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                      <option value="1m">1m (Scalping siêu ngắn)</option>
+                      <option value="5m">5m (Scalping nhanh)</option>
+                      <option value="15m" selected>15m (Intraday chuẩn)</option>
+                      <option value="1h">1H (Swing Trader)</option>
+                      <option value="4h">4H (Xu hướng vĩ mô)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔ TẢ CHIẾN LƯỢC / GHI CHÚ QUY TẮC VÀO LỆNH</label>
+                  <input type="text" id="strat-input-desc" placeholder="Ví dụ: Đánh theo phân kỳ RSI khung 15m, chốt lời +3%, cắt lỗ -1.5%" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">MÃ NGUỒN JAVASCRIPT (HÀM onTick) *</label>
+                    <span style="font-size: 10px; color: #64748b; font-family: monospace;">function onTick(market, portfolio)</span>
+                  </div>
+                  <textarea id="strat-input-code" spellcheck="false" style="width: 100%; height: 260px; background: #05070c; border: 1px solid #1e2433; color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; line-height: 1.6; padding: 12px; border-radius: 8px; outline: none; resize: vertical; tab-size: 2;"></textarea>
+                </div>
+
+                <!-- API Reference cheatsheet -->
+                <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 10px; color: #94a3b8; line-height: 1.6;">
+                  <strong style="color: #cbd5e1;">📌 Biến đầu vào:</strong> <code>market: { symbol, price, high, low, volume, rsi, ema10, ema20, ema50, supertrend, macd }</code> | <code>portfolio: { balance, cash, equity, openPositions }</code><br>
+                  <strong style="color: #cbd5e1;">📌 Giá trị trả về:</strong> <code>return { action: 'BUY'|'SELL'|'CLOSE', symbol, sizePct: 20, tp: 85000, sl: 82000, reason: 'Lý do' }</code> hoặc <code>return null;</code>
+                </div>
+
+                <!-- Validation Status Banner -->
+                <div id="strat-val-msg" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 12px;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <button class="btn" id="btn-studio-back-list" style="padding: 7px 14px; font-size: 11px;">← Quay Lại Danh Sách</button>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btn-studio-test-syntax" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra Cú Pháp</button>
+                    <button class="btn active" id="btn-studio-save-strat" style="padding: 7px 18px; font-size: 11px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu & Kích Hoạt Chiến Lược</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW 3: Hyperliquid Agent Key Configuration -->
+              <div id="strat-view-agent" style="display: none;">
+                <!-- Header Banner -->
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #38bdf8; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                      <span>🔑 Cấu Hình Hyperliquid Delegated Agent Signer (Auto-Trading Bot)</span>
+                    </strong>
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 3px; line-height: 1.5;">
+                      Ủy quyền khóa Agent phụ để bot tự động ký mở/đóng lệnh trên Hyperliquid L1. Agent Wallet bị cấm rút tiền (Withdrawal Forbidden), bảo vệ an toàn 100% cho số dư ví chính.
+                    </div>
+                  </div>
+                  <a href="https://app.hyperliquid.xyz/trade" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
+                    ↗ Mở Hyperliquid API Settings
+                  </a>
+                </div>
+
+                <!-- Input Fields Grid -->
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
+                  <!-- Main User Address -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ CHÍNH CỦA BẠN (VAULT / USER MASTER ADDRESS) *</label>
+                      <button type="button" class="btn" id="btn-hl-agent-use-current-wallet" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví Kết Nối</button>
+                    </div>
+                    <input type="text" id="hl-agent-input-user-addr" placeholder="0x... Địa chỉ ví Ethereum chính giữ tài sản ký quỹ" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
+                  </div>
+
+                  <!-- Agent Private Key (Secret) -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">HYPERLIQUID AGENT API SECRET (PRIVATE KEY CỦA AGENT WALLET) *</label>
+                      <span id="btn-toggle-agent-key-vis" style="cursor: pointer; font-size: 10px; color: #38bdf8; font-weight: 600;">👁️ Hiện Khóa</span>
+                    </div>
+                    <input type="password" id="hl-agent-input-key" placeholder="0x... Dán API Secret (Private Key của Agent Wallet cấp từ sàn)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #38bdf8; padding: 8px 10px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; outline: none;">
+                    <div style="font-size: 9.5px; color: #f59e0b; margin-top: 4px;">
+                      ⚠️ LƯU Ý BẢO MẬT: Tuyệt đối KHÔNG dán Private Key của ví chính! Chỉ dán Private Key của Agent Wallet phụ được tạo từ Hyperliquid (Settings -> API).
+                    </div>
+                  </div>
+
+                  <!-- Network Selection -->
+                  <div>
+                    <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">MÔI TRƯỜNG / MẠNG LƯỚI (NETWORK)</label>
+                    <select id="hl-agent-select-network" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                      <option value="mainnet" selected>Hyperliquid Mainnet L1 (https://api.hyperliquid.xyz)</option>
+                      <option value="testnet">Hyperliquid Testnet L1 (https://api.hyperliquid-testnet.xyz)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- On-Chain Verification Status Card -->
+                <div id="hl-agent-status-panel" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #94a3b8;">TRẠNG THÁI KHÓA AGENT:</span>
+                    <span id="hl-agent-state-pill" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-weight: 700;">● CHƯA CẤU HÌNH</span>
+                  </div>
+                  <div id="hl-agent-details-text" style="font-size: 11px; color: #cbd5e1; line-height: 1.5; font-family: monospace;">
+                    Chưa phát hiện cấu hình Agent Wallet. Vui lòng dán khóa để bot có thể tự động ký lệnh trên Hyperliquid L1.
+                  </div>
+                </div>
+
+                <!-- 4 Steps Quick Instructions Box -->
+                <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 10.5px; color: #94a3b8; line-height: 1.6;">
+                  <strong style="color: #cbd5e1;">📋 Cách lấy Agent Key trong 1 phút:</strong><br>
+                  1. Vào <a href="https://app.hyperliquid.xyz/trade" target="_blank" style="color: #38bdf8;">app.hyperliquid.xyz/trade</a> kết nối ví chính.<br>
+                  2. Bấm vào biểu tượng <strong>Cài Đặt (⚙️ Settings)</strong> ở góc trên bên phải -> Chọn tab <strong>API</strong>.<br>
+                  3. Đặt tên gợi nhớ (vd: <code>HyperviewBot</code>) -> Bấm nút <strong>Create API Key / Approve Agent</strong> và ký trên ví Web3.<br>
+                  4. Sao chép chuỗi <strong>API Secret (bắt đầu bằng 0x...)</strong> dán vào ô trên và bấm nút <strong>Lưu Cấu Hình</strong>.
+                </div>
+
+                <!-- Action Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+                  <button class="btn" id="btn-del-hl-agent" style="padding: 7px 14px; font-size: 11px; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️ Xóa Khóa</button>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btn-verify-hl-agent" style="padding: 7px 14px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700;">⚡ Kiểm Tra L1 (Verify On-Chain)</button>
+                    <button class="btn active" id="btn-save-hl-agent" style="padding: 7px 18px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình Khóa Agent</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW 4: Variational Protocol (Omni RFQ Airdrop) Configuration -->
+              <div id="strat-view-vario" style="display: none;">
+                <!-- Header Banner -->
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: #34d399; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                      <span>🌐 Cấu Hình Variational Protocol (Omni DEX - Arbitrum Airdrop)</span>
+                    </strong>
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 3px; line-height: 1.5;">
+                      Sàn phái sinh RFQ <strong>Zero-Fee (0% phí giao dịch)</strong> trên Arbitrum. <strong>32% tổng cung token $VAR</strong> (Genesis) sẽ được airdrop 100% không khóa tại TGE Q4/2026 chia theo Points. Bot tự động thực thi tín hiệu từ chiến lược đang chọn để cày Volume & Points an toàn.
+                    </div>
+                  </div>
+                  <a href="https://omni.variational.io" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
+                    ↗ Mở Omni App (Arbitrum)
+                  </a>
+                </div>
+
+                <!-- Live Airdrop Stats Grid -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">TRẠNG THÁI KẾT NỐI</div>
+                    <div id="vario-state-pill" style="margin-top: 4px; font-size: 11px; font-weight: 800; color: #f87171;">● CHƯA CẤU HÌNH</div>
+                  </div>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">VOLUME ĐÃ CÀY</div>
+                    <div id="vario-stat-volume" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #38bdf8;">$0.00</div>
+                  </div>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">ĐIỂM POINTS ƯỚC TÍNH</div>
+                    <div id="vario-stat-points" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #fbbf24;">0.0 pts</div>
+                  </div>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">SỐ LỆNH ĐÃ THỰC THI</div>
+                    <div id="vario-stat-trades" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #fff;">0 lệnh</div>
+                  </div>
+                </div>
+
+                <!-- Input Fields Grid -->
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
+                  <!-- Main User Address -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ ARBITRUM (EVM WALLET ADDRESS) *</label>
+                      <button type="button" class="btn" id="btn-vario-use-current-wallet" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví Đang Kết Nối</button>
+                    </div>
+                    <input type="text" id="vario-input-wallet-addr" placeholder="0x... Địa chỉ ví Arbitrum bạn dùng trên Variational Omni" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; font-family: monospace; border-radius: 6px; outline: none;">
+                  </div>
+
+                  <!-- Agent Key -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">PRIVATE KEY / KHÓA BÍ MẬT GIAO DỊCH (TÙY CHỌN TỰ ĐỘNG KÝ)</label>
+                      <button type="button" class="btn" id="btn-toggle-vario-key-vis" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">👁️ Hiện Khóa</button>
+                    </div>
+                    <input type="password" id="vario-input-key" placeholder="0x... (Tùy chọn: Nhập nếu muốn bot tự động ký RFQ trade gasless trên Arbitrum)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #34d399; padding: 8px 10px; font-size: 11.5px; font-family: monospace; border-radius: 6px; outline: none;">
+                    <span style="display: block; font-size: 9.5px; color: #64748b; margin-top: 3px;">Khóa được lưu cục bộ an toàn trên máy bạn. Nếu để trống, bạn vẫn có thể theo dõi thống kê và cày theo chiến lược.</span>
+                  </div>
+
+                  <!-- Leverage & Slippage -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                      <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">ĐÒN BẨY MẶC ĐỊNH (LEVERAGE)</label>
+                      <select id="vario-select-leverage" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                        <option value="1">1x (Spot Margin - An toàn tuyệt đối)</option>
+                        <option value="2" selected>2x (Chuẩn quản trị rủi ro HyperView)</option>
+                        <option value="3">3x (Tối ưu volume & kiểm soát margin)</option>
+                        <option value="5">5x (Aggressive Farmer)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">SLIPPAGE TỐI ĐA (MAX SLIPPAGE)</label>
+                      <select id="vario-select-slippage" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
+                        <option value="0.001">0.1% (Tight - Bảo toàn vốn tối đa)</option>
+                        <option value="0.005" selected>0.5% (Tiêu chuẩn khuyến nghị OLP)</option>
+                        <option value="0.01">1.0% (Fast Fill)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Auto-Farm Checkbox -->
+                  <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="vario-toggle-autofarm" style="width: 16px; height: 16px; accent-color: #10b981; cursor: pointer;">
+                    <label for="vario-toggle-autofarm" style="font-size: 11px; color: #e2e8f0; font-weight: 600; cursor: pointer;">
+                      Kích hoạt Bot tự động cày Volume & Points theo chiến lược đang chọn (Strategy Auto-Routing)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Market Spread Discipline & Real-time Stats -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 10.5px; line-height: 1.6;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: #cbd5e1;">📊 Bảng Báo Giá Thanh Khoản & Độ Lệch Spread (OLP L1):</strong>
+                    <span id="vario-markets-count-badge" style="font-size: 9.5px; color: #38bdf8;">Đang kết nối API v2...</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: #080c14; padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);">
+                      <div style="color: #f59e0b; font-weight: 800;">BTC-PERP (Cặp khuyên dùng cày volume)</div>
+                      <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                        <span>Mark Price: <strong id="vario-live-btc-price" style="color: #fff;">--</strong></span>
+                        <span>Spread: <strong id="vario-live-btc-spread" style="color: #4ade80;">~1.0 bps (0.01%)</strong></span>
+                      </div>
+                    </div>
+                    <div style="background: #080c14; padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);">
+                      <div style="color: #60a5fa; font-weight: 800;">ETH-PERP</div>
+                      <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                        <span>Mark Price: <strong id="vario-live-eth-price" style="color: #fff;">--</strong></span>
+                        <span>Spread: <strong id="vario-live-eth-spread" style="color: #4ade80;">~1.2 bps (0.012%)</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="margin-top: 6px; font-size: 9.5px; color: #94a3b8;">
+                    💡 <em>Nguyên tắc kỷ luật cày volume:</em> Sàn Variational không thu phí giao dịch (Zero Fee) nhưng thu phí qua Spread. Luôn tập trung cày volume trên BTC & ETH để tối thiểu hóa chi phí spread.
+                  </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+                  <button class="btn" id="btn-del-vario-agent" style="padding: 7px 14px; font-size: 11px; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️ Xóa Cấu Hình</button>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btn-verify-vario-agent" style="padding: 7px 14px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700;">⚡ Kiểm Tra Kết Nối (Verify Network)</button>
+                    <button class="btn active" id="btn-save-vario-agent" style="padding: 7px 18px; font-size: 11px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình Variational</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Web3 Wallet Selection Modal -->
+        <div id="web3-wallet-modal" class="web3-modal-overlay" style="display: none;">
+          <div class="web3-modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1f2536;">
+              <div>
+                <div style="font-size: 13px; font-weight: 800; color: #fff;">Connect to Hyperliquid</div>
+                <div style="font-size: 10px; color: #8c93a3;">Select your Web3 wallet provider or enter read-only address</div>
+              </div>
+              <button id="btn-close-web3-modal" style="background: none; border: none; color: #8c93a3; font-size: 16px; cursor: pointer; padding: 4px;">✕</button>
+            </div>
+
+            <div style="padding: 14px 16px;">
+              <!-- 1. MetaMask -->
+              <div class="web3-wallet-option" id="btn-connect-metamask">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">🦊</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">MetaMask</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Connect browser extension (EVM)</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <!-- 2. Rabby Wallet -->
+              <div class="web3-wallet-option" id="btn-connect-rabby">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">🐰</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Rabby Wallet</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Game-changing wallet for Hyperliquid</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <!-- 3. Phantom -->
+              <div class="web3-wallet-option" id="btn-connect-phantom">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">👻</span>
+                  <div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #fff;">Phantom</div>
+                    <div style="font-size: 9.5px; color: #8c93a3;">Multi-chain EVM & Solana wallet</div>
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: #3b82f6; font-weight: 700;">Connect →</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
+                <div style="flex: 1; height: 1px; background: #222736;"></div>
+                <span style="font-size: 9px; color: #64748b; font-weight: 700;">OR MANUAL ADDRESS</span>
+                <div style="flex: 1; height: 1px; background: #222736;"></div>
+              </div>
+
+              <!-- 4. Manual Address Input -->
+              <div>
+                <input type="text" id="input-hl-wallet" placeholder="0x... Enter Hyperliquid address (Read-only)" style="width: 100%; background: #161a24; border: 1px solid #23293a; color: #fff; padding: 7px 10px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none; margin-bottom: 8px;">
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn active" id="btn-save-hl-wallet" style="flex: 1; padding: 6px; font-size: 10.5px; font-weight: 700;">Watch Address</button>
+                  <button class="btn" id="btn-switch-paper-modal" style="padding: 6px 12px; font-size: 10.5px; background: rgba(34, 197, 94, 0.15); color: #4ade80;">Use Paper ($10k)</button>
+                </div>
+              </div>
+
+              <!-- Status / Error message -->
+              <div id="web3-status-msg" style="display: none; margin-top: 10px; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 600;"></div>
+            </div>
+          </div>
+        </div>
 
     <footer>
     <div style="display: flex; align-items: center; gap: 12px;">
@@ -9742,16 +9873,19 @@ const htmlContent = `<!DOCTYPE html>
       const btnList = document.getElementById('tab-strat-list');
       const btnEditor = document.getElementById('tab-strat-editor');
       const btnAgent = document.getElementById('tab-strat-agent');
+      const btnVario = document.getElementById('tab-strat-vario');
       const viewList = document.getElementById('strat-view-list');
       const viewEditor = document.getElementById('strat-view-editor');
       const viewAgent = document.getElementById('strat-view-agent');
+      const viewVario = document.getElementById('strat-view-vario');
 
-      [btnList, btnEditor, btnAgent].forEach(b => {
+      [btnList, btnEditor, btnAgent, btnVario].forEach(b => {
         if (b) { b.style.color = '#8c93a3'; b.style.borderBottomColor = 'transparent'; }
       });
       if (viewList) viewList.style.display = 'none';
       if (viewEditor) viewEditor.style.display = 'none';
       if (viewAgent) viewAgent.style.display = 'none';
+      if (viewVario) viewVario.style.display = 'none';
 
       if (tab === 'list') {
         if (btnList) { btnList.style.color = '#fff'; btnList.style.borderBottomColor = '#a855f7'; }
@@ -9763,6 +9897,10 @@ const htmlContent = `<!DOCTYPE html>
         if (btnAgent) { btnAgent.style.color = '#fff'; btnAgent.style.borderBottomColor = '#38bdf8'; }
         if (viewAgent) viewAgent.style.display = 'block';
         loadUserHlAgentData();
+      } else if (tab === 'vario') {
+        if (btnVario) { btnVario.style.color = '#fff'; btnVario.style.borderBottomColor = '#34d399'; }
+        if (viewVario) viewVario.style.display = 'block';
+        loadUserVarioAgentData();
       }
     }
 
@@ -9772,6 +9910,7 @@ const htmlContent = `<!DOCTYPE html>
       switchStratTab(tab);
       loadStrategiesData();
       loadUserHlAgentData();
+      loadUserVarioAgentData();
     }
     function closeStrategyModal() {
       if (stratModal) stratModal.style.display = 'none';
@@ -9785,6 +9924,8 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById('tab-strat-list')?.addEventListener('click', () => switchStratTab('list'));
     document.getElementById('tab-strat-editor')?.addEventListener('click', () => openStrategyEditor());
     document.getElementById('tab-strat-agent')?.addEventListener('click', () => switchStratTab('agent'));
+    document.getElementById('tab-strat-vario')?.addEventListener('click', () => switchStratTab('vario'));
+    document.getElementById('btn-open-vario-modal')?.addEventListener('click', () => openStrategyModal('vario'));
     document.getElementById('btn-studio-goto-add')?.addEventListener('click', () => openStrategyEditor());
     document.getElementById('btn-studio-back-list')?.addEventListener('click', () => switchStratTab('list'));
     document.getElementById('btn-open-strategy-studio')?.addEventListener('click', () => openStrategyModal('list'));
@@ -10082,9 +10223,192 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
+    // ========================================================
+    // VARIATIONAL PROTOCOL (OMNI ARBITRUM) CLIENT CONTROLLER
+    // ========================================================
+    async function loadUserVarioAgentData() {
+      try {
+        const res = await fetch("/api/user/vario-agent");
+        if (res.ok) {
+          const d = await res.json();
+          const ag = d.agent || {};
+          const pill = document.getElementById("vario-state-pill");
+          const badgeOnBar = document.getElementById("vario-agent-status-badge");
+          const inWalletAddr = document.getElementById("vario-input-wallet-addr");
+          const selLev = document.getElementById("vario-select-leverage");
+          const selSlip = document.getElementById("vario-select-slippage");
+          const toggleFarm = document.getElementById("vario-toggle-autofarm");
+          const statVol = document.getElementById("vario-stat-volume");
+          const statPts = document.getElementById("vario-stat-points");
+          const statTrades = document.getElementById("vario-stat-trades");
+
+          if (statVol) statVol.textContent = "$" + (ag.totalFarmedVolume || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          if (statPts) statPts.textContent = (ag.estimatedPoints || 0).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " pts";
+          if (statTrades) statTrades.textContent = (ag.farmedTradesCount || 0) + " lệnh";
+
+          if (ag.configured) {
+            if (pill) {
+              pill.textContent = "● ĐÃ KẾT NỐI VÍ";
+              pill.style.color = "#34d399";
+            }
+            if (badgeOnBar) {
+              badgeOnBar.textContent = "Đã Kết Nối";
+              badgeOnBar.style.background = "rgba(16, 185, 129, 0.2)";
+              badgeOnBar.style.borderColor = "rgba(16, 185, 129, 0.4)";
+              badgeOnBar.style.color = "#34d399";
+            }
+            if (inWalletAddr && ag.walletAddress) inWalletAddr.value = ag.walletAddress;
+            if (selLev && ag.defaultLeverage) selLev.value = String(ag.defaultLeverage);
+            if (selSlip && ag.maxSlippage) selSlip.value = String(ag.maxSlippage);
+            if (toggleFarm) toggleFarm.checked = Boolean(ag.autoFarmEnabled);
+          } else {
+            if (pill) {
+              pill.textContent = "● CHƯA CẤU HÌNH";
+              pill.style.color = "#f87171";
+            }
+            if (badgeOnBar) {
+              badgeOnBar.textContent = "Chưa Cài";
+              badgeOnBar.style.background = "rgba(239, 68, 68, 0.2)";
+              badgeOnBar.style.borderColor = "rgba(239, 68, 68, 0.4)";
+              badgeOnBar.style.color = "#f87171";
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Error loading Vario agent config:", e);
+      }
+
+      // Fetch live market stats for BTC-PERP and ETH-PERP
+      try {
+        const resStats = await fetch("/api/vario/stats");
+        if (resStats.ok) {
+          const stats = await resStats.json();
+          const cntBadge = document.getElementById("vario-markets-count-badge");
+          if (cntBadge) cntBadge.textContent = "● " + (stats.num_markets || 580) + " Markets Live | 24h Vol: $" + Math.round(parseFloat(stats.total_volume_24h || 0) / 1e6) + "M";
+
+          const btc = stats.listings ? stats.listings.find(function(l) { return l.ticker === "BTC-PERP"; }) : null;
+          const eth = stats.listings ? stats.listings.find(function(l) { return l.ticker === "ETH-PERP"; }) : null;
+
+          const elBtcPx = document.getElementById("vario-live-btc-price");
+          const elBtcSp = document.getElementById("vario-live-btc-spread");
+          if (elBtcPx && btc) elBtcPx.textContent = "$" + parseFloat(btc.mark_price).toLocaleString("en-US", { minimumFractionDigits: 2 });
+          if (elBtcSp && btc) elBtcSp.textContent = parseFloat(btc.base_spread_bps).toFixed(2) + " bps (" + (parseFloat(btc.base_spread_bps)/100).toFixed(3) + "%)";
+
+          const elEthPx = document.getElementById("vario-live-eth-price");
+          const elEthSp = document.getElementById("vario-live-eth-spread");
+          if (elEthPx && eth) elEthPx.textContent = "$" + parseFloat(eth.mark_price).toLocaleString("en-US", { minimumFractionDigits: 2 });
+          if (elEthSp && eth) elEthSp.textContent = parseFloat(eth.base_spread_bps).toFixed(2) + " bps (" + (parseFloat(eth.base_spread_bps)/100).toFixed(3) + "%)";
+        }
+      } catch (e) {
+        console.warn("Error loading Vario stats:", e);
+      }
+    }
+
+    // Toggle password visibility for Vario Key
+    document.getElementById("btn-toggle-vario-key-vis")?.addEventListener("click", () => {
+      const inp = document.getElementById("vario-input-key");
+      const btn = document.getElementById("btn-toggle-vario-key-vis");
+      if (!inp || !btn) return;
+      if (inp.type === "password") {
+        inp.type = "text";
+        btn.textContent = "🙈 Ẩn Khóa";
+      } else {
+        inp.type = "password";
+        btn.textContent = "👁️ Hiện Khóa";
+      }
+    });
+
+    // Fill current connected wallet into Vario address
+    document.getElementById("btn-vario-use-current-wallet")?.addEventListener("click", () => {
+      if (typeof connectedWalletAddress !== "undefined" && connectedWalletAddress) {
+        document.getElementById("vario-input-wallet-addr").value = connectedWalletAddress;
+      } else if (currentAuthUser && currentAuthUser.address) {
+        document.getElementById("vario-input-wallet-addr").value = currentAuthUser.address;
+      } else {
+        alert("Chưa kết nối ví Web3. Vui lòng kết nối ví ở góc phải hoặc dán địa chỉ ví Arbitrum vào ô.");
+      }
+    });
+
+    // Save Vario Config
+    document.getElementById("btn-save-vario-agent")?.addEventListener("click", async () => {
+      const walletAddress = document.getElementById("vario-input-wallet-addr").value.trim();
+      const privateKey = document.getElementById("vario-input-key").value.trim();
+      const defaultLeverage = document.getElementById("vario-select-leverage").value;
+      const maxSlippage = document.getElementById("vario-select-slippage").value;
+      const autoFarmEnabled = document.getElementById("vario-toggle-autofarm").checked;
+
+      if (!walletAddress && !privateKey) {
+        alert("Vui lòng nhập ít nhất Địa chỉ ví Arbitrum bạn dùng trên Variational Omni");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/vario-agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ walletAddress, privateKey, defaultLeverage, maxSlippage, autoFarmEnabled })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("🎉 " + data.message + (data.walletAddress ? " | Ví: " + data.walletAddress : ""));
+          document.getElementById("vario-input-key").value = "";
+          loadUserVarioAgentData();
+        } else {
+          alert("❌ Lỗi: " + (data.error || "Không thể lưu cấu hình"));
+        }
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      }
+    });
+
+    // Verify Vario Connection
+    document.getElementById("btn-verify-vario-agent")?.addEventListener("click", async () => {
+      const btn = document.getElementById("btn-verify-vario-agent");
+      if (!btn) return;
+      btn.textContent = "⏳ Đang kiểm tra Arbitrum & Omni...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/user/vario-agent/verify", { method: "POST" });
+        const data = await res.json();
+        if (data.verified) {
+          alert("✅ " + data.message + "\\n\\n" +
+                "• Ví Arbitrum: " + data.address + "\\n" +
+                "• Số dư ETH gas: " + data.ethBalance + " ETH\\n" +
+                "• Thị trường hoạt động: " + data.marketsActive + " cặp\\n" +
+                "• BTC-PERP Mark: $" + data.btcMarkPrice + " (Spread: " + data.btcSpreadBps + " bps)\\n" +
+                "• Protocol Volume 24h: $" + Math.round(parseFloat(data.protocolVolume24h)/1e6) + "M");
+        } else {
+          alert("⚠️ " + (data.error || "Không thể xác thực kết nối"));
+        }
+        loadUserVarioAgentData();
+      } catch (err) {
+        alert("Lỗi kiểm tra: " + err.message);
+      } finally {
+        btn.textContent = "⚡ Kiểm Tra Kết Nối (Verify Network)";
+        btn.disabled = false;
+      }
+    });
+
+    // Delete Vario Config
+    document.getElementById("btn-del-vario-agent")?.addEventListener("click", async () => {
+      if (!confirm("Bạn có chắc muốn xóa cấu hình Variational Omni này khỏi hệ thống?")) return;
+      try {
+        const res = await fetch("/api/user/vario-agent", { method: "DELETE" });
+        const data = await res.json();
+        alert(data.message || "Đã xóa cấu hình");
+        document.getElementById("vario-input-wallet-addr").value = "";
+        document.getElementById("vario-input-key").value = "";
+        loadUserVarioAgentData();
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      }
+    });
+
     // Initial load of strategies & agent data
     loadStrategiesData();
     loadUserHlAgentData();
+    loadUserVarioAgentData();
 
     // ========================================================
     // AUTHENTICATION & WEB3 WALLET CLIENT CONTROLLER
@@ -11579,6 +11903,57 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ verified: false, error: err.message }));
+    }
+  }
+
+  // --- User Variational Protocol (Omni RFQ Airdrop) Endpoints ---
+  if (pathname === '/api/user/vario-agent') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    if (req.method === 'GET') {
+      const cfg = variationalConnector.getUserConfig(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, agent: cfg }));
+    }
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      try {
+        const saved = variationalConnector.saveUserConfig(userId, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(saved));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+    if (req.method === 'DELETE') {
+      const del = variationalConnector.deleteUserConfig(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(del));
+    }
+  }
+
+  if (pathname === '/api/user/vario-agent/verify') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    try {
+      const v = await variationalConnector.verifyConnection(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(v));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ verified: false, error: err.message }));
+    }
+  }
+
+  if (pathname === '/api/vario/stats') {
+    try {
+      const stats = await variationalConnector.getExchangeStats();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(stats));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: err.message }));
     }
   }
 
