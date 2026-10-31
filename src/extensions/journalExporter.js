@@ -53,6 +53,7 @@ function generateFullJournalCSV() {
       const exitTime = t.exitTime || t.entryTime;
       if (!exitTime) continue;
       const dStr = exitTime.slice(0, 10);
+      if (!dStr.startsWith('2026-10')) continue; // Strictly live October to avoid double-counting simulated September
       const timeStr = exitTime.slice(11, 16);
       const tradeKey = t.id || `${dStr}_${timeStr}_${t.symbol}_${t.pnl}`;
       if (!seenIds.has(tradeKey)) {

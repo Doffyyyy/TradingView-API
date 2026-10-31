@@ -757,6 +757,12 @@ class PaperTradingEngine {
       this.hasLoggedDailyStopLoss = false;
       this.symbolCooldowns = {};
       this.savePortfolio();
+
+      // Trigger daily journal sync and report re-export at 07:00 AM UTC+7
+      try {
+        const { syncDailySimulation } = require('./dailySimulationScheduler');
+        syncDailySimulation().catch(() => {});
+      } catch (e) {}
     }
   }
 

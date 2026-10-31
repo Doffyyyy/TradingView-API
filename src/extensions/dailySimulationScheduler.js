@@ -211,6 +211,20 @@ async function syncDailySimulation() {
 
     fs.writeFileSync(JOURNAL_PATH, JSON.stringify({ summary, daysMap }, null, 2));
     console.log(`[DailySimScheduler] 💾 Successfully updated ${JOURNAL_PATH}! (${Object.keys(daysMap).length} days, latest: ${Object.keys(daysMap).pop()})`);
+
+    // Auto-regenerate public Excel and CSV exports so downloads are always fresh!
+    try {
+      const { generateFullJournalExcelBuffer } = require('./excelExporter');
+      const { generateFullJournalCSV } = require('./journalExporter');
+      const excelBuf = await generateFullJournalExcelBuffer();
+      fs.writeFileSync(path.join(__dirname, '..', '..', 'public', 'Hyperview_Full_Trading_Journal_2026.xlsx'), excelBuf);
+      const csvStr = generateFullJournalCSV();
+      fs.writeFileSync(path.join(__dirname, '..', '..', 'public', 'Hyperview_Full_Trading_Journal_2026.csv'), csvStr, 'utf8');
+      console.log('[DailySimScheduler] 📊 Automatically refreshed public Excel and CSV export files.');
+    } catch (expErr) {
+      console.warn('[DailySimScheduler] Warning auto-generating export files:', expErr.message);
+    }
+
     return true;
   } catch (e) {
     console.error('[DailySimScheduler] Error syncing daily simulation:', e);
