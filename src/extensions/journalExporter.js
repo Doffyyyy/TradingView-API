@@ -21,7 +21,7 @@ function generateFullJournalCSV() {
 
   if (simData && simData.daysMap) {
     for (const [dateStr, dayObj] of Object.entries(simData.daysMap)) {
-      if (dateStr.startsWith('2026-10')) continue; // Skip simulated October, live October is loaded purely from portData!
+      if (dateStr >= '2026-10-01') continue; // Skip simulated months from October onwards; live months loaded purely from portData!
       for (const t of (dayObj.trades || [])) {
         const dStr = t.date || dateStr;
         const timeStr = t.time || (t.exitTime ? t.exitTime.slice(11, 16) : '12:00');
@@ -53,7 +53,7 @@ function generateFullJournalCSV() {
       const exitTime = t.exitTime || t.entryTime;
       if (!exitTime) continue;
       const dStr = exitTime.slice(0, 10);
-      if (!dStr.startsWith('2026-10')) continue; // Strictly live October to avoid double-counting simulated September
+      if (dStr < '2026-10-01') continue; // Strictly live forward trading (October 2026 onwards) to avoid double-counting
       const timeStr = exitTime.slice(11, 16);
       const tradeKey = t.id || `${dStr}_${timeStr}_${t.symbol}_${t.pnl}`;
       if (!seenIds.has(tradeKey)) {

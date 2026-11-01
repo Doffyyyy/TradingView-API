@@ -1190,17 +1190,24 @@ const htmlContent = `<!DOCTYPE html>
     }
     .ts-cal-brand {
       display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: #fff;
+      flex: 1 1 0; min-width: 0;
     }
     .ts-cal-nav {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 320px; min-width: 320px; max-width: 320px; flex-shrink: 0;
     }
     .ts-cal-nav-btn {
-      background: #1a1e28; border: 1px solid #292f3d; color: #8c93a3; width: 26px; height: 26px;
-      border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;
+      background: #1a1e28; border: 1px solid #292f3d; color: #8c93a3; width: 28px; height: 28px; flex-shrink: 0;
+      border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;
+      user-select: none;
     }
     .ts-cal-nav-btn:hover { background: #262c3a; color: #fff; border-color: #38bdf8; }
     .ts-cal-nav-title {
-      font-size: 13px; font-weight: 800; color: #fff; min-width: 110px; text-align: center;
+      font-size: 13px; font-weight: 800; color: #fff; width: 240px; min-width: 240px; max-width: 240px; flex-shrink: 0; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .ts-cal-actions {
+      flex: 1 1 0; display: flex; justify-content: flex-end; align-items: center; min-width: 0;
     }
 
     .ts-cal-grid {
@@ -2545,7 +2552,7 @@ const htmlContent = `<!DOCTYPE html>
               <option value="week">This Week</option>
             </select>
             <select class="ts-select" id="ts-month-mode" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 700;">
-              <option value="sim6m" selected>📊 Paper Trading Journal (March - Oct 2026)</option>
+              <option value="sim6m" selected>📊 Paper Trading Journal (Jan - Nov 2026)</option>
               <option value="current">⚡ Current Live Paper Trading</option>
               <option value="march2026">📅 March 2026 (Demo Showcase)</option>
             </select>
@@ -2784,10 +2791,10 @@ const htmlContent = `<!DOCTYPE html>
             </div>
             <div class="ts-cal-nav">
               <button class="ts-cal-nav-btn" id="btn-ts-prev-month" title="Previous month">&lt;</button>
-              <div class="ts-cal-nav-title" id="ts-cal-title">March 2026</div>
+              <div class="ts-cal-nav-title" id="ts-cal-title">October 2026 (Live Paper)</div>
               <button class="ts-cal-nav-btn" id="btn-ts-next-month" title="Next month">&gt;</button>
             </div>
-            <div>
+            <div class="ts-cal-actions">
               <button class="ts-btn-outline" id="btn-ts-journal-card" style="font-size: 11px;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 Journal Card
@@ -8613,8 +8620,10 @@ const htmlContent = `<!DOCTYPE html>
       return null;
     }
 
-    let simActiveMonthIndex = 7; // Default to October 2026 (index 7: 0=Mar, ..., 6=Sep, 7=Oct)
+    let simActiveMonthIndex = 10; // Default to current month: November 2026 (index 10: 0=Jan, ..., 9=Oct, 10=Nov)
     const simMonthList = [
+      { name: "January 2026", year: 2026, month: 0, prefix: "2026-01" },
+      { name: "February 2026", year: 2026, month: 1, prefix: "2026-02" },
       { name: "March 2026", year: 2026, month: 2, prefix: "2026-03" },
       { name: "April 2026", year: 2026, month: 3, prefix: "2026-04" },
       { name: "May 2026", year: 2026, month: 4, prefix: "2026-05" },
@@ -8622,7 +8631,8 @@ const htmlContent = `<!DOCTYPE html>
       { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
       { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
       { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" },
-      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10" }
+      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10", isLive: true },
+      { name: "November 2026", year: 2026, month: 10, prefix: "2026-11", isLive: true }
     ];
 
     async function renderJournalDashboard() {
@@ -8642,7 +8652,7 @@ const htmlContent = `<!DOCTYPE html>
       let longPnl = 0;
       let shortPnl = 0;
       let year = 2026;
-      let month = 9; // October
+      let month = 10; // November
 
       // Always ensure fresh paper status is available
       if (!cachedPaperStatus && typeof refreshPaperStatus === 'function') {
@@ -8652,13 +8662,19 @@ const htmlContent = `<!DOCTYPE html>
       if (currentJournalMode === "sim6m") {
         const simData = await loadSim6mData();
         const mInfo = simMonthList[simActiveMonthIndex] || simMonthList[simMonthList.length - 1];
-        if (calTitle) calTitle.textContent = mInfo.name + (mInfo.prefix === "2026-10" ? " (Live Paper)" : " (Sim)");
+        const isLiveMonth = mInfo.prefix >= "2026-10";
+        if (calTitle) calTitle.textContent = mInfo.name + (isLiveMonth ? " (Live Paper)" : " (Sim)");
         year = mInfo.year;
         month = mInfo.month;
 
-        if (mInfo.prefix === "2026-10") {
-          // October 2026 is 100% Live Paper Trading — populate purely from live paper portfolio to prevent double-counting
+        if (isLiveMonth) {
+          // October 2026 & November 2026 onwards are 100% Live Paper Trading
           daysMap = {};
+          const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dStr = mInfo.prefix + '-' + String(d).padStart(2, '0');
+            daysMap[dStr] = { pnl: 0, trades: [] };
+          }
           if (cachedPaperStatus && cachedPaperStatus.allTrades) {
             cachedPaperStatus.allTrades.forEach(t => {
               const exitTime = t.exitTime || t.entryTime;

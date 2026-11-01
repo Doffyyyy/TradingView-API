@@ -80,23 +80,24 @@ async function syncDailySimulation() {
     let currentBalance = 10000.0;
     const daysMap = {};
 
-    // Generate date sequence from 2026-03-01 to today
-    const startDate = new Date('2026-03-01T00:00:00Z');
+    // Generate date sequence from 2026-01-01 to end of current month (at least through 2026-11-30)
+    const startDate = new Date('2026-01-01T00:00:00Z');
     const today = new Date();
-    // Default today fallback to 2026-10-24 if system clock is behind
-    const effectiveEnd = today.getFullYear() >= 2026 ? today : new Date('2026-10-24T23:59:59Z');
+    const curYear = today.getFullYear() >= 2026 ? today.getFullYear() : 2026;
+    const curMonth = today.getFullYear() >= 2026 ? Math.max(10, today.getMonth()) : 10; // at least month 10 (Nov)
+    const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0, 23, 59, 59));
     const curD = new Date(startDate);
 
-    while (curD <= effectiveEnd) {
+    while (curD <= endOfMonth) {
       const dStr = curD.toISOString().slice(0, 10);
       daysMap[dStr] = { pnl: 0, trades: [] };
       curD.setUTCDate(curD.getUTCDate() + 1);
     }
 
-    // Populate March - September from Pure Loss Guard Simulation
+    // Populate January - September from Pure Loss Guard Simulation
     for (const t of trades) {
       const dStr = t.exitTime ? t.exitTime.slice(0, 10) : t.entryTime.slice(0, 10);
-      if (dStr >= '2026-10-01') continue;
+      if (dStr < '2026-01-01' || dStr >= '2026-10-01') continue;
       const mStr = dStr.slice(0, 7);
       const pnlRound = Math.round(t.pnl * 100) / 100;
       currentBalance = Math.round((currentBalance + pnlRound) * 100) / 100;
