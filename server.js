@@ -8664,17 +8664,22 @@ const htmlContent = `<!DOCTYPE html>
     let currentSelectedDate = "2026-10-04";
     let cachedPaperStatus = null;
     let cachedSim6mData = null;
+    let lastSimFetchStatus = 0;
     let currentJournalDaysMap = {};
 
-    async function loadSim6mData() {
+    async function loadSim6mData(forceRefresh = false) {
+      if (forceRefresh) cachedSim6mData = null;
       if (cachedSim6mData) return cachedSim6mData;
       try {
-        const res = await fetch('/api/paper/simulated-6m');
+        const res = await fetch('/api/paper/simulated-6m?t=' + Date.now(), { credentials: 'same-origin' });
+        lastSimFetchStatus = res.status;
         if (res.ok) {
           cachedSim6mData = await res.json();
           return cachedSim6mData;
         }
-      } catch (e) {}
+      } catch (e) {
+        lastSimFetchStatus = 0;
+      }
       return null;
     }
 
@@ -8689,7 +8694,7 @@ const htmlContent = `<!DOCTYPE html>
       { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
       { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
       { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" },
-      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10", isLive: true },
+      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10" },
       { name: "November 2026", year: 2026, month: 10, prefix: "2026-11", isLive: true }
     ];
 
@@ -8718,61 +8723,67 @@ const htmlContent = `<!DOCTYPE html>
       }
 
       if (currentJournalMode === "sim6m") {
+        const LIVE_CUTOFF_DATE = "2026-11-21";
         const simData = await loadSim6mData();
         const mInfo = simMonthList[simActiveMonthIndex] || simMonthList[simMonthList.length - 1];
-        const isLiveMonth = mInfo.prefix >= "2026-10";
-        if (calTitle) calTitle.textContent = mInfo.name + (isLiveMonth ? " (Live Paper)" : " (Sim)");
+        if (calTitle) {
+          if (!simData && lastSimFetchStatus === 403) {
+            calTitle.textContent = mInfo.name + " (Cần đăng nhập Admin để xem lịch sử Sim)";
+          } else {
+            calTitle.textContent = mInfo.name + (mInfo.prefix >= "2026-11" ? " (Sim + Live)" : " (Enhanced R:R Sim)");
+          }
+        }
         year = mInfo.year;
         month = mInfo.month;
 
-        if (isLiveMonth) {
-          // October 2026 & November 2026 onwards are 100% Live Paper Trading
-          daysMap = {};
-          const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-          for (let d = 1; d <= daysInMonth; d++) {
-            const dStr = mInfo.prefix + '-' + String(d).padStart(2, '0');
-            daysMap[dStr] = { pnl: 0, trades: [] };
-          }
-          if (cachedPaperStatus && cachedPaperStatus.allTrades) {
-            cachedPaperStatus.allTrades.forEach(t => {
-              const exitTime = t.exitTime || t.entryTime;
-              if (!exitTime) return;
-              const dStr = exitTime.slice(0, 10);
-              if (dStr.startsWith(mInfo.prefix)) {
-                if (!daysMap[dStr]) {
-                  daysMap[dStr] = { pnl: 0, trades: [] };
-                }
-                const tPnl = Math.round(Number(t.pnl || 0) * 100) / 100;
-                daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + tPnl) * 100) / 100;
-                daysMap[dStr].trades.push({
-                  id: t.id,
-                  symbol: t.symbol,
-                  side: t.side,
-                  entryPrice: t.entryPrice,
-                  exitPrice: t.exitPrice,
-                  pnl: tPnl,
-                  pnlPercent: t.pnlPercent,
-                  strategy: t.strategy || 'Live Paper Trade',
-                  reason: t.reason,
-                  time: exitTime.slice(11, 16),
-                  date: dStr,
-                  exitTime: exitTime
-                });
-              }
-            });
-          }
-        } else {
-          if (simData && simData.daysMap) {
-            // Filter days for active month
-            for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
-              if (dStr.startsWith(mInfo.prefix)) {
-                daysMap[dStr] = {
-                  pnl: dObj.pnl,
-                  trades: [...(dObj.trades || [])]
-                };
-              }
+        // Pre-fill all calendar days in active month
+        daysMap = {};
+        const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dStr = mInfo.prefix + '-' + String(d).padStart(2, '0');
+          daysMap[dStr] = { pnl: 0, trades: [] };
+        }
+
+        // 1. Load Enhanced Oliver Kell R:R Simulation for dates < 2026-11-21 (Jan - Nov 20, 2026)
+        if (simData && simData.daysMap) {
+          for (const [dStr, dObj] of Object.entries(simData.daysMap)) {
+            if (dStr.startsWith(mInfo.prefix) && dStr < LIVE_CUTOFF_DATE) {
+              daysMap[dStr] = {
+                pnl: Math.round(Number(dObj.pnl || 0) * 100) / 100,
+                trades: [...(dObj.trades || [])]
+              };
             }
           }
+        }
+
+        // 2. Merge authentic Live Paper Trades from 2026-11-21 onwards
+        if (cachedPaperStatus && cachedPaperStatus.allTrades) {
+          cachedPaperStatus.allTrades.forEach(t => {
+            const exitTime = t.exitTime || t.entryTime;
+            if (!exitTime) return;
+            const dStr = exitTime.slice(0, 10);
+            if (dStr.startsWith(mInfo.prefix) && dStr >= LIVE_CUTOFF_DATE) {
+              if (!daysMap[dStr]) {
+                daysMap[dStr] = { pnl: 0, trades: [] };
+              }
+              const tPnl = Math.round(Number(t.pnl || 0) * 100) / 100;
+              daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + tPnl) * 100) / 100;
+              daysMap[dStr].trades.push({
+                id: t.id,
+                symbol: t.symbol,
+                side: t.side,
+                entryPrice: t.entryPrice,
+                exitPrice: t.exitPrice,
+                pnl: tPnl,
+                pnlPercent: t.pnlPercent,
+                strategy: t.strategy || 'Oliver Kell Enhanced R:R (V2.1)',
+                reason: t.reason,
+                time: exitTime.slice(11, 16),
+                date: dStr,
+                exitTime: exitTime
+              });
+            }
+          });
         }
 
         // Calculate stats for all trades in this active month
@@ -9217,9 +9228,10 @@ const htmlContent = `<!DOCTYPE html>
     });
 
     // Sync button
-    document.getElementById("btn-ts-sync")?.addEventListener("click", () => {
-      refreshPaperStatus();
-      renderJournalDashboard();
+    document.getElementById("btn-ts-sync")?.addEventListener("click", async () => {
+      cachedSim6mData = null;
+      if (typeof refreshPaperStatus === 'function') await refreshPaperStatus();
+      await renderJournalDashboard();
     });
 
     // Link from Paper Trade View

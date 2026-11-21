@@ -21,7 +21,7 @@ function loadAllTrades() {
 
   if (simData && simData.daysMap) {
     for (const [dateStr, dayObj] of Object.entries(simData.daysMap)) {
-      if (dateStr >= '2026-10-01') continue; // Skip simulated months from October onwards; live months loaded purely from portData!
+      if (dateStr >= '2026-11-21') continue; // Skip simulated dates from 2026-11-21 onwards; live trades loaded purely from portData!
       for (const t of (dayObj.trades || [])) {
         const dStr = t.date || dateStr;
         const timeStr = t.time || (t.exitTime ? t.exitTime.slice(11, 16) : '12:00');
@@ -52,7 +52,7 @@ function loadAllTrades() {
       const exitTime = t.exitTime || t.entryTime;
       if (!exitTime) continue;
       const dStr = exitTime.slice(0, 10);
-      if (dStr < '2026-10-01') continue; // Strictly live forward trading (October 2026 onwards) to avoid double-counting
+      if (dStr < '2026-11-21') continue; // Strictly live forward trading (2026-11-21 onwards) to avoid double-counting
       const timeStr = exitTime.slice(11, 16);
       const tradeKey = t.id || `${dStr}_${timeStr}_${t.symbol}_${t.pnl}`;
       if (!seenIds.has(tradeKey)) {

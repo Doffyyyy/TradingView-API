@@ -8,7 +8,8 @@
     "tunnel": "./cloudflared.exe tunnel --url http://localhost:8095",
     "test": "vitest",
     "example": "node --env-file=.env",
-    "example:dev": "nodemon --env-file=.env"
+    "example:dev": "nodemon --env-file=.env",
+    "build:rust": "cargo build --manifest-path rust-core/Cargo.toml --target wasm32-unknown-unknown --release && node -e \"require('fs').copyFileSync('rust-core/target/wasm32-unknown-unknown/release/tradingview_rust_core.wasm','rust-core/tradingview_rust_core.wasm')\""
   },
   "repository": {
     "type": "git",

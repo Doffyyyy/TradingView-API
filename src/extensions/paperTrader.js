@@ -348,107 +348,123 @@ class PaperTradingEngine {
       const curr = this.latestPrices[pos.symbol]?.price;
       if (!curr) continue;
 
-      // Composite Edge Tiered Trailing Stop & Profit Lock:
-      // When price moves >= +1.6% in profit, lock SL at entry + 0.40% (safely locks fee-free profit)
-      // When price moves >= +2.4% in profit, lock SL at entry + 1.20% (locks runner gains)
-      if (pos.side === 'LONG') {
-        const gainPct = (curr - pos.entryPrice) / pos.entryPrice;
-        if (gainPct >= 0.024) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0120);
-          if (pos.stopLoss < lockPrice) {
-            pos.stopLoss = lockPrice;
-            this.log(`Runner Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at +1.2% ($${formatTokenPrice(lockPrice)})`);
-          }
-        } else if (gainPct >= 0.016) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 1.0040);
-          if (pos.stopLoss < lockPrice) {
-            pos.stopLoss = lockPrice;
-            this.log(`Breakeven Trailing Stop locked for LONG ${pos.symbol} [${pos.leverage || 1}x] at +0.4% ($${formatTokenPrice(lockPrice)})`);
-          }
-        }
-      } else {
-        const gainPct = (pos.entryPrice - curr) / pos.entryPrice;
-        if (gainPct >= 0.024) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9880);
-          if (pos.stopLoss > lockPrice) {
-            pos.stopLoss = lockPrice;
-            this.log(`Runner Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at +1.2% ($${formatTokenPrice(lockPrice)})`);
-          }
-        } else if (gainPct >= 0.016) {
-          const lockPrice = roundPriceForCoin(pos.entryPrice * 0.9960);
-          if (pos.stopLoss > lockPrice) {
-            pos.stopLoss = lockPrice;
-            this.log(`Breakeven Trailing Stop locked for SHORT ${pos.symbol} [${pos.leverage || 1}x] at +0.4% ($${formatTokenPrice(lockPrice)})`);
-          }
-        }
+      // Preserve original 1R risk distance so trailing stops never shrink Stage 1/Runner targets
+      if (!pos.initialStopLoss) pos.initialStopLoss = pos.stopLoss;
+      if (!pos.initialStopDist || pos.initialStopDist <= 0) {
+        pos.initialStopDist = Math.max(pos.entryPrice * 0.008, Math.abs(pos.entryPrice - pos.initialStopLoss));
       }
+      const stopDist = pos.initialStopDist;
 
-      // Oliver Kell Two-Stage Exit Architecture (50% TP at +2.2R, Runner Climax Extension at +5R)
+      // Oliver Kell True R-Based Exit Architecture:
+      //  - At +1.6R: Move SL to Breakeven (+0.15% fee buffer), free-rolling the trade
+      //  - At +2.5R: Take 50% Stage 1 TP (+1.25R realized), move Runner SL to +1.2R
+      //  - At +3.5R: Trail Runner SL to +2.0R
+      //  - At +4.5R: Climax Extension full exit on remaining 50%
       let shouldClose = false;
       let reason = '';
 
-      const stopDist = Math.max(pos.entryPrice * 0.008, Math.abs(pos.entryPrice - pos.stopLoss));
-
       if (pos.side === 'LONG') {
-        // Stage 1 Take Profit (+2.2R): Realize 50% profit and lock runner to Breakeven (+0.2% fee buffer)
-        const stage1Price = pos.entryPrice + stopDist * 2.2;
+        const beTriggerPrice = pos.entryPrice + stopDist * 1.6;
+        if (!pos.stage1Taken && !pos.isBreakeven && curr >= beTriggerPrice) {
+          const bePrice = roundPriceForCoin(pos.entryPrice * 1.0015);
+          if (pos.stopLoss < bePrice) {
+            pos.stopLoss = bePrice;
+            pos.isBreakeven = true;
+            this.log(`🔒 Breakeven locked (+1.6R) for LONG ${pos.symbol} at $${formatTokenPrice(bePrice)}`);
+          }
+        }
+
+        // Stage 1 Take Profit (+2.5R): Realize 50% profit and lock runner SL to +1.2R
+        const stage1Price = pos.entryPrice + stopDist * 2.5;
         if (!pos.stage1Taken && curr >= stage1Price) {
           pos.stage1Taken = true;
-          this.log(`🏆 Oliver Kell Stage 1 TP hit (+2.2R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to Breakeven.`);
-          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) + Runner', 0.5);
-          pos.stopLoss = roundPriceForCoin(pos.entryPrice * 1.002);
+          pos.isBreakeven = true;
+          this.log(`🏆 Oliver Kell Stage 1 TP hit (+2.5R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to +1.2R.`);
+          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.5R) + Runner', 0.5);
+          const lock12 = roundPriceForCoin(pos.entryPrice + stopDist * 1.2);
+          if (pos.stopLoss < lock12) pos.stopLoss = lock12;
           continue;
         }
 
-        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R ~ +5R)
+        // Runner Step Trail at +3.5R -> lock +2.0R
+        const trailTriggerPrice = pos.entryPrice + stopDist * 3.5;
+        if (pos.stage1Taken && curr >= trailTriggerPrice) {
+          const lock20 = roundPriceForCoin(pos.entryPrice + stopDist * 2.0);
+          if (pos.stopLoss < lock20) {
+            pos.stopLoss = lock20;
+            this.log(`📈 Runner Trailing Stop locked (+2.0R) for LONG ${pos.symbol} at $${formatTokenPrice(lock20)}`);
+          }
+        }
+
+        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R)
         const climaxPrice = pos.entryPrice + stopDist * 4.5;
         if (pos.stage1Taken && curr >= climaxPrice) {
           shouldClose = true;
-          reason = `Oliver Kell: Climax Extension (+5R~8R) hit at $${formatTokenPrice(curr)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Oliver Kell: Climax Extension (+4.5R) hit at $${formatTokenPrice(curr)} (+${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
         } else if (curr <= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
           reason = pos.stage1Taken
-            ? `Oliver Kell: Runner Breakeven Exit at $${formatTokenPrice(curr)}`
-            : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
-        } else if (curr >= pos.takeProfit && pos.takeProfit > 0) {
-          shouldClose = true;
-          reason = `Oliver Kell: Target Reached at $${formatTokenPrice(curr)}`;
+            ? `Oliver Kell: Runner Trail Exit at $${formatTokenPrice(pos.stopLoss)}`
+            : pos.isBreakeven
+              ? `Oliver Kell: Breakeven Exit at $${formatTokenPrice(pos.stopLoss)}`
+              : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((curr - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)}%)`;
         }
       } else {
         // SHORT SIDE
-        // Stage 1 Take Profit (-2.2R): Realize 50% profit and lock runner to Breakeven (-0.2% fee buffer)
-        const stage1Price = pos.entryPrice - stopDist * 2.2;
+        const beTriggerPrice = pos.entryPrice - stopDist * 1.6;
+        if (!pos.stage1Taken && !pos.isBreakeven && curr <= beTriggerPrice) {
+          const bePrice = roundPriceForCoin(pos.entryPrice * 0.9985);
+          if (pos.stopLoss > bePrice || pos.stopLoss === 0) {
+            pos.stopLoss = bePrice;
+            pos.isBreakeven = true;
+            this.log(`🔒 Breakeven locked (+1.6R) for SHORT ${pos.symbol} at $${formatTokenPrice(bePrice)}`);
+          }
+        }
+
+        // Stage 1 Take Profit (-2.5R): Realize 50% profit and lock runner SL to +1.2R
+        const stage1Price = pos.entryPrice - stopDist * 2.5;
         if (!pos.stage1Taken && curr <= stage1Price) {
           pos.stage1Taken = true;
-          this.log(`🏆 Oliver Kell Stage 1 TP hit (-2.2R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to Breakeven.`);
-          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.2R) + Runner', 0.5);
-          pos.stopLoss = roundPriceForCoin(pos.entryPrice * 0.998);
+          pos.isBreakeven = true;
+          this.log(`🏆 Oliver Kell Stage 1 TP hit (-2.5R) on ${pos.symbol} @ $${formatTokenPrice(curr)}! Realizing 50% profit and locking runner SL to +1.2R.`);
+          await this.closePosition(pos.id, curr, 'Oliver Kell: Stage 1 TP (+2.5R) + Runner', 0.5);
+          const lock12 = roundPriceForCoin(pos.entryPrice - stopDist * 1.2);
+          if (pos.stopLoss > lock12) pos.stopLoss = lock12;
           continue;
         }
 
-        // Stage 2 (Runner): Climax Exhaustion Exit (-4.5R ~ -5R)
+        // Runner Step Trail at +3.5R -> lock +2.0R
+        const trailTriggerPrice = pos.entryPrice - stopDist * 3.5;
+        if (pos.stage1Taken && curr <= trailTriggerPrice) {
+          const lock20 = roundPriceForCoin(pos.entryPrice - stopDist * 2.0);
+          if (pos.stopLoss > lock20) {
+            pos.stopLoss = lock20;
+            this.log(`📈 Runner Trailing Stop locked (+2.0R) for SHORT ${pos.symbol} at $${formatTokenPrice(lock20)}`);
+          }
+        }
+
+        // Stage 2 (Runner): Climax Exhaustion Exit (+4.5R)
         const climaxPrice = pos.entryPrice - stopDist * 4.5;
         if (pos.stage1Taken && curr <= climaxPrice) {
           shouldClose = true;
-          reason = `Oliver Kell: Climax Extension (+5R~8R) hit at $${formatTokenPrice(curr)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
+          reason = `Oliver Kell: Climax Extension (+4.5R) hit at $${formatTokenPrice(curr)} (+${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
         } else if (curr >= pos.stopLoss && pos.stopLoss > 0) {
           shouldClose = true;
           reason = pos.stage1Taken
-            ? `Oliver Kell: Runner Breakeven Exit at $${formatTokenPrice(curr)}`
-            : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
-        } else if (curr <= pos.takeProfit && pos.takeProfit > 0) {
-          shouldClose = true;
-          reason = `Oliver Kell: Target Reached at $${formatTokenPrice(curr)}`;
+            ? `Oliver Kell: Runner Trail Exit at $${formatTokenPrice(pos.stopLoss)}`
+            : pos.isBreakeven
+              ? `Oliver Kell: Breakeven Exit at $${formatTokenPrice(pos.stopLoss)}`
+              : `Oliver Kell: EMA Crossback Setup (Stop Loss) at $${formatTokenPrice(curr)} (${(((pos.entryPrice - curr) / pos.entryPrice) * 100).toFixed(2)}%)`;
         }
       }
 
-      // Strategy V2 Time Exit (Section 26: 48 bars = 12h maximum holding period)
+      // Strategy V2 Time Exit (36h max holding limit aligned to 1H swing cycle)
       if (!shouldClose && pos.entryTime) {
         const holdingHours = (Date.now() - new Date(pos.entryTime).getTime()) / (1000 * 60 * 60);
-        if (holdingHours >= 12.0) {
+        if (holdingHours >= 36.0) {
           shouldClose = true;
           const pnlPct = pos.side === 'LONG' ? ((curr - pos.entryPrice) / pos.entryPrice) * 100 : ((pos.entryPrice - curr) / pos.entryPrice) * 100;
-          reason = `Oliver Kell Time Exit: 12h max holding limit reached (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+          reason = `Oliver Kell Time Exit: 36h max holding limit reached (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
         }
       }
 
@@ -621,7 +637,7 @@ class PaperTradingEngine {
     if (customSl && customSl > 0) {
       stopLoss = roundPriceForCoin(customSl);
       const stopDistance = Math.max(currPrice * 0.008, Math.abs(currPrice - stopLoss));
-      takeProfit = side === 'LONG' ? roundPriceForCoin(currPrice + stopDistance * 2.2) : roundPriceForCoin(currPrice - stopDistance * 2.2);
+      takeProfit = side === 'LONG' ? roundPriceForCoin(currPrice + stopDistance * 4.5) : roundPriceForCoin(currPrice - stopDistance * 4.5);
     } else if (side === 'LONG') {
       let initialSl = currPrice * (1 - baseStopPct);
       if (rlmData?.signal?.type === 'LONG' && rlmData.signal.sl > 0 && rlmData.signal.sl < currPrice) {
@@ -634,7 +650,7 @@ class PaperTradingEngine {
       }
       stopLoss = roundPriceForCoin(initialSl);
       const stopDistance = Math.max(currPrice * 0.008, currPrice - stopLoss);
-      takeProfit = roundPriceForCoin(currPrice + stopDistance * 2.2); // Strategy V2 2.2R Target
+      takeProfit = roundPriceForCoin(currPrice + stopDistance * 4.5); // Strategy V2 Climax Runner Target
     } else {
       let initialSl = currPrice * (1 + baseStopPct);
       if (rlmData?.signal?.type === 'SHORT' && rlmData.signal.sl > 0 && rlmData.signal.sl > currPrice) {
@@ -647,7 +663,7 @@ class PaperTradingEngine {
       }
       stopLoss = roundPriceForCoin(initialSl);
       const stopDistance = Math.max(currPrice * 0.008, stopLoss - currPrice);
-      takeProfit = roundPriceForCoin(currPrice - stopDistance * 2.2);
+      takeProfit = roundPriceForCoin(currPrice - stopDistance * 4.5);
     }
 
     // Strategy V2 Risk-based Position Sizing (Section 15, 16)
@@ -689,6 +705,10 @@ class PaperTradingEngine {
       notional,
       leverage: lev,
       stopLoss,
+      initialStopLoss: stopLoss,
+      initialStopDist: Math.max(currPrice * 0.008, Math.abs(currPrice - stopLoss)),
+      isBreakeven: false,
+      stage1Taken: false,
       takeProfit,
       entryTime: new Date().toISOString(),
       strategy,
@@ -832,8 +852,12 @@ class PaperTradingEngine {
       this.hasLoggedDailyMin = true;
     }
 
-    // 4. Check if slots available
+    // 4. Check if slots available + Correlation Guard (max 1 unprotected position at a time)
     if (this.portfolio.positions.length >= this.portfolio.maxOpenPositions) {
+      return;
+    }
+    const unprotectedCount = this.portfolio.positions.filter(p => !p.isBreakeven && !p.stage1Taken).length;
+    if (unprotectedCount >= 1) {
       return;
     }
 
@@ -914,20 +938,21 @@ class PaperTradingEngine {
           // Oliver Kell Bullish Trend Alignment
           const isKellTrend = (e10 > e20 && e20 > e50) || (htf.curPrice > e50 && e50 > e200);
 
-          // Oliver Kell EMA Crossback Pullback: Price pulls back to 10 or 20 EMA
+          // Oliver Kell EMA Crossback Pullback: Price pulls back to 10 or 20 EMA + RSI zone + 15m bullish confirmation
           const isKellCrossback = (currentPrice <= e10 * 1.004 || currentPrice <= e20 * 1.008) && currentPrice >= e50 * 0.990;
           const isRsiPullback = (rsi >= 32 && rsi <= 55);
+          const isBullBounce15m = !ltf.lastCandle || ltf.lastCandle.close > ltf.lastCandle.open;
 
-          if (isKellTrend && (isKellCrossback || isRsiPullback)) {
-            const strategyName = 'Oliver Kell: EMA Crossback Setup';
+          if (isKellTrend && isKellCrossback && isRsiPullback && isBullBounce15m) {
+            const strategyName = 'Oliver Kell Enhanced R:R (V2.1)';
             const lev = isDefensive ? 1 : 2;
             const atrVal = htf.atr || (currentPrice * 0.015);
             const slDistance = Math.min(currentPrice * 0.025, Math.max(currentPrice * 0.010, atrVal * 1.1));
             const calculatedSl = roundPriceForCoin(currentPrice - slDistance);
 
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(buyFlow * 100)}% Buy, POC: $${ltf.galton.pocPrice}]` : '';
-            const reason = `Oliver Kell Price Cycle [${lev}x]: 1H Macro BULL (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Crossback Retest RSI ${rsi}${flowStr}. Targeting Stage 1 (+2.2R) and Climax Extension (+5R~8R).`;
-            this.log(`🚀 [Pure Oliver Kell Engine] Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
+            const reason = `Oliver Kell V2.1 [${lev}x]: 1H Macro BULL (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Crossback Retest RSI ${rsi}${flowStr}. Targeting BE (+1.6R), Stage 1 (+2.5R -> lock +1.2R), Climax (+4.5R).`;
+            this.log(`🚀 [Oliver Kell V2.1 Engine] Entry: ${sym} LONG (${lev}x Lev) | Reason: ${reason}`);
             await this.openPosition(sym, 'LONG', strategyName, reason, lev, ltf.galton, ltf.rlm, calculatedSl);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;
@@ -957,20 +982,21 @@ class PaperTradingEngine {
           // Oliver Kell Bearish Trend Alignment
           const isKellBearTrend = (e10 < e20 && e20 < e50) || (htf.curPrice < e50 && e50 < e200);
 
-          // Oliver Kell Bear EMA Crossback: Price bounces up to test 10 or 20 EMA
+          // Oliver Kell Bear EMA Crossback: Price bounces up to test 10 or 20 EMA + RSI zone + 15m bearish confirmation
           const isKellBearCrossback = (currentPrice >= e10 * 0.996 || currentPrice >= e20 * 0.992) && currentPrice <= e50 * 1.010;
           const isRsiBounce = (rsi >= 45 && rsi <= 68);
+          const isBearBounce15m = !ltf.lastCandle || ltf.lastCandle.close < ltf.lastCandle.open;
 
-          if (isKellBearTrend && (isKellBearCrossback || isRsiBounce)) {
-            const strategyName = 'Oliver Kell: EMA Crossback Setup';
+          if (isKellBearTrend && isKellBearCrossback && isRsiBounce && isBearBounce15m) {
+            const strategyName = 'Oliver Kell Enhanced R:R (V2.1)';
             const lev = isDefensive ? 1 : 2;
             const atrVal = htf.atr || (currentPrice * 0.015);
             const slDistance = Math.min(currentPrice * 0.025, Math.max(currentPrice * 0.010, atrVal * 1.1));
             const calculatedSl = roundPriceForCoin(currentPrice + slDistance);
 
             const flowStr = ltf.galton ? ` [Flow: ${Math.round(sellFlow * 100)}% Sell, POC: $${ltf.galton.pocPrice}]` : '';
-            const reason = `Oliver Kell Inverted Bear Cycle [${lev}x]: 1H Macro BEAR (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Bounce RSI ${rsi}${flowStr}. Targeting Stage 1 (-2.2R) and Climax Extension (-5R~8R).`;
-            this.log(`🚀 [Pure Oliver Kell Engine] Entry: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
+            const reason = `Oliver Kell V2.1 Inverted Bear [${lev}x]: 1H Macro BEAR (EMA10: $${formatTokenPrice(e10)}, EMA20: $${formatTokenPrice(e20)}, EMA50: $${formatTokenPrice(e50)}), EMA Bounce RSI ${rsi}${flowStr}. Targeting BE (+1.6R), Stage 1 (+2.5R -> lock +1.2R), Climax (+4.5R).`;
+            this.log(`🚀 [Oliver Kell V2.1 Engine] Entry: ${sym} SHORT (${lev}x Lev) | Reason: ${reason}`);
             await this.openPosition(sym, 'SHORT', strategyName, reason, lev, ltf.galton, ltf.rlm, calculatedSl);
             if (this.portfolio.positions.length >= (isTargetHit || isDefensive ? 1 : this.portfolio.maxOpenPositions)) break;
             continue;

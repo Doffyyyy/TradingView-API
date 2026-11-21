@@ -57,34 +57,39 @@ async function syncDailySimulation() {
       mergedData[`${sym}_1h`] = Array.from(timeMap.values()).sort((a, b) => a.time - b.time);
     }
 
-    // 2. Run Oliver Kell Strategy V2 Engine on complete merged data with Pure Loss Guard up to Sep 30
+    // 2. Run Enhanced Oliver Kell Strategy V2 Engine from 2026-01-01 through latest date
     const engine = new OliverKellEngine({
       maxCrossbacks: 3,
-      minRRPivot: 2.2,
+      minRRPivot: 2.5,
+      breakevenR: 1.6,
+      runnerLockR: 1.2,
       atrBuffer: 0.6,
       initialBalance: 10000,
       riskPerTradePct: 0.005,
       maxMargin: 2500,
       maxLeverage: 2.0,
+      maxUnprotectedPositions: 1,
       pureLossGuard: true,
-      maxDate: '2026-09-30T23:59:59Z', // Simulate March-September; October is pure live paper trading
+      enableShort: true,
+      earlyInvalidation: false,
+      minDate: '2026-01-01T00:00:00Z',
+      maxDate: '2026-11-20T23:59:59Z',
     });
 
     const res = engine.run(mergedData, SYMBOLS);
-    console.log(`[DailySimScheduler] ✅ Simulation complete: ${res.totalTrades} trades, Net PnL: +$${res.netPnl.toFixed(2)}, WR: ${res.winRate.toFixed(1)}%, PF: ${res.profitFactor.toFixed(2)}`);
+    console.log(`[DailySimScheduler] ✅ Simulation complete: ${res.totalTrades} trades, Net PnL: ${res.netPnl >= 0 ? '+' : ''}$${res.netPnl.toFixed(2)}, WR: ${res.winRate.toFixed(1)}%, PF: ${res.profitFactor.toFixed(2)}, R:R: ${res.payoff.toFixed(2)}`);
 
-    // 3. Build Daily PnL Journal daysMap
+    // 3. Build Daily PnL Journal daysMap from 2026-01-01 to end of current month
     const trades = res.trades;
     trades.sort((a, b) => new Date(a.exitTime).getTime() - new Date(b.exitTime).getTime());
 
     let currentBalance = 10000.0;
     const daysMap = {};
 
-    // Generate date sequence from 2026-01-01 to end of current month (at least through 2026-11-30)
     const startDate = new Date('2026-01-01T00:00:00Z');
     const today = new Date();
     const curYear = today.getFullYear() >= 2026 ? today.getFullYear() : 2026;
-    const curMonth = today.getFullYear() >= 2026 ? Math.max(10, today.getMonth()) : 10; // at least month 10 (Nov)
+    const curMonth = today.getFullYear() >= 2026 ? Math.max(10, today.getMonth()) : 10;
     const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0, 23, 59, 59));
     const curD = new Date(startDate);
 
@@ -94,10 +99,9 @@ async function syncDailySimulation() {
       curD.setUTCDate(curD.getUTCDate() + 1);
     }
 
-    // Populate January - September from Pure Loss Guard Simulation
     for (const t of trades) {
       const dStr = t.exitTime ? t.exitTime.slice(0, 10) : t.entryTime.slice(0, 10);
-      if (dStr < '2026-01-01' || dStr >= '2026-10-01') continue;
+      if (dStr < '2026-01-01' || dStr >= '2026-11-21') continue;
       const mStr = dStr.slice(0, 7);
       const pnlRound = Math.round(t.pnl * 100) / 100;
       currentBalance = Math.round((currentBalance + pnlRound) * 100) / 100;
@@ -109,17 +113,23 @@ async function syncDailySimulation() {
       daysMap[dStr].pnl = Math.round((daysMap[dStr].pnl + pnlRound) * 100) / 100;
 
       let stratLabel = 'Oliver Kell: EMA Crossback Setup';
-      if (t.reason === 'EXHAUSTION_CLIMAX' || t.reason === 'RUNNER_EMA20_EXIT') {
-        stratLabel = 'Oliver Kell: Climax Extension (+5R~8R)';
+      if (t.reason === 'EXHAUSTION_CLIMAX' || t.reason === 'RUNNER_EMA20_EXIT' || t.reason === 'RUNNER_LOCK_EXIT') {
+        stratLabel = 'Oliver Kell: Climax / Runner Trail';
       } else if (t.stage1Taken) {
-        stratLabel = 'Oliver Kell: Stage 1 TP (+2.2R) + Runner';
+        stratLabel = 'Oliver Kell: Stage 1 TP (+2.5R) + Runner';
+      } else if (t.reason === 'BREAKEVEN_EXIT') {
+        stratLabel = 'Oliver Kell: Breakeven Protected (+1.6R)';
       }
 
-      const pnlPct = Math.round(((t.exitPrice - t.entryPrice) / t.entryPrice) * 10000) / 100;
+      const rawPct = t.side === 'SHORT'
+        ? ((t.entryPrice - t.exitPrice) / t.entryPrice) * 100
+        : ((t.exitPrice - t.entryPrice) / t.entryPrice) * 100;
+      const pnlPct = Math.round(rawPct * 100) / 100;
 
       daysMap[dStr].trades.push({
+        id: t.id,
         symbol: t.symbol,
-        side: 'LONG',
+        side: t.side || 'LONG',
         strategy: stratLabel,
         entry: t.entryPrice,
         entryPrice: t.entryPrice,
@@ -137,18 +147,18 @@ async function syncDailySimulation() {
       });
     }
 
-    // Populate October 2026 onwards purely from authentic live paper trades
+    // Merge live paper trades from 2026-11-21 onwards (official V2.1 activation date)
     const PORTFOLIO_PATH = path.join(__dirname, '..', '..', 'data', 'paper_portfolio.json');
     if (fs.existsSync(PORTFOLIO_PATH)) {
       try {
         const portData = JSON.parse(fs.readFileSync(PORTFOLIO_PATH, 'utf8'));
-        const octTrades = (portData.trades || []).filter(t => {
+        const liveTrades = (portData.trades || []).filter(t => {
           const exitTime = t.exitTime || t.entryTime;
-          return exitTime && exitTime.slice(0, 10) >= '2026-10-01';
+          return exitTime && exitTime.slice(0, 10) >= '2026-11-21';
         });
-        octTrades.sort((a, b) => (a.exitTime || a.entryTime).localeCompare(b.exitTime || b.entryTime));
+        liveTrades.sort((a, b) => (a.exitTime || a.entryTime).localeCompare(b.exitTime || b.entryTime));
 
-        for (const t of octTrades) {
+        for (const t of liveTrades) {
           const exitTime = t.exitTime || t.entryTime;
           const dStr = exitTime.slice(0, 10);
           const mStr = dStr.slice(0, 7);
@@ -161,7 +171,7 @@ async function syncDailySimulation() {
             id: t.id,
             symbol: t.symbol,
             side: t.side,
-            strategy: t.strategy || 'Oliver Kell: EMA Crossback Setup',
+            strategy: t.strategy || 'Oliver Kell Enhanced R:R (V2.1)',
             entry: t.entryPrice,
             entryPrice: t.entryPrice,
             exit: t.exitPrice,
@@ -178,7 +188,7 @@ async function syncDailySimulation() {
           });
         }
       } catch (err) {
-        console.warn('[DailySimScheduler] Error loading live October trades:', err.message);
+        console.warn('[DailySimScheduler] Error loading live trades from 2026-11-21:', err.message);
       }
     }
 
@@ -206,7 +216,10 @@ async function syncDailySimulation() {
       winRate: Math.round((winCount / (totalTradesCount || 1)) * 1000) / 10,
       profitFactor: Math.round(res.profitFactor * 100) / 100,
       maxDrawdown: Math.round(res.maxDrawdownPct * 100) / 100,
-      strategy: 'Strategy V2 (Oliver Kell Price Cycle Edition - Live Auto-Synced)',
+      avgWin: Math.round((res.avgWin || 0) * 100) / 100,
+      avgLoss: Math.round((res.avgLoss || 0) * 100) / 100,
+      realizedRR: Math.round((res.payoff || 0) * 100) / 100,
+      strategy: 'Strategy V2 (Oliver Kell Enhanced R:R Edition - Jan to Nov 2026)',
       lastSyncedAt: new Date().toISOString(),
     };
 

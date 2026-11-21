@@ -5,3 +5,9 @@ public/test_chart.png
 cloudflared.exe
 cloudflared.log
 server.log
+rust-core/target/
+graphify-out/
+data/backups/
+data/user_portfolios/
+data/user_vario_agents/
+

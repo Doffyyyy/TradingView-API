@@ -1,10 +1,13 @@
 const { fetchCandles, calcSupertrend, calcEMA, calcRSI, calcMACD } = require('./indicators');
+const rustBridge = require('../rustBridge');
 
 /**
  * Astra Backtest & Strategy Hypothesis Testing Engine
  */
 
 function runStrategySimulation(candles, strategyConfig) {
+  const rustRes = rustBridge.runStrategySimulation(candles, strategyConfig);
+  if (rustRes) return rustRes;
   const {
     type = 'supertrend',
     initialCapital = 10000,

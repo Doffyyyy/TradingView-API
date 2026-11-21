@@ -6,6 +6,8 @@
 
 'use strict';
 
+const rustBridge = require('../rustBridge');
+
 /**
  * Wilson score interval for a binomial proportion (default 95% confidence, z = 1.95996).
  * Returns { estimate, lo, hi, pFormatted, ciFormatted }
@@ -139,6 +141,8 @@ function groupIntoDailySessions(candles) {
  * 5. P(Inside Day Breakout)
  */
 function computeEdgeStats(candles, currentPrice) {
+  const rustRes = rustBridge.computeEdgeStats(candles, currentPrice);
+  if (rustRes) return rustRes;
   const sessions = groupIntoDailySessions(candles);
   if (sessions.length < 15) {
     return { error: 'Insufficient sessions history for quantitative edge stats (needs >= 15 days)' };

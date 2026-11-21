@@ -10,6 +10,7 @@ const { SetupEngine } = require('./setupEngine');
 const { RiskEngine } = require('./riskEngine');
 const { ExitEngine } = require('./exitEngine');
 const { Reporter } = require('./reporter');
+const rustBridge = require('../rustBridge');
 
 class ExecutionEngine {
   constructor(config) {
@@ -29,6 +30,17 @@ class ExecutionEngine {
   run(candleData, symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'NEARUSDT']) {
     const btc1h = candleData['BTCUSDT_1h'];
     if (!btc1h) throw new Error('BTCUSDT_1h candles required for Macro Regime');
+
+    const rustSim = rustBridge.runStrategyV2(candleData, symbols, this.config);
+    if (rustSim) {
+      const initialEquity = this.config.initialEquity || 10000;
+      const report = Reporter.generateReport(rustSim.trades, rustSim.equityHistory, initialEquity, this.config);
+      return {
+        report,
+        trades: rustSim.trades,
+        equityHistory: rustSim.equityHistory,
+      };
+    }
 
     // 1. Precompute BTC Macro Regimes on 1H
     const btcRegimeData = this.regimeEngine.computeBtcMacroRegimes(btc1h);

@@ -36,6 +36,7 @@ const DEFAULT_CONFIG = {
   sessionTtlHours: 24,
   adminEmails: [
     'admin@hyperview.ai.id',
+    'hi.imduy@gmail.com',
   ],
   adminWallets: [
     // Add authorized admin EVM wallets here (lowercase)

@@ -14,6 +14,8 @@
  *   4. Band Width Volatility Expansion metric.
  */
 
+const rustBridge = require('../rustBridge');
+
 function calcEMA(values, period) {
   const n = values.length;
   const ema = new Float64Array(n);
@@ -96,6 +98,9 @@ function evaluateEma30BandBreakout(candles, options = {}) {
   if (n < Math.max(lenBand, 35)) {
     return null;
   }
+
+  const rustRes = rustBridge.evaluateEma30BandBreakout(candles, options);
+  if (rustRes) return rustRes;
 
   const highs = new Float64Array(n);
   const lows = new Float64Array(n);

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const TradingView = require('../../main');
+const rustBridge = require('../rustBridge');
 
 /**
  * Technical Indicator Calculation Engine
@@ -72,6 +73,8 @@ function calcMACD(closes, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
 
 function calcSupertrend(candles, period = 10, multiplier = 3) {
   if (candles.length < period) return [];
+  const rustRes = rustBridge.calcSupertrend(candles, period, multiplier);
+  if (rustRes) return rustRes;
   const tr = [];
   for (let i = 0; i < candles.length; i++) {
     if (i === 0) tr.push(candles[i].high - candles[i].low);
@@ -352,6 +355,8 @@ function normalCDF(z) {
  */
 function calcGaltonVolumeProfile(candles, period = 50) {
   if (!candles || candles.length < 5) return null;
+  const rustRes = rustBridge.calcGaltonVolumeProfile(candles, period);
+  if (rustRes) return rustRes;
   const slice = candles.slice(-Math.min(candles.length, period));
   const n = slice.length;
 
@@ -474,6 +479,8 @@ function calcGaltonVolumeProfile(candles, period = 50) {
  */
 function calcVolumeFootprint(candles, windowBars = 5, imbalanceRatio = 3.0) {
   if (!candles || candles.length < 3) return null;
+  const rustRes = rustBridge.calcVolumeFootprint(candles, windowBars, imbalanceRatio);
+  if (rustRes) return rustRes;
   const slice = candles.slice(-Math.min(candles.length, windowBars));
 
   let minLow = Infinity, maxHigh = -Infinity;
@@ -554,6 +561,8 @@ function calcVolumeFootprint(candles, windowBars = 5, imbalanceRatio = 3.0) {
  * Online level clustering + reaction measurement + aging + polarity bonus + trade engine
  */
 function calcReactionLevelMatrix(candles, options = {}) {
+  const rustRes = rustBridge.calcReactionLevelMatrix(candles, options);
+  if (rustRes) return rustRes;
   const swingLen = options.swingLength || 6;
   const tolRatio = options.levelTolerance || 0.6;
   const halfLife = options.halfLife || 500;
@@ -882,6 +891,7 @@ async function getMultiTimeframeAnalysis(symbol) {
         ema20: e20,
         ema50: e50,
         ema200: e200,
+        atr: rlm1h?.atr14 || null,
         bias,
         supertrend: st1h?.trend,
         rlm: rlm1h,
@@ -912,6 +922,9 @@ async function getMultiTimeframeAnalysis(symbol) {
   const { evaluateEma30BandBreakout } = require('./ema30BandBreakout');
   const ema30_15m = evaluateEma30BandBreakout(candles15m);
 
+  const lc = candles15m[candles15m.length - 1];
+  const pc = candles15m.length >= 2 ? candles15m[candles15m.length - 2] : lc;
+
   return {
     symbol,
     currentPrice,
@@ -925,6 +938,14 @@ async function getMultiTimeframeAnalysis(symbol) {
       rlm: rlm15m,
       luxalgo: lux15m?.latestState || null,
       ema30Band: ema30_15m?.latestState || null,
+      lastCandle: lc ? {
+        open: lc.open,
+        high: lc.high,
+        low: lc.low,
+        close: lc.close,
+        prevHigh: pc ? pc.high : lc.high,
+        prevLow: pc ? pc.low : lc.low,
+      } : null,
     }
   };
 }

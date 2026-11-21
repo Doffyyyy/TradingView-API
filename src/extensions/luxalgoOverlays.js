@@ -8,6 +8,8 @@
 
 'use strict';
 
+const rustBridge = require('../rustBridge');
+
 /**
  * Ehlers SuperSmoother 2-pole Filter
  * Produces low-lag, smooth curve without aliasing
@@ -245,6 +247,8 @@ function generateConfirmationSignals(candles, smartTrail, reversalZones) {
  * Full LuxAlgo Signals & Overlays Suite Pipeline
  */
 function evaluateLuxAlgoOverlays(candles) {
+  const rustRes = rustBridge.evaluateLuxAlgoOverlays(candles);
+  if (rustRes) return rustRes;
   const smartTrail = calcSmartTrail(candles, 10, 4.0, 8);
   const reversalZones = calcReversalZones(candles, 100, 1.0, 2.415);
   const signals = generateConfirmationSignals(candles, smartTrail, reversalZones);

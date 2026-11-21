@@ -1,4 +1,5 @@
 const axios = require('axios');
+const rustBridge = require('../rustBridge');
 
 /**
  * 26-Indicator Consensus & Validation Bot Engine
@@ -279,6 +280,8 @@ function compute26IndicatorsFromCandles(symbol, candles) {
   if (!candles || candles.length < 35) {
     throw new Error(`Insufficient candle history for ${symbol} to evaluate 26 indicators`);
   }
+  const rustRes = rustBridge.compute26IndicatorsFromCandles(symbol, candles);
+  if (rustRes) return rustRes;
   const closes = candles.map(c => c.close);
   const currentPrice = closes[closes.length - 1];
 
