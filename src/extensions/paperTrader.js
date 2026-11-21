@@ -1022,6 +1022,12 @@ class PaperTradingEngine {
       for (let i = this.portfolio.positions.length - 1; i >= 0; i--) {
         const pos = this.portfolio.positions[i];
         try {
+          if (!pos.initialStopLoss) pos.initialStopLoss = pos.stopLoss;
+          if (!pos.initialStopDist || pos.initialStopDist <= 0) {
+            pos.initialStopDist = Math.max(pos.entryPrice * 0.008, Math.abs(pos.entryPrice - pos.initialStopLoss));
+          }
+          const stopDist = pos.initialStopDist;
+
           const fetchBars = Math.min(300, Math.ceil(offlineMins / 15) + 8);
           const candles = await fetchCandles(pos.symbol, '15', fetchBars);
           if (!candles || candles.length === 0) continue;
@@ -1040,32 +1046,104 @@ class PaperTradingEngine {
             let triggerReason = '';
 
             if (pos.side === 'LONG') {
-              if (pos.takeProfit > 0 && bar.high >= pos.takeProfit) {
-                triggered = true;
-                triggerPrice = pos.takeProfit;
-                triggerReason = `Take Profit hit at $${formatTokenPrice(pos.takeProfit)} (Simulated during shutdown at ${barTimeStr})`;
-              } else if (pos.stopLoss > 0 && bar.low <= pos.stopLoss) {
-                triggered = true;
-                triggerPrice = pos.stopLoss;
-                triggerReason = `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
-              } else if (hoursHeld >= 12.0) {
+              const beTrigger = pos.entryPrice + stopDist * 1.6;
+              const stage1Price = pos.entryPrice + stopDist * 2.5;
+              const trailTrigger = pos.entryPrice + stopDist * 3.5;
+              const climaxPrice = pos.entryPrice + stopDist * 4.5;
+
+              if (!pos.stage1Taken) {
+                if (pos.stopLoss > 0 && bar.low <= pos.stopLoss) {
+                  triggered = true;
+                  triggerPrice = pos.stopLoss;
+                  triggerReason = pos.isBreakeven
+                    ? `Breakeven Exit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`
+                    : `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.high >= stage1Price) {
+                  pos.stage1Taken = true;
+                  pos.isBreakeven = true;
+                  await this.closePosition(
+                    pos.id,
+                    stage1Price,
+                    `Oliver Kell: Stage 1 TP (+2.5R) + Runner (Simulated during shutdown at ${barTimeStr})`,
+                    0.5,
+                  );
+                  const lock12 = roundPriceForCoin(pos.entryPrice + stopDist * 1.2);
+                  if (pos.stopLoss < lock12) pos.stopLoss = lock12;
+                  continue;
+                } else if (!pos.isBreakeven && bar.high >= beTrigger) {
+                  const bePrice = roundPriceForCoin(pos.entryPrice * 1.0015);
+                  if (pos.stopLoss < bePrice) pos.stopLoss = bePrice;
+                  pos.isBreakeven = true;
+                }
+              } else {
+                if (pos.stopLoss > 0 && bar.low <= pos.stopLoss) {
+                  triggered = true;
+                  triggerPrice = pos.stopLoss;
+                  triggerReason = `Oliver Kell: Runner Trail Exit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.high >= climaxPrice) {
+                  triggered = true;
+                  triggerPrice = climaxPrice;
+                  triggerReason = `Oliver Kell: Climax Extension (+4.5R) hit at $${formatTokenPrice(climaxPrice)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.high >= trailTrigger) {
+                  const lock20 = roundPriceForCoin(pos.entryPrice + stopDist * 2.0);
+                  if (pos.stopLoss < lock20) pos.stopLoss = lock20;
+                }
+              }
+
+              if (!triggered && hoursHeld >= 36.0) {
                 triggered = true;
                 triggerPrice = bar.close;
-                triggerReason = `12h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
+                triggerReason = `36h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
               }
             } else { // SHORT
-              if (pos.takeProfit > 0 && bar.low <= pos.takeProfit) {
-                triggered = true;
-                triggerPrice = pos.takeProfit;
-                triggerReason = `Take Profit hit at $${formatTokenPrice(pos.takeProfit)} (Simulated during shutdown at ${barTimeStr})`;
-              } else if (pos.stopLoss > 0 && bar.high >= pos.stopLoss) {
-                triggered = true;
-                triggerPrice = pos.stopLoss;
-                triggerReason = `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
-              } else if (hoursHeld >= 12.0) {
+              const beTrigger = pos.entryPrice - stopDist * 1.6;
+              const stage1Price = pos.entryPrice - stopDist * 2.5;
+              const trailTrigger = pos.entryPrice - stopDist * 3.5;
+              const climaxPrice = pos.entryPrice - stopDist * 4.5;
+
+              if (!pos.stage1Taken) {
+                if (pos.stopLoss > 0 && bar.high >= pos.stopLoss) {
+                  triggered = true;
+                  triggerPrice = pos.stopLoss;
+                  triggerReason = pos.isBreakeven
+                    ? `Breakeven Exit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`
+                    : `Stop Loss hit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.low <= stage1Price) {
+                  pos.stage1Taken = true;
+                  pos.isBreakeven = true;
+                  await this.closePosition(
+                    pos.id,
+                    stage1Price,
+                    `Oliver Kell: Stage 1 TP (+2.5R) + Runner (Simulated during shutdown at ${barTimeStr})`,
+                    0.5,
+                  );
+                  const lock12 = roundPriceForCoin(pos.entryPrice - stopDist * 1.2);
+                  if (pos.stopLoss > lock12 || pos.stopLoss === 0) pos.stopLoss = lock12;
+                  continue;
+                } else if (!pos.isBreakeven && bar.low <= beTrigger) {
+                  const bePrice = roundPriceForCoin(pos.entryPrice * 0.9985);
+                  if (pos.stopLoss > bePrice || pos.stopLoss === 0) pos.stopLoss = bePrice;
+                  pos.isBreakeven = true;
+                }
+              } else {
+                if (pos.stopLoss > 0 && bar.high >= pos.stopLoss) {
+                  triggered = true;
+                  triggerPrice = pos.stopLoss;
+                  triggerReason = `Oliver Kell: Runner Trail Exit at $${formatTokenPrice(pos.stopLoss)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.low <= climaxPrice) {
+                  triggered = true;
+                  triggerPrice = climaxPrice;
+                  triggerReason = `Oliver Kell: Climax Extension (+4.5R) hit at $${formatTokenPrice(climaxPrice)} (Simulated during shutdown at ${barTimeStr})`;
+                } else if (bar.low <= trailTrigger) {
+                  const lock20 = roundPriceForCoin(pos.entryPrice - stopDist * 2.0);
+                  if (pos.stopLoss > lock20 || pos.stopLoss === 0) pos.stopLoss = lock20;
+                }
+              }
+
+              if (!triggered && hoursHeld >= 36.0) {
                 triggered = true;
                 triggerPrice = bar.close;
-                triggerReason = `12h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
+                triggerReason = `36h Time Exit hit (Simulated during shutdown at ${barTimeStr})`;
               }
             }
 
