@@ -29,17 +29,17 @@
 
       if (!this.chart && typeof LightweightCharts !== 'undefined') {
         this.chart = LightweightCharts.createChart(this.container, {
-          layout: { background: { color: '#0d111a' }, textColor: '#8c93a3' },
-          grid: { vertLines: { color: '#161b26' }, horzLines: { color: '#161b26' } },
+          layout: { background: { color: '#09090b' }, textColor: '#a1a1aa' },
+          grid: { vertLines: { color: '#18181b' }, horzLines: { color: '#18181b' } },
           crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
           timeScale: {
-            borderColor: '#2b3040',
+            borderColor: '#27272a',
             timeVisible: true,
             rightOffset: 25,
             barSpacing: 9,
           },
           rightPriceScale: {
-            borderColor: '#2b3040',
+            borderColor: '#27272a',
             autoScale: true,
             scaleMargins: { top: 0.1, bottom: 0.18 },
           },
@@ -246,7 +246,7 @@
       } else {
         this.pause();
         const statusEl = document.getElementById('rep-status-text');
-        if (statusEl) statusEl.textContent = '🏁 Replay simulation reached the end of history.';
+        if (statusEl) statusEl.textContent = 'Replay reached the end of history.';
       }
     }
 
@@ -280,7 +280,7 @@
       this.isPlaying = true;
       const playBtn = document.getElementById('btn-rep-play');
       if (playBtn) {
-        playBtn.innerHTML = '<span style="font-size: 14px;">⏸</span> <span>Pause</span>';
+        playBtn.textContent = '⏸ Pause';
         playBtn.classList.add('playing');
       }
       const ms = Math.max(50, Math.floor(800 / this.speed));
@@ -295,7 +295,7 @@
       }
       const playBtn = document.getElementById('btn-rep-play');
       if (playBtn) {
-        playBtn.innerHTML = '<span style="font-size: 14px;">▶</span> <span>Play</span>';
+        playBtn.textContent = '▶ Play';
         playBtn.classList.remove('playing');
       }
     }

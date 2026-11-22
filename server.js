@@ -471,17 +471,17 @@ const htmlContent = `<!DOCTYPE html>
       vertical-align: middle;
       box-sizing: border-box;
     }
-    #table-paper-positions .pos-col-symbol   { width: 16%; min-width: 140px; }
+    #table-paper-positions .pos-col-symbol   { width: 14.5%; min-width: 135px; }
     #table-paper-positions .pos-col-side     { width: 6.5%; min-width: 55px; text-align: center; }
     #table-paper-positions .pos-col-lev      { width: 5.5%; min-width: 48px; text-align: center; }
-    #table-paper-positions .pos-col-entry    { width: 9%; min-width: 80px; }
-    #table-paper-positions .pos-col-mark     { width: 10%; min-width: 95px; }
-    #table-paper-positions .pos-col-tp       { width: 9%; min-width: 80px; }
-    #table-paper-positions .pos-col-sl       { width: 9%; min-width: 80px; }
+    #table-paper-positions .pos-col-entry    { width: 8.5%; min-width: 78px; }
+    #table-paper-positions .pos-col-mark     { width: 10%; min-width: 92px; }
+    #table-paper-positions .pos-col-tp       { width: 8.5%; min-width: 78px; }
+    #table-paper-positions .pos-col-sl       { width: 8.5%; min-width: 78px; }
     #table-paper-positions .pos-col-margin   { width: 8.5%; min-width: 75px; }
     #table-paper-positions .pos-col-notional { width: 8.5%; min-width: 75px; }
-    #table-paper-positions .pos-col-pnl      { width: 13.5%; min-width: 155px; }
-    #table-paper-positions .pos-col-action   { width: 4.5%; min-width: 50px; text-align: center; }
+    #table-paper-positions .pos-col-pnl      { width: 14%; min-width: 155px; }
+    #table-paper-positions .pos-col-action   { width: 7%; min-width: 72px; text-align: center; }
 
     .action-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     .action-buy { background: rgba(38, 166, 154, 0.2); color: var(--accent-green); }
@@ -1025,184 +1025,189 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     /* ========================================================
-       TRADESYNC JOURNALING DASHBOARD STYLES
+       TRADESYNC JOURNALING DASHBOARD STYLES (SHADCN ZINC DARK)
        ======================================================== */
     .ts-dashboard {
-      flex: 1; overflow-y: auto; background: #0c0d10; padding: 18px 24px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "JetBrains Mono", sans-serif;
-      color: #e4e7eb; box-sizing: border-box;
+      flex: 1; overflow-y: auto; background: #09090b; padding: 24px 28px 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      color: #fafafa; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
     .ts-dashboard::-webkit-scrollbar { width: 6px; }
-    .ts-dashboard::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
+    .ts-dashboard::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    .ts-dashboard-inner {
+      max-width: 1380px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+    }
 
-    /* Top Navigation within Journal */
+    /* Top Header & Toolbar within Journal */
     .ts-top-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
     }
     .ts-title-left {
       display: flex; align-items: center; gap: 10px;
     }
     .ts-title {
-      font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.2px; margin: 0;
+      font-size: 20px; font-weight: 600; color: #fafafa; letter-spacing: -0.025em; margin: 0; line-height: 1.25;
     }
     .ts-top-right {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 8px;
     }
     .ts-status-badge {
-      display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-      background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3);
-      font-size: 11px; font-weight: 600; color: #10b981;
+      display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px;
+      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.28);
+      font-size: 11px; font-weight: 500; color: #34d399;
     }
     .ts-status-dot {
       width: 6px; height: 6px; border-radius: 50%; background: #10b981;
-      box-shadow: 0 0 8px #10b981; animation: pulse 1.8s infinite;
-    }
-    .ts-icon-btn {
-      background: #181a20; border: 1px solid #262a36; border-radius: 6px;
-      color: #8c93a3; width: 28px; height: 28px; display: flex; align-items: center;
-      justify-content: center; cursor: pointer; transition: all 0.15s; position: relative;
-    }
-    .ts-icon-btn:hover { background: #222634; color: #fff; border-color: #38bdf8; }
-    .ts-notif-dot {
-      position: absolute; top: -2px; right: -2px; width: 7px; height: 7px;
-      border-radius: 50%; background: #ef4444; border: 1px solid #0c0d10;
     }
 
     /* Filter & Action Toolbars */
     .ts-toolbar {
-      display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
     }
     .ts-pill-group {
-      display: inline-flex; background: #151820; border: 1px solid #232733; border-radius: 999px; padding: 2px;
+      display: inline-flex; background: #18181b; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 3px; gap: 2px;
     }
     .ts-pill-btn {
-      padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer;
-      color: #8c93a3; background: transparent; border: none; transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 11px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+      color: #a1a1aa; background: transparent; border: 1px solid transparent; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 5px;
     }
     .ts-pill-btn.active {
-      background: #fff; color: #0c0d10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-weight: 700;
+      background: #09090b; color: #fafafa; border-color: #27272a; box-shadow: 0 1px 2px rgba(0,0,0,0.45); font-weight: 500;
     }
-    .ts-pill-btn:hover:not(.active) { color: #fff; }
+    .ts-pill-btn:hover:not(.active) { color: #fafafa; }
     .ts-dropdowns {
-      display: flex; gap: 8px; align-items: center;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     }
     .ts-select {
-      background: #151820; border: 1px solid #232733; border-radius: 6px; color: #e4e7eb;
-      font-size: 11px; font-weight: 600; padding: 6px 10px; cursor: pointer; outline: none;
+      height: 32px; background-color: #09090b !important; border: 1px solid #27272a !important; border-radius: 6px;
+      color: #fafafa !important; font-size: 12.5px; font-weight: 500; padding: 0 10px; cursor: pointer; outline: none;
     }
-    .ts-select:hover { border-color: #3a4254; }
+    .ts-select:hover { border-color: #3f3f46 !important; }
 
     .ts-subtabs {
-      display: inline-flex; background: #151820; border: 1px solid #232733; border-radius: 6px; padding: 3px; gap: 2px;
+      display: inline-flex; background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 3px; gap: 2px;
     }
     .ts-subtab-btn {
-      padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
-      color: #8c93a3; background: transparent; border: none; transition: all 0.15s;
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+      color: #a1a1aa; background: transparent; border: none; transition: all 0.15s;
     }
     .ts-subtab-btn.active {
-      background: #232733; color: #fff; font-weight: 700;
+      background: #09090b; color: #fafafa;
     }
     .ts-btn-outline {
-      background: #151820; border: 1px solid #262a36; border-radius: 6px; color: #e4e7eb;
-      font-size: 11px; font-weight: 600; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+      background: transparent; border: 1px solid #27272a; border-radius: 6px; color: #fafafa; height: 32px;
+      font-size: 12.5px; font-weight: 500; padding: 0 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
     }
-    .ts-btn-outline:hover { background: #222634; border-color: #38bdf8; color: #fff; }
+    .ts-btn-outline:hover { background: #18181b; border-color: #3f3f46; }
     .ts-btn-white {
-      background: #fff; color: #0c0d10; border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
-      padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+      background: #fafafa; color: #18181b; border: 1px solid #fafafa; border-radius: 6px; height: 32px;
+      font-size: 12.5px; font-weight: 600; padding: 0 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
     }
-    .ts-btn-white:hover { background: #e2e8f0; }
+    .ts-btn-white:hover { background: #e4e4e7; }
     .ts-btn-primary {
-      background: #38bdf8; color: #0c0d10; border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
-      padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+      background: #fafafa; color: #18181b; border: 1px solid #fafafa; border-radius: 6px; height: 32px;
+      font-size: 12.5px; font-weight: 600; padding: 0 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
     }
-    .ts-btn-primary:hover { background: #7dd3fc; }
+    .ts-btn-primary:hover { background: #e4e4e7; }
     .ts-badge-free {
-      background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 800;
+      background: rgba(16, 185, 129, 0.12); color: #34d399; font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 500;
     }
 
     /* 5 KPI Summary Ribbon */
     .ts-kpi-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 14px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    }
+    @media (max-width: 1100px) {
+      .ts-kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-kpi-card {
-      background: #14161d; border: 1px solid #202430; border-radius: 8px; padding: 12px 14px;
-      display: flex; flex-direction: column; justify-content: space-between; min-height: 105px;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 112px;
     }
     .ts-kpi-head {
-      display: flex; justify-content: space-between; align-items: center; font-size: 10px;
-      font-weight: 700; color: #8c93a3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px;
+      font-weight: 500; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
     }
     .ts-kpi-val {
-      font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 2px;
-      font-family: "JetBrains Mono", monospace;
+      font-size: 20px; font-weight: 600; color: #fafafa; line-height: 1.2; margin-bottom: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
     }
-    .ts-kpi-val.green { color: #10b981; }
-    .ts-kpi-val.red { color: #ef4444; }
+    .ts-kpi-val.green { color: #34d399; }
+    .ts-kpi-val.red { color: #f87171; }
     .ts-kpi-sub {
-      font-size: 10px; color: #8c93a3; margin-bottom: 8px; font-weight: 500;
+      font-size: 11.5px; color: #71717a; margin-bottom: 8px; font-weight: 400;
     }
     .ts-bar-dual {
-      display: flex; height: 5px; border-radius: 3px; overflow: hidden; background: #262a36; margin: 4px 0;
+      display: flex; height: 5px; border-radius: 999px; overflow: hidden; background: #18181b; margin: 4px 0;
     }
     .ts-bar-dual-green { background: #10b981; }
     .ts-bar-dual-red { background: #ef4444; }
     .ts-kpi-split-foot {
-      display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; margin-top: 4px;
+      display: flex; justify-content: space-between; font-size: 11px; font-weight: 500; margin-top: 4px;
+      font-variant-numeric: tabular-nums;
     }
     .ts-sub-bar-row {
-      display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: 3px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-top: 4px;
+      font-variant-numeric: tabular-nums;
     }
     .ts-sub-bar-track {
-      flex: 1; height: 4px; border-radius: 2px; background: #202430; margin: 0 6px; overflow: hidden;
+      flex: 1; height: 4px; border-radius: 999px; background: #18181b; margin: 0 8px; overflow: hidden;
     }
 
     /* 4 Performance & Sparkline Cards */
     .ts-perf-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    }
+    @media (max-width: 1100px) {
+      .ts-perf-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-perf-card {
-      background: #14161d; border: 1px solid #202430; border-radius: 8px; padding: 12px 14px;
-      display: flex; flex-direction: column; justify-content: space-between; height: 140px; position: relative; overflow: hidden;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
+      display: flex; flex-direction: column; justify-content: space-between; height: 146px; position: relative; overflow: hidden;
     }
     .ts-perf-head {
-      display: flex; justify-content: space-between; align-items: center; font-size: 10px;
-      font-weight: 700; color: #8c93a3; text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px;
+      font-weight: 500; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.04em;
     }
     .ts-score-badge {
-      background: #202430; padding: 2px 7px; border-radius: 999px; font-size: 9.5px; color: #fff; font-weight: 700;
+      background: #18181b; border: 1px solid #27272a; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; color: #fafafa; font-weight: 500; font-variant-numeric: tabular-nums;
     }
     .ts-perf-val {
-      font-size: 20px; font-weight: 800; color: #10b981; font-family: "JetBrains Mono", monospace;
+      font-size: 20px; font-weight: 600; color: #34d399; letter-spacing: -0.02em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
     }
-    .ts-perf-val.red { color: #ef4444; }
+    .ts-perf-val.red { color: #f87171; }
     .ts-sparkline-svg {
-      width: 100%; height: 60px; margin-top: auto;
+      width: 100%; height: 58px; margin-top: auto;
     }
 
     /* Interactive Calendar View */
     .ts-calendar-card {
-      background: #14161d; border: 1px solid #202430; border-radius: 10px; padding: 16px;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 18px;
     }
     .ts-cal-header {
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px;
-      border-bottom: 1px solid #202430;
+      border-bottom: 1px solid #27272a; gap: 12px; flex-wrap: wrap;
     }
     .ts-cal-brand {
-      display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: #fff;
+      display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: #fafafa;
       flex: 1 1 0; min-width: 0;
     }
     .ts-cal-nav {
-      display: flex; align-items: center; justify-content: center; gap: 8px; width: 320px; min-width: 320px; max-width: 320px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: auto; min-width: 260px; max-width: 520px; flex: 0 1 auto;
     }
     .ts-cal-nav-btn {
-      background: #1a1e28; border: 1px solid #292f3d; color: #8c93a3; width: 28px; height: 28px; flex-shrink: 0;
+      background: #09090b; border: 1px solid #27272a; color: #a1a1aa; width: 28px; height: 28px; flex-shrink: 0;
       border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;
       user-select: none;
     }
-    .ts-cal-nav-btn:hover { background: #262c3a; color: #fff; border-color: #38bdf8; }
+    .ts-cal-nav-btn:hover { background: #18181b; color: #fafafa; border-color: #3f3f46; }
     .ts-cal-nav-title {
-      font-size: 13px; font-weight: 800; color: #fff; width: 240px; min-width: 240px; max-width: 240px; flex-shrink: 0; text-align: center;
+      font-size: 13.5px; font-weight: 600; color: #fafafa; width: auto; min-width: 180px; max-width: 460px; padding: 0 8px; text-align: center;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center;
       font-variant-numeric: tabular-nums;
     }
@@ -1214,72 +1219,77 @@ const htmlContent = `<!DOCTYPE html>
       display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
     }
     .ts-cal-col-head {
-      text-align: center; font-size: 11px; font-weight: 700; color: #717684; padding: 6px 0; text-transform: uppercase;
+      text-align: center; font-size: 11px; font-weight: 500; color: #71717a; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .ts-cal-col-head.weekly { color: #38bdf8; }
+    .ts-cal-col-head.weekly { color: #a1a1aa; }
     .ts-cal-cell {
-      background: #101217; border: 1px solid #1c202a; border-radius: 6px; min-height: 72px; padding: 6px 8px;
-      display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: all 0.15s; position: relative;
+      background: #09090b; border: 1px solid #27272a; border-radius: 8px; min-height: 76px; padding: 7px 9px;
+      display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: background 0.12s, border-color 0.12s; position: relative;
     }
     .ts-cal-cell:hover {
-      background: #181b24; border-color: #2e3547; transform: translateY(-1px);
+      background: #141418; border-color: #3f3f46;
     }
     .ts-cal-cell.empty {
-      background: #0d0f14; border-color: #171922; cursor: default;
+      background: #09090b; border-color: rgba(39, 39, 42, 0.45); cursor: default; opacity: 0.55;
     }
-    .ts-cal-cell.empty:hover { transform: none; background: #0d0f14; border-color: #171922; }
+    .ts-cal-cell.empty:hover { background: #09090b; border-color: rgba(39, 39, 42, 0.45); }
     .ts-cal-cell.active-day {
-      border: 1.5px solid #fff !important; box-shadow: 0 0 14px rgba(255, 255, 255, 0.15);
-      background: #161a24;
+      border: 1.5px solid #fafafa !important;
+      background: #141418;
     }
     .ts-cell-daynum {
-      font-size: 10px; font-weight: 700; color: #525866; line-height: 1;
+      font-size: 11px; font-weight: 500; color: #52525b; line-height: 1; font-variant-numeric: tabular-nums;
     }
-    .ts-cell-daynum.active { color: #fff; }
+    .ts-cell-daynum.active { color: #a1a1aa; }
     .ts-cell-pnl {
-      font-size: 12px; font-weight: 800; text-align: center; font-family: "JetBrains Mono", monospace; margin: 4px 0 2px 0;
+      font-size: 12.5px; font-weight: 600; text-align: center; margin: 4px 0 2px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
     }
-    .ts-cell-pnl.green { color: #10b981; }
-    .ts-cell-pnl.red { color: #ef4444; }
+    .ts-cell-pnl.green { color: #34d399; }
+    .ts-cell-pnl.red { color: #f87171; }
     .ts-cell-trades {
-      font-size: 9px; color: #717684; text-align: center; font-weight: 600;
+      font-size: 10.5px; color: #71717a; text-align: center; font-weight: 500;
     }
     .ts-weekly-cell {
-      background: #141722; border: 1px solid #232a3d; border-radius: 6px; min-height: 72px; padding: 6px 8px;
+      background: #111114; border: 1px solid #27272a; border-radius: 8px; min-height: 76px; padding: 7px 9px;
       display: flex; flex-direction: column; justify-content: space-between; text-align: center;
     }
     .ts-weekly-title {
-      font-size: 9.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase;
+      font-size: 10.5px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.04em;
     }
     .ts-weekly-pnl {
-      font-size: 12.5px; font-weight: 800; font-family: "JetBrains Mono", monospace;
+      font-size: 12.5px; font-weight: 600; color: #fafafa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
     }
     .ts-weekly-trades {
-      font-size: 9px; color: #8c93a3; font-weight: 600;
+      font-size: 10.5px; color: #71717a; font-weight: 500;
     }
 
-    /* Modal / Drawer for Day Journal Details */
+    /* Modal / Dialog for Day Journal Details */
     .ts-modal-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 999;
+      background: rgba(0, 0, 0, 0.78); backdrop-filter: blur(6px); z-index: 999;
       align-items: center; justify-content: center;
     }
     .ts-modal-box {
-      background: #14161f; border: 1px solid #282d3d; border-radius: 12px; width: 680px; max-width: 90%;
-      max-height: 80vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 12px; width: 720px; max-width: 92%;
+      max-height: 82vh; overflow-y: auto; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.85);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif; color: #fafafa;
     }
     .ts-modal-head {
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px;
-      border-bottom: 1px solid #222634;
+      border-bottom: 1px solid #27272a;
     }
 
     /* ========================================================
-       MACRO CALENDAR (SHADCN/UI ZINC DARK DESIGN SYSTEM)
+       SHARED SHADCN/UI ZINC DARK DESIGN SYSTEM (.sh-view)
        ======================================================== */
     .mc-pill-badge {
-      font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.4px;
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.02em;
     }
-    #view-macro {
+    .sh-view {
       --sh-bg: #09090b;
       --sh-card: #0c0c0f;
       --sh-surface: #111114;
@@ -1295,216 +1305,321 @@ const htmlContent = `<!DOCTYPE html>
       --sh-emerald: #10b981;
       background: var(--sh-bg);
       color: var(--sh-fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     }
-    #view-macro .sh-scroll {
+    .sh-view .val-green { color: #34d399 !important; }
+    .sh-view .val-red { color: #f87171 !important; }
+    .sh-view .val-yellow { color: #fbbf24 !important; }
+    .sh-view .sh-scroll {
       flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
-    #view-macro .sh-scroll::-webkit-scrollbar { width: 6px; }
-    #view-macro .sh-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-    #view-macro .sh-container {
+    .sh-view .sh-scroll::-webkit-scrollbar { width: 6px; }
+    .sh-view .sh-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    .sh-view .sh-container {
       max-width: 1380px; width: 100%; margin: 0 auto; padding: 24px 28px 40px;
       display: flex; flex-direction: column; gap: 20px;
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     }
-    #view-macro .sh-header {
+    .sh-view .sh-header {
       display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
     }
-    #view-macro .sh-title {
+    .sh-view .sh-title {
       font-size: 20px; font-weight: 600; letter-spacing: -0.025em; color: var(--sh-fg); margin: 0; line-height: 1.25;
     }
-    #view-macro .sh-subtitle {
-      font-size: 13px; color: var(--sh-muted-fg); margin-top: 4px;
+    .sh-view .sh-subtitle {
+      font-size: 13px; color: var(--sh-muted-fg); margin-top: 4px; line-height: 1.45;
     }
-    #view-macro .sh-header-actions {
-      display: flex; align-items: center; gap: 8px;
+    .sh-view .sh-header-actions {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
-    #view-macro .sh-btn-outline {
+    .sh-view .sh-btn-outline {
       display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
       border-radius: 6px; border: 1px solid var(--sh-border); background: transparent;
       color: var(--sh-fg); font-size: 12.5px; font-weight: 500; cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s; white-space: nowrap;
     }
-    #view-macro .sh-btn-outline:hover { background: var(--sh-muted); border-color: #3f3f46; }
-    #view-macro .sh-btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
-    #view-macro .sh-btn-outline.is-loading svg { animation: sh-spin 0.8s linear infinite; }
-    #view-macro .sh-btn-ghost {
+    .sh-view .sh-btn-outline:hover { background: var(--sh-muted); border-color: #3f3f46; }
+    .sh-view .sh-btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
+    .sh-view .sh-btn-outline.is-loading svg { animation: sh-spin 0.8s linear infinite; }
+    .sh-view .sh-btn-primary {
+      display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+      border-radius: 6px; border: 1px solid #fafafa; background: #fafafa;
+      color: #18181b; font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s; white-space: nowrap;
+    }
+    .sh-view .sh-btn-primary:hover { background: #e4e4e7; border-color: #e4e4e7; }
+    .sh-view .sh-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .sh-view .sh-btn-destructive {
+      display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+      border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.28); background: rgba(239, 68, 68, 0.1);
+      color: #f87171; font-size: 12.5px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s; white-space: nowrap;
+    }
+    .sh-view .sh-btn-destructive:hover { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.45); }
+    .sh-view .sh-btn-ghost {
       display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px;
       border-radius: 6px; border: none; background: transparent; color: var(--sh-muted-fg);
-      font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap;
     }
-    #view-macro .sh-btn-ghost:hover { background: var(--sh-muted); color: var(--sh-fg); }
-    #view-macro .sh-kpi-grid {
+    .sh-view .sh-btn-ghost:hover { background: var(--sh-muted); color: var(--sh-fg); }
+    .sh-view .sh-btn-sm {
+      height: 28px; padding: 0 10px; font-size: 12px;
+    }
+    .sh-view select,
+    .sh-view .sh-select {
+      height: 32px; padding: 0 10px; border-radius: 6px;
+      background-color: #09090b !important; color: #fafafa !important;
+      border: 1px solid #27272a !important; font-size: 12.5px; font-weight: 500; outline: none;
+    }
+    .sh-view select:focus,
+    .sh-view .sh-select:focus { border-color: #52525b !important; }
+    .sh-view .sh-input-plain {
+      height: 32px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--sh-border);
+      background: var(--sh-bg); color: var(--sh-fg); font-size: 12.5px; outline: none; transition: border-color 0.15s;
+    }
+    .sh-view .sh-input-plain::placeholder { color: var(--sh-subtle-fg); }
+    .sh-view .sh-input-plain:focus { border-color: #52525b; }
+
+    .sh-view .sh-kpi-grid {
       display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 14px;
     }
-    @media (max-width: 980px) {
-      #view-macro .sh-kpi-grid { grid-template-columns: 1fr; }
+    .sh-view .sh-kpi-4 {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
     }
-    #view-macro .sh-card {
+    .sh-view .sh-grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+    @media (max-width: 980px) {
+      .sh-view .sh-kpi-grid { grid-template-columns: 1fr; }
+      .sh-view .sh-kpi-4 { grid-template-columns: repeat(2, 1fr); }
+      .sh-view .sh-grid-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .sh-view .sh-kpi-4 { grid-template-columns: 1fr; }
+    }
+    .sh-view .sh-card {
       background: var(--sh-card); border: 1px solid var(--sh-border); border-radius: 10px;
       padding: 16px 18px; display: flex; flex-direction: column;
     }
-    #view-macro .sh-card-top {
+    .sh-view .sh-card-top {
       display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;
     }
-    #view-macro .sh-card-label {
+    .sh-view .sh-card-label {
       font-size: 12px; font-weight: 500; color: var(--sh-muted-fg);
     }
-    #view-macro .sh-card-value {
+    .sh-view .sh-card-value {
       font-size: 16px; font-weight: 600; color: var(--sh-fg); letter-spacing: -0.015em; line-height: 1.35;
+      font-variant-numeric: tabular-nums;
     }
-    #view-macro .sh-card-meta {
+    .sh-view .sh-card-meta {
       font-size: 12px; color: var(--sh-subtle-fg); line-height: 1.45; margin-top: 6px;
     }
-    #view-macro .sh-timer {
+    .sh-view .sh-stat-mini {
+      background: var(--sh-bg); border: 1px solid var(--sh-border); border-radius: 8px; padding: 8px 10px;
+    }
+    .sh-view .sh-stat-mini .stat-label {
+      font-size: 10px; font-weight: 500; color: var(--sh-subtle-fg); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px;
+    }
+    .sh-view .sh-stat-mini .stat-value {
+      font-size: 13.5px; font-weight: 600; color: var(--sh-fg); font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .sh-view .sh-progress-track {
+      width: 100%; height: 6px; background: var(--sh-muted); border-radius: 999px; overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .sh-view .sh-timer {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 600;
       color: var(--sh-fg); background: var(--sh-muted); border: 1px solid var(--sh-border);
       padding: 2px 8px; border-radius: 6px; white-space: nowrap;
     }
-    #view-macro .sh-toolbar {
+    .sh-view .sh-toolbar {
       display: flex; flex-direction: column; gap: 10px;
     }
-    #view-macro .sh-toolbar-row {
+    .sh-view .sh-toolbar-row {
       display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
-    #view-macro .sh-tabs-list {
+    .sh-view .sh-tabs-list {
       display: inline-flex; align-items: center; background: var(--sh-muted); padding: 3px;
       border-radius: 8px; border: 1px solid var(--sh-border-subtle); gap: 2px; flex-wrap: wrap;
     }
-    #view-macro .sh-tab-trigger {
+    .sh-view .sh-tab-trigger {
       height: 28px; padding: 0 11px; border-radius: 6px; border: 1px solid transparent;
       background: transparent; color: var(--sh-muted-fg); font-size: 12px; font-weight: 500;
       cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
-    #view-macro .sh-tab-trigger:hover:not(.active) { color: var(--sh-fg); }
-    #view-macro .sh-tab-trigger.active {
+    .sh-view .sh-tab-trigger:hover:not(.active) { color: var(--sh-fg); }
+    .sh-view .sh-tab-trigger.active {
       background: var(--sh-bg); color: var(--sh-fg); border-color: var(--sh-border);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
     }
-    #view-macro .sh-search-wrap {
+    .sh-view .sh-search-wrap {
       position: relative; display: flex; align-items: center;
     }
-    #view-macro .sh-search-icon {
+    .sh-view .sh-search-icon {
       position: absolute; left: 10px; color: var(--sh-subtle-fg); pointer-events: none;
     }
-    #view-macro .sh-input {
+    .sh-view .sh-input {
       height: 32px; width: 240px; padding: 0 10px 0 30px; border-radius: 6px;
       border: 1px solid var(--sh-border); background: var(--sh-bg); color: var(--sh-fg);
       font-size: 12.5px; outline: none; transition: border-color 0.15s;
     }
-    #view-macro .sh-input::placeholder { color: var(--sh-subtle-fg); }
-    #view-macro .sh-input:focus { border-color: #52525b; }
-    #view-macro .sh-switch-label {
+    .sh-view .sh-input::placeholder { color: var(--sh-subtle-fg); }
+    .sh-view .sh-input:focus { border-color: #52525b; }
+    .sh-view .sh-switch-label {
       position: relative; display: inline-flex; align-items: center; gap: 8px;
       font-size: 12px; color: var(--sh-muted-fg); cursor: pointer; user-select: none;
     }
-    #view-macro .sh-switch-input {
+    .sh-view .sh-switch-input {
       position: absolute; opacity: 0; width: 0; height: 0;
     }
-    #view-macro .sh-switch-track {
+    .sh-view .sh-switch-track {
       position: relative; width: 32px; height: 18px; background: #27272a; border-radius: 999px;
       border: 1px solid #3f3f46; transition: background 0.15s, border-color 0.15s; flex-shrink: 0;
     }
-    #view-macro .sh-switch-thumb {
+    .sh-view .sh-switch-thumb {
       position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%;
       background: #a1a1aa; transition: transform 0.15s, background 0.15s;
     }
-    #view-macro .sh-switch-input:checked + .sh-switch-track { background: #fafafa; border-color: #fafafa; }
-    #view-macro .sh-switch-input:checked + .sh-switch-track .sh-switch-thumb {
+    .sh-view .sh-switch-input:checked + .sh-switch-track { background: #fafafa; border-color: #fafafa; }
+    .sh-view .sh-switch-input:checked + .sh-switch-track .sh-switch-thumb {
       transform: translateX(14px); background: #09090b;
     }
-    #view-macro .sh-filter-bar {
+    .sh-view .sh-filter-bar {
       display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
     }
-    #view-macro .sh-filter-left {
+    .sh-view .sh-filter-left {
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
-    #view-macro .sh-filter-group {
+    .sh-view .sh-filter-group {
       display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
     }
-    #view-macro .sh-filter-divider {
+    .sh-view .sh-filter-divider {
       width: 1px; height: 16px; background: var(--sh-border); margin: 0 4px;
     }
-    #view-macro .sh-filter-chip {
+    .sh-view .sh-filter-chip {
       height: 26px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--sh-border);
       background: transparent; color: var(--sh-muted-fg); font-size: 11.5px; font-weight: 500;
       cursor: pointer; transition: all 0.12s; white-space: nowrap;
     }
-    #view-macro .sh-filter-chip:hover:not(.active) { background: var(--sh-muted); color: var(--sh-fg); }
-    #view-macro .sh-filter-chip.active {
+    .sh-view .sh-filter-chip:hover:not(.active) { background: var(--sh-muted); color: var(--sh-fg); }
+    .sh-view .sh-filter-chip.active {
       background: var(--sh-fg); color: var(--sh-primary-fg); border-color: var(--sh-fg);
     }
-    #view-macro .sh-badge {
+    .sh-view .sh-badge {
       display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px;
       border-radius: 999px; font-size: 11px; font-weight: 500; border: 1px solid var(--sh-border);
       white-space: nowrap; line-height: 1;
     }
-    #view-macro .sh-badge-outline { background: transparent; color: var(--sh-muted-fg); }
-    #view-macro .sh-badge-secondary { background: var(--sh-muted); color: var(--sh-fg); border-color: transparent; }
-    #view-macro .sh-badge-destructive {
+    .sh-view .sh-badge-outline { background: transparent; color: var(--sh-muted-fg); }
+    .sh-view .sh-badge-secondary { background: var(--sh-muted); color: var(--sh-fg); border-color: transparent; }
+    .sh-view .sh-badge-destructive {
       background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.28);
     }
-    #view-macro .sh-badge-amber {
+    .sh-view .sh-badge-amber {
       background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.28);
     }
-    #view-macro .sh-badge-emerald {
+    .sh-view .sh-badge-emerald {
       background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.28);
     }
-    #view-macro .sh-dot {
+    .sh-view .sh-badge-sky {
+      background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-color: rgba(56, 189, 248, 0.28);
+    }
+    .sh-view .sh-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
-    #view-macro .sh-table-card {
+    .sh-view .action-badge {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 500; text-transform: none; line-height: 1.3;
+    }
+    .sh-view .action-buy {
+      background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .sh-view .action-sell {
+      background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .sh-view .action-neutral {
+      background: #18181b; color: #a1a1aa; border: 1px solid #27272a;
+    }
+    .sh-view .sh-table-card {
       background: var(--sh-card); border: 1px solid var(--sh-border); border-radius: 10px; overflow: hidden;
     }
-    #view-macro .sh-table-scroll {
+    .sh-view .sh-table-card-head {
+      display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+      border-bottom: 1px solid var(--sh-border); background: var(--sh-card);
+    }
+    .sh-view .sh-table-card-title {
+      font-size: 13.5px; font-weight: 600; color: var(--sh-fg);
+    }
+    .sh-view .sh-table-scroll {
       overflow-x: auto; max-height: 540px; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
-    #view-macro .sh-table {
+    .sh-view table,
+    .sh-view .sh-table {
       width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;
     }
-    #view-macro .sh-table thead th {
+    .sh-view table thead th,
+    .sh-view .sh-table thead th,
+    .sh-view #table-paper-positions th {
       position: sticky; top: 0; z-index: 5; background: var(--sh-surface); color: var(--sh-subtle-fg);
       font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;
       padding: 10px 14px; border-bottom: 1px solid var(--sh-border); white-space: nowrap;
     }
-    #view-macro .sh-date-group-row td {
+    .sh-view #table-paper-positions th,
+    .sh-view #table-paper-positions td {
+      padding: 10px 8px;
+    }
+    .sh-view table tbody tr,
+    .sh-view .sh-table tbody tr {
+      border-bottom: 1px solid rgba(39, 39, 42, 0.65); transition: background 0.12s;
+    }
+    .sh-view table tbody tr:hover,
+    .sh-view .sh-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+    .sh-view table tbody td,
+    .sh-view .sh-table tbody td,
+    .sh-view #table-paper-positions td {
+      padding: 10px 14px; vertical-align: middle; font-size: 12.5px;
+      font-variant-numeric: tabular-nums; border-bottom: 1px solid rgba(39, 39, 42, 0.65);
+    }
+    .sh-view .sh-date-group-row td {
       background: #101013; color: var(--sh-muted-fg); font-size: 11.5px; font-weight: 600;
       padding: 7px 14px; border-bottom: 1px solid var(--sh-border); border-top: 1px solid var(--sh-border);
     }
-    #view-macro .sh-table-row {
+    .sh-view .sh-table-row {
       border-bottom: 1px solid rgba(39, 39, 42, 0.65); transition: background 0.12s; cursor: pointer;
     }
-    #view-macro .sh-table-row:hover { background: rgba(255, 255, 255, 0.03); }
-    #view-macro .sh-table-row.is-high td:first-child { box-shadow: inset 2px 0 0 #ef4444; }
-    #view-macro .sh-table-row.is-past { opacity: 0.55; }
-    #view-macro .sh-table-row.is-expanded { background: rgba(255, 255, 255, 0.035); }
-    #view-macro .sh-table-row td { padding: 11px 14px; vertical-align: middle; }
-    #view-macro .sh-num {
+    .sh-view .sh-table-row:hover { background: rgba(255, 255, 255, 0.03); }
+    .sh-view .sh-table-row.is-high td:first-child { box-shadow: inset 2px 0 0 #ef4444; }
+    .sh-view .sh-table-row.is-past { opacity: 0.55; }
+    .sh-view .sh-table-row.is-expanded { background: rgba(255, 255, 255, 0.035); }
+    .sh-view .sh-table-row td { padding: 11px 14px; vertical-align: middle; }
+    .sh-view .sh-num {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 12.5px;
     }
-    #view-macro .sh-detail-row td {
+    .sh-view .sh-detail-row td {
       background: #0a0a0c; padding: 12px 18px; border-bottom: 1px solid var(--sh-border);
     }
-    #view-macro .sh-detail-box {
+    .sh-view .sh-detail-box {
       display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
     }
-    #view-macro .sh-scenario-grid {
+    .sh-view .sh-scenario-grid {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px;
     }
     @media (max-width: 980px) {
-      #view-macro .sh-scenario-grid { grid-template-columns: 1fr; }
+      .sh-view .sh-scenario-grid { grid-template-columns: 1fr; }
     }
-    #view-macro .sh-scenario-item {
+    .sh-view .sh-scenario-item {
       background: var(--sh-bg); border: 1px solid var(--sh-border); border-radius: 8px;
       padding: 14px; display: flex; flex-direction: column; gap: 10px;
     }
-    #view-macro .sh-scenario-cond {
+    .sh-view .sh-scenario-cond {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 11.5px; color: var(--sh-fg); background: var(--sh-muted);
       padding: 6px 9px; border-radius: 6px; border: 1px solid var(--sh-border-subtle);
     }
-    #view-macro .sh-scenario-exec {
+    .sh-view .sh-scenario-exec {
       font-size: 12px; color: var(--sh-muted-fg); border-left: 2px solid var(--sh-border);
       padding-left: 10px; line-height: 1.5; margin-top: auto;
     }
@@ -1514,43 +1629,50 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     /* ========================================================
-       AI INTELLIGENCE HUB (26-TA, ASTRA BACKTEST, 300-AGENTS)
+       AI INTELLIGENCE HUB (SHADCN ZINC DARK)
        ======================================================== */
-    .ai-hub-wrapper {
-      flex: 1; overflow-y: auto; background: #0b0d13; padding: 16px 20px;
-      display: flex; flex-direction: column; gap: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      box-sizing: border-box;
-    }
-    .ai-hub-wrapper::-webkit-scrollbar { width: 6px; }
-    .ai-hub-wrapper::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
-    .ai-hub-topbar {
-      display: flex; justify-content: space-between; align-items: center; background: #12151e;
-      border: 1px solid #1f2536; border-radius: 8px; padding: 12px 18px; flex-wrap: wrap; gap: 10px;
-    }
     .ai-hub-grid-3col {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: stretch;
+    }
+    @media (max-width: 1180px) {
+      .ai-hub-grid-3col { grid-template-columns: 1fr; }
     }
     .ai-hub-grid-3rows {
       display: flex; flex-direction: column; gap: 16px;
     }
     .ai-hub-col {
-      background: #10131c; border: 1px solid #1c2233; border-radius: 8px; padding: 14px;
-      display: flex; flex-direction: column; gap: 12px; min-width: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px; min-width: 0;
     }
     .ai-hub-col-head {
-      display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;
-      border-bottom: 1px solid #1e2436; margin-bottom: 2px;
+      display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;
+      border-bottom: 1px solid #27272a;
     }
     .ai-hub-col-title {
-      font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 7px;
+      font-size: 14px; font-weight: 600; color: #fafafa; display: flex; align-items: center; gap: 7px;
     }
-    .ai-hub-btn-toggle {
-      background: #161a26; border: 1px solid #283045; color: #8c93a3; padding: 4px 10px;
-      border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    .ai-hub-subcard {
+      background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
     }
-    .ai-hub-btn-toggle.active {
-      background: #3b82f6; border-color: #3b82f6; color: #fff;
+
+    /* ========================================================
+       REPLAY ENGINE (SHADCN ZINC DARK)
+       ======================================================== */
+    #view-replay .sh-rep-topbar {
+      background: #0c0c0f; border-bottom: 1px solid #27272a; padding: 8px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      z-index: 10; flex-shrink: 0;
+    }
+    #view-replay .sh-rep-dock {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 30;
+      background: rgba(12, 12, 15, 0.92); backdrop-filter: blur(12px);
+      border: 1px solid #27272a; border-radius: 12px; padding: 8px 14px;
+      display: flex; align-items: center; gap: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+      max-width: calc(100% - 32px); flex-wrap: wrap;
+    }
+    #view-replay #rep-slider {
+      width: 140px; accent-color: #fafafa; cursor: pointer;
     }
 
     /* ========================================================
@@ -1672,7 +1794,7 @@ const htmlContent = `<!DOCTYPE html>
       <button class="tab-btn" data-target="view-macro" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;">⚡ Macro Calendar</button>
       <button class="tab-btn" data-target="view-ai-hub" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-weight: 700;">🤖 AI Intelligence Hub</button>
       <button class="tab-btn" data-target="view-replay">⏪ Replay Engine</button>
-      <button class="tab-btn" data-target="view-alert">🔔 Telegram & Kelly</button>
+      <button class="tab-btn" data-target="view-alert">🔔 Telegram</button>
     </div>
     <div class="header-auth-section" id="header-auth-section">
       <button class="btn-auth-wallet" id="btn-header-wallet" title="Connect MetaMask / EVM Wallet (EIP-4361 Secure Signature)">
@@ -2572,453 +2694,452 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <!-- VIEW PAPER TRADE ($10K) -->
-    <div class="view-panel" id="view-paper">
-      <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <button class="btn active" id="btn-toggle-auto-trade" style="background: #22c55e; color: #fff; font-weight: 700;">🟢 Auto-Trade: ACTIVE</button>
-          <button class="btn" id="btn-open-strategy-studio" style="background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); color: #d8b4fe; font-weight: 700;" title="Quản lý chiến lược có sẵn & Tự viết code chiến lược mới">🧠 Chiến Lược: <span id="paper-active-strat-lbl">Oliver Kell Cycle</span> ▾</button>
-          <button class="btn" id="btn-open-hl-agent-modal" style="background: rgba(56, 189, 248, 0.18); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-weight: 700;" title="Cấu hình Hyperliquid Agent Wallet để Bot tự động ký lệnh">🔑 API Bot Key (Hyperliquid) <span id="hl-agent-status-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Chưa Cài</span></button>
-          <button class="btn" id="btn-open-vario-modal" style="background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399; font-weight: 700;" title="Cấu hình kết nối Variational (Omni DEX) để bot chạy chiến lược & cày Airdrop $VAR">🌐 Sàn Variational (Omni) <span id="vario-agent-status-badge" style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Chưa Cài</span></button>
-          <button class="btn" id="btn-paper-refresh">🔄 Refresh Status</button>
-          <button class="btn" id="btn-paper-close-all" style="background: rgba(239, 83, 80, 0.15); color: #ef5350;">Close All Positions</button>
-          <button class="btn" id="btn-paper-reset" style="background: rgba(140, 147, 163, 0.15);">Reset $10k Fund</button>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 11px; color: var(--text-secondary);">Daily Target: <strong>1% - 3% ($100 - $300 / day) [Max 3x Lev]</strong></span>
-          <span id="paper-engine-status" style="font-size: 12px; color: var(--accent-green);">● Auto-Engine Running</span>
-        </div>
-      </div>
-      <div class="panel-scroll">
-        <!-- Summary Cards -->
-        <div class="grid-4" style="margin-bottom: 16px;">
-          <div class="stat-box">
-            <div class="stat-label">Total Account Equity</div>
-            <div class="stat-value" id="paper-equity">$10,000.00</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Available Cash</div>
-            <div class="stat-value" id="paper-cash">$10,000.00</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Today Realized PnL</div>
-            <div class="stat-value" id="paper-daily-pnl">$0.00</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-label">Win Rate / Trades</div>
-            <div class="stat-value" id="paper-winrate">0% (0)</div>
-          </div>
-        </div>
+    <!-- VIEW: PAPER TRADE (SHADCN/UI ZINC DARK) -->
+    <div class="view-panel sh-view" id="view-paper">
+      <div class="sh-scroll">
+        <div class="sh-container">
 
-        <!-- Daily Target & Stop Loss Progress Card -->
-        <div class="card">
-          <div class="card-title">
-            <span>Daily Profit Target (1% - 3% | $100 - $300) & Stop Loss (-$180)</span>
-            <span id="target-progress-text" style="color: #fbbf24; font-weight: 700;">0%</span>
+          <!-- Header -->
+          <div class="sh-header">
+            <div>
+              <h1 class="sh-title">Paper Trade</h1>
+              <p class="sh-subtitle">Tài khoản mô phỏng $10,000 · Oliver Kell Enhanced R:R V2.1 · Tối đa 3x đòn bẩy</p>
+            </div>
+            <div class="sh-header-actions">
+              <span class="sh-badge sh-badge-outline">Target: $100 – $300 / day</span>
+              <span class="sh-badge sh-badge-emerald" id="paper-engine-status">● Auto-Engine Running</span>
+            </div>
           </div>
-          <div style="width: 100%; height: 12px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; margin-top: 4px;">
-            <div id="target-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #26a69a, #4ade80, #fbbf24); transition: width 0.3s;"></div>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--text-secondary);">
-            <span style="color: #ef5350; font-weight: 700;">-$180.00 (Daily Stop Loss -1.8%)</span>
-            <span>$0.00</span>
-            <span style="color: #38bdf8; font-weight: 700;">$100.00 (Min Target 1%)</span>
-            <span style="color: #4ade80; font-weight: 700;">$300.00 (Max Target 3% - Lock)</span>
-          </div>
-        </div>
 
-        <!-- Open Positions -->
-        <div class="card">
-          <div class="card-title">Active Paper Positions (Max 2 Concurrent | Leverage up to 3x)</div>
-          <div style="overflow-x: auto; width: 100%;">
-            <table id="table-paper-positions">
-              <thead>
-                <tr>
-                  <th class="pos-col-symbol">Symbol</th>
-                  <th class="pos-col-side">Side</th>
-                  <th class="pos-col-lev">Lev</th>
-                  <th class="pos-col-entry">Entry</th>
-                  <th class="pos-col-mark">Mark Price</th>
-                  <th class="pos-col-tp">TP</th>
-                  <th class="pos-col-sl">SL</th>
-                  <th class="pos-col-margin">Margin</th>
-                  <th class="pos-col-notional">Notional</th>
-                  <th class="pos-col-pnl">Unrealized PnL</th>
-                  <th class="pos-col-action">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">Scanning for high-confluence entry setups...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <!-- Action Toolbar -->
+          <div class="sh-toolbar-row">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <button class="sh-btn-outline" id="btn-toggle-auto-trade" type="button">● Auto-Trade: Active</button>
+              <button class="sh-btn-outline" id="btn-open-strategy-studio" type="button" title="Quản lý chiến lược có sẵn &amp; Tự viết code chiến lược mới">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/></svg>
+                <span>Strategy: <strong id="paper-active-strat-lbl" style="font-weight: 600;">Oliver Kell Cycle</strong></span>
+              </button>
+              <button class="sh-btn-outline" id="btn-open-hl-agent-modal" type="button" title="Cấu hình Hyperliquid Agent Wallet để Bot tự động ký lệnh">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                <span>Hyperliquid API</span>
+                <span class="sh-badge sh-badge-destructive" id="hl-agent-status-badge" style="height: 18px; font-size: 10px;">Chưa cài</span>
+              </button>
+              <button class="sh-btn-outline" id="btn-open-vario-modal" type="button" title="Cấu hình kết nối Variational (Omni DEX)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span>Variational Omni</span>
+                <span class="sh-badge sh-badge-destructive" id="vario-agent-status-badge" style="height: 18px; font-size: 10px;">Chưa cài</span>
+              </button>
+            </div>
 
-        <!-- Recent Completed Trades -->
-        <div class="grid-2">
-          <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
-            <div class="card-title">Completed Trades History</div>
-            <div style="flex: 1; overflow-y: auto; max-height: 480px;">
-              <table id="table-paper-trades">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <button class="sh-btn-outline" id="btn-paper-refresh" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                <span>Refresh</span>
+              </button>
+              <button class="sh-btn-destructive" id="btn-paper-close-all" type="button">Close All</button>
+              <button class="sh-btn-outline" id="btn-paper-reset" type="button">Reset $10k</button>
+            </div>
+          </div>
+
+          <!-- 4 KPI Cards -->
+          <div class="sh-kpi-4">
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Total Equity</span>
+                <span class="sh-badge sh-badge-outline">USD</span>
+              </div>
+              <div class="sh-card-value" id="paper-equity" style="font-size: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">$10,000.00</div>
+              <div class="sh-card-meta">Tổng tài sản ước tính (Cash + uPnL)</div>
+            </div>
+
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Available Cash</span>
+              </div>
+              <div class="sh-card-value" id="paper-cash" style="font-size: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">$10,000.00</div>
+              <div class="sh-card-meta">Ký quỹ khả dụng cho lệnh mới</div>
+            </div>
+
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Today Realized PnL</span>
+              </div>
+              <div class="sh-card-value" id="paper-daily-pnl" style="font-size: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">$0.00</div>
+              <div class="sh-card-meta">Lãi/lỗ đã chốt trong phiên hôm nay</div>
+            </div>
+
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Win Rate / Trades</span>
+              </div>
+              <div class="sh-card-value" id="paper-winrate" style="font-size: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">0% (0)</div>
+              <div class="sh-card-meta">Tỷ lệ thắng trên tổng số lệnh đã đóng</div>
+            </div>
+          </div>
+
+          <!-- Daily Target & Stop Loss Guard Card -->
+          <div class="sh-card">
+            <div class="sh-card-top" style="margin-bottom: 8px;">
+              <span class="sh-card-label" style="color: var(--sh-fg); font-size: 13px;">Daily Profit Target (1% – 3% | $100 – $300) &amp; Stop Loss Guard (-$180)</span>
+              <span id="target-progress-text" style="font-size: 12.5px; font-weight: 600; color: #fbbf24; font-variant-numeric: tabular-nums;">0%</span>
+            </div>
+            <div class="sh-progress-track">
+              <div id="target-progress-bar" style="height: 100%; width: 0%; background: #10b981; transition: width 0.3s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--sh-subtle-fg); font-variant-numeric: tabular-nums; flex-wrap: wrap; gap: 6px;">
+              <span style="color: #f87171;">-$180.00 Stop Loss (-1.8%)</span>
+              <span>$0.00</span>
+              <span style="color: #38bdf8;">$100.00 Min Target (1%)</span>
+              <span style="color: #34d399;">$300.00 Max Lock (3%)</span>
+            </div>
+          </div>
+
+          <!-- Active Paper Positions Table -->
+          <div class="sh-table-card">
+            <div class="sh-table-card-head">
+              <span class="sh-table-card-title">Active Paper Positions</span>
+              <span class="sh-badge sh-badge-outline">Max 2 Concurrent · Up to 3x Leverage</span>
+            </div>
+            <div class="sh-table-scroll">
+              <table class="sh-table" id="table-paper-positions">
                 <thead>
                   <tr>
-                    <th>Symbol</th>
-                    <th>Side</th>
-                    <th>Exit Price</th>
-                    <th>Net PnL</th>
-                    <th>Reason</th>
+                    <th class="pos-col-symbol">Symbol</th>
+                    <th class="pos-col-side">Side</th>
+                    <th class="pos-col-lev">Lev</th>
+                    <th class="pos-col-entry">Entry</th>
+                    <th class="pos-col-mark">Mark Price</th>
+                    <th class="pos-col-tp">TP</th>
+                    <th class="pos-col-sl">SL</th>
+                    <th class="pos-col-margin">Margin</th>
+                    <th class="pos-col-notional">Notional</th>
+                    <th class="pos-col-pnl">Unrealized PnL</th>
+                    <th class="pos-col-action">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No completed trades yet today.</td></tr>
+                  <tr><td colspan="11" style="text-align: center; color: var(--sh-subtle-fg); padding: 20px;">Scanning for high-confluence entry setups...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- Activity Logs -->
-          <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
-            <div class="card-title">
-              <span>Strategy Execution Log</span>
-              <span id="paper-logs-status" style="font-size: 10px; font-weight: 600; color: #38bdf8;">● Live Event Stream</span>
+          <!-- Completed Trades & Strategy Execution Log -->
+          <div class="sh-grid-2">
+            <div class="sh-table-card" style="display: flex; flex-direction: column;">
+              <div class="sh-table-card-head">
+                <span class="sh-table-card-title">Completed Trades History</span>
+              </div>
+              <div class="sh-table-scroll" style="max-height: 460px;">
+                <table class="sh-table" id="table-paper-trades">
+                  <thead>
+                    <tr>
+                      <th>Symbol</th>
+                      <th>Side</th>
+                      <th>Exit Price</th>
+                      <th>Net PnL</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="5" style="text-align: center; color: var(--sh-subtle-fg); padding: 20px;">No completed trades yet today.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div id="paper-logs-container" style="font-family: monospace; font-size: 11px; color: #cbd5e1; line-height: 1.6; flex: 1; min-height: 320px; max-height: 480px; overflow-y: auto; background: #0c0e14; border: 1px solid #1c202a; border-radius: 6px; padding: 10px 12px; scrollbar-width: thin;">
-              <div>[PaperTrader] Engine initialized with $10,000.00 fund.</div>
+
+            <div class="sh-card" style="display: flex; flex-direction: column;">
+              <div class="sh-card-top">
+                <span class="sh-card-label" style="color: var(--sh-fg); font-size: 13.5px; font-weight: 600;">Strategy Execution Log</span>
+                <span class="sh-badge sh-badge-sky" id="paper-logs-status">● Live Event Stream</span>
+              </div>
+              <div id="paper-logs-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #a1a1aa; line-height: 1.6; flex: 1; min-height: 300px; max-height: 460px; overflow-y: auto; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 12px; scrollbar-width: thin;">
+                <div>[PaperTrader] Engine initialized with $10,000.00 fund.</div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
 
-    <!-- VIEW: TRADESYNC DAILY PNL JOURNAL -->
-    <div class="view-panel" id="view-journal">
+    <!-- VIEW: DAILY PNL JOURNAL (SHADCN/UI ZINC DARK) -->
+    <div class="view-panel sh-view" id="view-journal">
       <div class="ts-dashboard">
-        <!-- Top App Bar & Market Status -->
-        <div class="ts-top-header">
-          <div class="ts-title-left">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <h1 class="ts-title">Journaling Dashboard</h1>
-          </div>
-          <div class="ts-top-right">
-            <div class="ts-status-badge">
-              <span class="ts-status-dot"></span>
-              <span>Market Open</span>
-            </div>
-            <button class="ts-icon-btn" title="Toggle theme">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            </button>
-            <button class="ts-icon-btn" title="Notifications">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              <span class="ts-notif-dot"></span>
-            </button>
-            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;">
-              T
-            </div>
-          </div>
-        </div>
+        <div class="ts-dashboard-inner">
 
-        <!-- Filter Toolbar (Row 1) -->
-        <div class="ts-toolbar">
-          <div class="ts-pill-group">
-            <button class="ts-pill-btn active" data-ts-source="all">All Journals</button>
-          </div>
-          <div class="ts-dropdowns">
-            <select class="ts-select" id="ts-filter-account">
-              <option value="all">All Accounts (Paper $10k & Live)</option>
-              <option value="paper">Paper Trade $10,000 USD</option>
-              <option value="hyperliquid">Hyperliquid Mainnet</option>
-            </select>
-            <select class="ts-select" id="ts-filter-strategy">
-              <option value="all">All Strategies</option>
-              <option value="Supertrend">Supertrend + MACD</option>
-              <option value="Sniper">Sniper A+ Confluence</option>
-              <option value="Manual">Manual Execution</option>
-            </select>
-            <select class="ts-select" id="ts-filter-timeframe">
-              <option value="all">All Time</option>
-              <option value="month">This Month</option>
-              <option value="week">This Week</option>
-            </select>
-            <select class="ts-select" id="ts-month-mode" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-weight: 700;">
-              <option value="sim6m" selected>📊 Paper Trading Journal (Jan - Nov 2026)</option>
-              <option value="current">⚡ Current Live Paper Trading</option>
-              <option value="march2026">📅 March 2026 (Demo Showcase)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Action Toolbar (Row 2) -->
-        <div class="ts-toolbar" style="margin-bottom: 16px;">
-          <div style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
-            <button class="ts-btn-outline" id="btn-ts-export-excel" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #10b981; font-weight: 600;" title="Tải File Excel Kẻ Bảng Đẹp (.xlsx)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-              📊 Export Excel (.xlsx)
-            </button>
-            <button class="ts-btn-outline" id="btn-ts-send-tele" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 600;" title="Gửi File Báo Cáo Excel (.xlsx) Kèm Tổng Kết Sang Telegram Ngay Lập Tức">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              📲 Gửi Báo Cáo Tele
-            </button>
-            <button class="ts-btn-outline" id="btn-ts-import">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              Manual Import <span class="ts-badge-free">Free</span>
-            </button>
-            <button class="ts-btn-white" id="btn-ts-sync">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              Sync
-            </button>
-            <button class="ts-btn-primary" id="btn-ts-new">
-              <span>＋</span> New Journal
-            </button>
-          </div>
-        </div>
-
-        <!-- Section 2: 5 KPI Summary Cards -->
-        <div class="ts-kpi-grid">
-          <!-- Card 1: DAY WIN % -->
-          <div class="ts-kpi-card">
+          <!-- Header -->
+          <div class="ts-top-header">
             <div>
-              <div class="ts-kpi-head"><span>&lt; DAY WIN %</span></div>
-              <div class="ts-kpi-val" id="ts-kpi-winrate">72.7%</div>
-              <div class="ts-kpi-sub" id="ts-kpi-winloss-count">16W - 6L</div>
+              <h1 class="ts-title">Daily PnL Journal</h1>
+              <p class="sh-subtitle">Nhật ký hiệu suất giao dịch theo ngày · Mô phỏng V2.1 &amp; Giao dịch trực tiếp</p>
             </div>
-            <div>
-              <div class="ts-bar-dual">
-                <div class="ts-bar-dual-green" id="ts-kpi-winbar" style="width: 72.7%;"></div>
-                <div class="ts-bar-dual-red" id="ts-kpi-lossbar" style="width: 27.3%;"></div>
-              </div>
-              <div class="ts-kpi-split-foot">
-                <span style="color: #10b981;" id="ts-kpi-wins-label">16 wins</span>
-                <span style="color: #ef4444;" id="ts-kpi-losses-label">6 losses</span>
+            <div class="ts-top-right">
+              <div class="ts-status-badge">
+                <span class="ts-status-dot"></span>
+                <span>Live Sync</span>
               </div>
             </div>
           </div>
 
-          <!-- Card 2: AVG WIN/LOSS -->
-          <div class="ts-kpi-card">
-            <div>
-              <div class="ts-kpi-head"><span>AVG WIN/LOSS</span></div>
-              <div class="ts-kpi-val" id="ts-kpi-avg-winloss">$131.59</div>
-              <div class="ts-kpi-sub">Per trade</div>
+          <!-- Filter & Action Toolbar (Functional controls only) -->
+          <div class="ts-toolbar">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <select class="ts-select sh-select" id="ts-month-mode">
+                <option value="sim6m" selected>Paper Trading Journal (Jan – Nov 2026)</option>
+                <option value="current">Current Live Paper Trading</option>
+                <option value="march2026">March 2026 (Demo Showcase)</option>
+              </select>
             </div>
-            <div>
-              <div class="ts-sub-bar-row">
-                <span style="color: #10b981; font-weight: 700; width: 62px;" id="ts-kpi-avg-win-val">+$250.31</span>
-                <div class="ts-sub-bar-track"><div style="height: 100%; width: 75%; background: #10b981; border-radius: 2px;"></div></div>
-              </div>
-              <div class="ts-sub-bar-row">
-                <span style="color: #ef4444; font-weight: 700; width: 62px;" id="ts-kpi-avg-loss-val">-$185.00</span>
-                <div class="ts-sub-bar-track"><div style="height: 100%; width: 55%; background: #ef4444; border-radius: 2px;"></div></div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Card 3: LONG VS SHORT -->
-          <div class="ts-kpi-card">
-            <div>
-              <div class="ts-kpi-head"><span>LONG VS SHORT</span></div>
-              <div class="ts-kpi-val green" id="ts-kpi-ls-total">+$2,895</div>
-              <div class="ts-kpi-sub">Total PnL</div>
-            </div>
-            <div>
-              <div class="ts-sub-bar-row">
-                <span style="color: #8c93a3; font-weight: 700;">L</span>
-                <div class="ts-sub-bar-track"><div style="height: 100%; width: 68%; background: #10b981; border-radius: 2px;"></div></div>
-                <span style="color: #10b981; font-weight: 700;" id="ts-kpi-long-val">+$1,630 &gt;</span>
-              </div>
-              <div class="ts-sub-bar-row">
-                <span style="color: #8c93a3; font-weight: 700;">S</span>
-                <div class="ts-sub-bar-track"><div style="height: 100%; width: 52%; background: #10b981; border-radius: 2px;"></div></div>
-                <span style="color: #10b981; font-weight: 700;" id="ts-kpi-short-val">+$1,265 &gt;</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 4: MAX STREAKS -->
-          <div class="ts-kpi-card">
-            <div>
-              <div class="ts-kpi-head"><span>MAX STREAKS</span></div>
-              <div class="ts-kpi-val green" id="ts-kpi-streak-val">6</div>
-              <div class="ts-kpi-sub">Best win streak</div>
-            </div>
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
-                <span style="color: #8c93a3;">Consecutive wins</span>
-                <strong style="color: #10b981;" id="ts-kpi-streak-win">6</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px;">
-                <span style="color: #8c93a3;">Consecutive losses</span>
-                <strong style="color: #ef4444;" id="ts-kpi-streak-loss">1</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 5: AVG DURATION -->
-          <div class="ts-kpi-card">
-            <div>
-              <div class="ts-kpi-head"><span>AVG DURATION</span></div>
-              <div class="ts-kpi-val" id="ts-kpi-avg-duration">2h 20m</div>
-              <div class="ts-kpi-sub">Per trade</div>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #8c93a3; margin-top: 4px;">
-              <span>Fastest: <strong style="color: #fff;">14m</strong></span>
-              <span>Longest: <strong style="color: #fff;">8h 15m</strong></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: 4 Performance & Sparkline Cards -->
-        <div class="ts-perf-grid">
-          <!-- Card 1: Tradesyncer Score -->
-          <div class="ts-perf-card">
-            <div class="ts-perf-head">
-              <span>TRADESYNCER SCORE</span>
-              <span class="ts-score-badge" id="ts-score-badge-val">50 / 100</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-              <svg width="100" height="90" viewBox="0 0 100 90">
-                <polygon points="50,15 85,75 15,75" fill="none" stroke="#262a38" stroke-width="1.2" />
-                <polygon points="50,30 72,70 28,70" fill="none" stroke="#1f2330" stroke-width="1" />
-                <line x1="50" y1="15" x2="50" y2="75" stroke="#262a38" stroke-width="0.8" stroke-dasharray="2,2" />
-                <polygon id="ts-radar-polygon" points="50,22 75,68 30,72" fill="rgba(56, 189, 248, 0.25)" stroke="#38bdf8" stroke-width="1.8" />
-                <text x="50" y="10" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="middle">R/W</text>
-                <text x="94" y="80" fill="#8c93a3" font-size="7.5" font-weight="700" text-anchor="end">Win %</text>
-                <text x="6" y="80" fill="#8c93a3" font-size="7.5" font-weight="700">P.F.</text>
-              </svg>
-              <div style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; gap: 6px;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>BIAS</span><span style="color: #fff;" id="ts-score-bias-val">73</span>
-                  </div>
-                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div id="ts-score-bias-bar" style="width: 73%; height: 100%; background: #38bdf8;"></div>
-                  </div>
-                </div>
-                <div>
-                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>R/R</span><span style="color: #fff;" id="ts-score-rr-val">45</span>
-                  </div>
-                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div id="ts-score-rr-bar" style="width: 45%; height: 100%; background: #a855f7;"></div>
-                  </div>
-                </div>
-                <div>
-                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; color: #8c93a3;">
-                    <span>P.F.</span><span style="color: #fff;" id="ts-score-pf-val">34</span>
-                  </div>
-                  <div style="height: 3px; background: #202430; border-radius: 2px; overflow: hidden; margin-top: 2px;">
-                    <div id="ts-score-pf-bar" style="width: 34%; height: 100%; background: #10b981;"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: DAILY CUMULATIVE PNL -->
-          <div class="ts-perf-card">
-            <div class="ts-perf-head">
-              <span>DAILY CUMULATIVE PNL</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-            </div>
-            <div class="ts-perf-val" id="ts-cum-pnl-val">+$2,895</div>
-            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
-              <defs>
-                <linearGradient id="tsGradCum" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
-                </linearGradient>
-              </defs>
-              <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6 L 175 50 L 0 50 Z" fill="url(#tsGradCum)" />
-              <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
-              <circle cx="175" cy="6" r="3" fill="#10b981" />
-            </svg>
-          </div>
-
-          <!-- Card 3: DRAWDOWN -->
-          <div class="ts-perf-card">
-            <div class="ts-perf-head">
-              <span>DRAWDOWN</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
-            </div>
-            <div class="ts-perf-val red" id="ts-dd-val">-$150.00 <span style="font-size: 11px; font-weight: 500; color: #8c93a3;">current</span></div>
-            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
-              <defs>
-                <linearGradient id="tsGradDD" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.3"/>
-                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
-                </linearGradient>
-              </defs>
-              <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44 L 175 50 L 0 50 Z" fill="url(#tsGradDD)" />
-              <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
-              <circle cx="175" cy="44" r="3" fill="#ef4444" />
-            </svg>
-          </div>
-
-          <!-- Card 4: P&L -->
-          <div class="ts-perf-card">
-            <div class="ts-perf-head">
-              <span>PNL</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-            </div>
-            <div class="ts-perf-val" id="ts-today-pnl-val">+$250</div>
-            <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
-              <path d="M 0 35 Q 25 15, 50 25 T 100 20 T 140 10 T 175 6" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
-              <circle cx="175" cy="6" r="3" fill="#10b981" />
-            </svg>
-          </div>
-        </div>
-
-        <!-- Section 4: Interactive Tradesyncer Calendar View -->
-        <div class="ts-calendar-card">
-          <div class="ts-cal-header">
-            <div class="ts-cal-brand">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
-                <circle cx="9" cy="12" r="5"></circle>
-                <circle cx="15" cy="12" r="5"></circle>
-              </svg>
-              <span>Tradesync Tradesyncer Calendar</span>
-            </div>
-            <div class="ts-cal-nav">
-              <button class="ts-cal-nav-btn" id="btn-ts-prev-month" title="Previous month">&lt;</button>
-              <div class="ts-cal-nav-title" id="ts-cal-title">October 2026 (Live Paper)</div>
-              <button class="ts-cal-nav-btn" id="btn-ts-next-month" title="Next month">&gt;</button>
-            </div>
-            <div class="ts-cal-actions">
-              <button class="ts-btn-outline" id="btn-ts-journal-card" style="font-size: 11px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                Journal Card
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button class="ts-btn-outline" id="btn-ts-export-excel" type="button" title="Tải File Excel (.xlsx)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+                <span>Export Excel</span>
+              </button>
+              <button class="ts-btn-outline" id="btn-ts-send-tele" type="button" title="Gửi Báo Cáo Excel (.xlsx) Sang Telegram">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <span>Gửi Telegram</span>
+              </button>
+              <button class="ts-btn-primary" id="btn-ts-sync" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                <span>Sync</span>
               </button>
             </div>
           </div>
 
-          <!-- 8-Column Calendar Grid -->
-          <div class="ts-cal-grid" id="ts-cal-grid-body">
-            <!-- Headers and Cells will be dynamically generated by JS -->
+          <!-- 5 KPI Summary Cards -->
+          <div class="ts-kpi-grid">
+            <div class="ts-kpi-card">
+              <div>
+                <div class="ts-kpi-head"><span>Win Rate</span></div>
+                <div class="ts-kpi-val" id="ts-kpi-winrate">72.7%</div>
+                <div class="ts-kpi-sub" id="ts-kpi-winloss-count">16W - 6L</div>
+              </div>
+              <div>
+                <div class="ts-bar-dual">
+                  <div class="ts-bar-dual-green" id="ts-kpi-winbar" style="width: 72.7%;"></div>
+                  <div class="ts-bar-dual-red" id="ts-kpi-lossbar" style="width: 27.3%;"></div>
+                </div>
+                <div class="ts-kpi-split-foot">
+                  <span style="color: #34d399;" id="ts-kpi-wins-label">16 wins</span>
+                  <span style="color: #f87171;" id="ts-kpi-losses-label">6 losses</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ts-kpi-card">
+              <div>
+                <div class="ts-kpi-head"><span>Avg Win / Loss</span></div>
+                <div class="ts-kpi-val" id="ts-kpi-avg-winloss">$131.59</div>
+                <div class="ts-kpi-sub">Per trade expectancy</div>
+              </div>
+              <div>
+                <div class="ts-sub-bar-row">
+                  <span style="color: #34d399; font-weight: 500; width: 66px;" id="ts-kpi-avg-win-val">+$250.31</span>
+                  <div class="ts-sub-bar-track"><div style="height: 100%; width: 75%; background: #10b981; border-radius: 999px;"></div></div>
+                </div>
+                <div class="ts-sub-bar-row">
+                  <span style="color: #f87171; font-weight: 500; width: 66px;" id="ts-kpi-avg-loss-val">-$185.00</span>
+                  <div class="ts-sub-bar-track"><div style="height: 100%; width: 55%; background: #ef4444; border-radius: 999px;"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ts-kpi-card">
+              <div>
+                <div class="ts-kpi-head"><span>Long vs Short</span></div>
+                <div class="ts-kpi-val green" id="ts-kpi-ls-total">+$2,895</div>
+                <div class="ts-kpi-sub">Total Net PnL</div>
+              </div>
+              <div>
+                <div class="ts-sub-bar-row">
+                  <span style="color: #a1a1aa; font-weight: 500;">L</span>
+                  <div class="ts-sub-bar-track"><div style="height: 100%; width: 68%; background: #10b981; border-radius: 999px;"></div></div>
+                  <span style="color: #34d399; font-weight: 500;" id="ts-kpi-long-val">+$1,630 &gt;</span>
+                </div>
+                <div class="ts-sub-bar-row">
+                  <span style="color: #a1a1aa; font-weight: 500;">S</span>
+                  <div class="ts-sub-bar-track"><div style="height: 100%; width: 52%; background: #10b981; border-radius: 999px;"></div></div>
+                  <span style="color: #34d399; font-weight: 500;" id="ts-kpi-short-val">+$1,265 &gt;</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ts-kpi-card">
+              <div>
+                <div class="ts-kpi-head"><span>Max Streaks</span></div>
+                <div class="ts-kpi-val green" id="ts-kpi-streak-val">6</div>
+                <div class="ts-kpi-sub">Best consecutive wins</div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                  <span style="color: #71717a;">Consecutive wins</span>
+                  <strong style="color: #34d399; font-weight: 600;" id="ts-kpi-streak-win">6</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                  <span style="color: #71717a;">Consecutive losses</span>
+                  <strong style="color: #f87171; font-weight: 600;" id="ts-kpi-streak-loss">1</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="ts-kpi-card">
+              <div>
+                <div class="ts-kpi-head"><span>Avg Duration</span></div>
+                <div class="ts-kpi-val" id="ts-kpi-avg-duration">2h 20m</div>
+                <div class="ts-kpi-sub">Holding duration</div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: #71717a; margin-top: 4px;">
+                <span>Fastest: <strong style="color: #fafafa; font-weight: 500;">14m</strong></span>
+                <span>Longest: <strong style="color: #fafafa; font-weight: 500;">8h 15m</strong></span>
+              </div>
+            </div>
           </div>
+
+          <!-- 4 Performance & Sparkline Cards -->
+          <div class="ts-perf-grid">
+            <div class="ts-perf-card">
+              <div class="ts-perf-head">
+                <span>Performance Score</span>
+                <span class="ts-score-badge" id="ts-score-badge-val">50 / 100</span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                <svg width="96" height="86" viewBox="0 0 100 90">
+                  <polygon points="50,15 85,75 15,75" fill="none" stroke="#27272a" stroke-width="1.2" />
+                  <polygon points="50,30 72,70 28,70" fill="none" stroke="#18181b" stroke-width="1" />
+                  <line x1="50" y1="15" x2="50" y2="75" stroke="#27272a" stroke-width="0.8" stroke-dasharray="2,2" />
+                  <polygon id="ts-radar-polygon" points="50,22 75,68 30,72" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="1.6" />
+                  <text x="50" y="10" fill="#71717a" font-size="7.5" font-weight="600" text-anchor="middle">R/W</text>
+                  <text x="94" y="80" fill="#71717a" font-size="7.5" font-weight="600" text-anchor="end">Win %</text>
+                  <text x="6" y="80" fill="#71717a" font-size="7.5" font-weight="600">P.F.</text>
+                </svg>
+                <div style="flex: 1; margin-left: 12px; display: flex; flex-direction: column; gap: 7px;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 500; color: #a1a1aa;">
+                      <span>BIAS</span><span style="color: #fafafa;" id="ts-score-bias-val">73</span>
+                    </div>
+                    <div style="height: 4px; background: #18181b; border-radius: 999px; overflow: hidden; margin-top: 3px;">
+                      <div id="ts-score-bias-bar" style="width: 73%; height: 100%; background: #38bdf8;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 500; color: #a1a1aa;">
+                      <span>R/R</span><span style="color: #fafafa;" id="ts-score-rr-val">45</span>
+                    </div>
+                    <div style="height: 4px; background: #18181b; border-radius: 999px; overflow: hidden; margin-top: 3px;">
+                      <div id="ts-score-rr-bar" style="width: 45%; height: 100%; background: #a855f7;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 500; color: #a1a1aa;">
+                      <span>P.F.</span><span style="color: #fafafa;" id="ts-score-pf-val">34</span>
+                    </div>
+                    <div style="height: 4px; background: #18181b; border-radius: 999px; overflow: hidden; margin-top: 3px;">
+                      <div id="ts-score-pf-bar" style="width: 34%; height: 100%; background: #10b981;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ts-perf-card">
+              <div class="ts-perf-head">
+                <span>Cumulative PnL</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div class="ts-perf-val" id="ts-cum-pnl-val">+$2,895</div>
+              <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+                <defs>
+                  <linearGradient id="tsGradCum" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.28"/>
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6 L 175 50 L 0 50 Z" fill="url(#tsGradCum)" />
+                <path d="M 0 45 L 20 40 L 45 36 L 70 28 L 95 24 L 120 18 L 145 12 L 175 6" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" />
+                <circle cx="175" cy="6" r="2.5" fill="#10b981" />
+              </svg>
+            </div>
+
+            <div class="ts-perf-card">
+              <div class="ts-perf-head">
+                <span>Max Drawdown</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+              </div>
+              <div class="ts-perf-val red" id="ts-dd-val">-$150.00 <span style="font-size: 11px; font-weight: 400; color: #71717a;">max</span></div>
+              <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+                <defs>
+                  <linearGradient id="tsGradDD" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44 L 175 50 L 0 50 Z" fill="url(#tsGradDD)" />
+                <path d="M 0 8 L 35 8 L 70 12 L 105 10 L 140 14 L 165 42 L 175 44" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" />
+                <circle cx="175" cy="44" r="2.5" fill="#ef4444" />
+              </svg>
+            </div>
+
+            <div class="ts-perf-card">
+              <div class="ts-perf-head">
+                <span>Month PnL</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div class="ts-perf-val" id="ts-today-pnl-val">+$250</div>
+              <svg class="ts-sparkline-svg" viewBox="0 0 180 50">
+                <path d="M 0 35 Q 25 15, 50 25 T 100 20 T 140 10 T 175 6" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" />
+                <circle cx="175" cy="6" r="2.5" fill="#10b981" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Monthly Calendar Card -->
+          <div class="ts-calendar-card">
+            <div class="ts-cal-header">
+              <div class="ts-cal-brand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>Monthly Calendar</span>
+              </div>
+              <div class="ts-cal-nav">
+                <button class="ts-cal-nav-btn" id="btn-ts-prev-month" type="button" title="Previous month">&lt;</button>
+                <div class="ts-cal-nav-title" id="ts-cal-title">November 2026</div>
+                <button class="ts-cal-nav-btn" id="btn-ts-next-month" type="button" title="Next month">&gt;</button>
+              </div>
+              <div class="ts-cal-actions">
+                <button class="ts-btn-outline" id="btn-ts-journal-card" type="button" style="height: 28px; font-size: 12px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  <span>Day Details</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="ts-cal-grid" id="ts-cal-grid-body">
+              <!-- Dynamically generated by JS -->
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
 
     <!-- Day Journal Detail Modal -->
-    <div class="ts-modal-overlay" id="ts-modal-overlay">
+    <div class="ts-modal-overlay sh-view" id="ts-modal-overlay">
       <div class="ts-modal-box">
         <div class="ts-modal-head">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            <strong style="font-size: 14px; color: #fff;" id="ts-modal-date-title">Trade Details — March 19, 2026</strong>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <strong style="font-size: 15px; font-weight: 600; color: #fafafa;" id="ts-modal-date-title">Trade Details</strong>
           </div>
-          <button id="btn-ts-modal-close" style="background: transparent; border: none; color: #8c93a3; font-size: 18px; cursor: pointer; padding: 0 4px;">✕</button>
+          <button id="btn-ts-modal-close" type="button" style="background: transparent; border: none; color: #a1a1aa; font-size: 16px; cursor: pointer; padding: 4px 6px;">✕</button>
         </div>
-        <div id="ts-modal-summary" style="display: flex; gap: 12px; margin-bottom: 14px;"></div>
+        <div id="ts-modal-summary" style="display: flex; gap: 12px; margin-bottom: 16px;"></div>
         <div id="ts-modal-trades-list"></div>
       </div>
     </div>
 
     <!-- VIEW: MACRO CALENDAR (SHADCN/UI ZINC DARK) -->
-    <div class="view-panel" id="view-macro">
+    <div class="view-panel sh-view" id="view-macro">
       <div class="sh-scroll">
         <div class="sh-container">
 
@@ -3197,371 +3318,365 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <!-- VIEW: AI INTELLIGENCE HUB (COMBINED: 26-TA VALIDATION • ASTRA BACKTEST • 300-AGENT HUB) -->
-    <div class="view-panel" id="view-ai-hub">
-      <div class="ai-hub-wrapper">
+    <!-- VIEW: AI INTELLIGENCE HUB (SHADCN/UI ZINC DARK) -->
+    <div class="view-panel sh-view" id="view-ai-hub">
+      <div class="sh-scroll">
+        <div class="sh-container">
 
-        <!-- Executive Topbar & Layout Switcher -->
-        <div class="ai-hub-topbar">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); display: flex; align-items: center; justify-content: center; font-size: 16px;">
-              🤖
-            </div>
+          <!-- Header -->
+          <div class="sh-header">
             <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h1 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">AI Intelligence & Quantitative Backtest Hub</h1>
-                <span class="mc-pill-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">3-IN-1 UNIFIED</span>
-                <span class="mc-pill-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">MULTI-AGENT</span>
+              <h1 class="sh-title">AI Intelligence Hub</h1>
+              <p class="sh-subtitle">Đồng thuận 26 chỉ báo kỹ thuật · Kiểm thử chiến lược Astra Backtest · Cụm 300 Sub-Agents song song</p>
+            </div>
+            <div class="sh-header-actions">
+              <div class="sh-tabs-list" role="tablist">
+                <button class="sh-tab-trigger ai-hub-focus-btn active" type="button" data-ai-target="all">All Modules</button>
+                <button class="sh-tab-trigger ai-hub-focus-btn" type="button" data-ai-target="ai-sec-validation">Validation 26-TA</button>
+                <button class="sh-tab-trigger ai-hub-focus-btn" type="button" data-ai-target="ai-sec-backtest">Astra Backtest</button>
+                <button class="sh-tab-trigger ai-hub-focus-btn" type="button" data-ai-target="ai-sec-hub">300-Agent Hub</button>
               </div>
-              <div style="font-size: 10.5px; color: #8c93a3; margin-top: 2px;">
-                Hệ thống AI đa tầng: Đồng thuận 26 chỉ báo TA • Thử nghiệm chiến lược Astra • Giám sát 300 Sub-Agents song song
-              </div>
+              <button class="sh-btn-primary" id="btn-ai-run-all" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <span>Run All Engines</span>
+              </button>
             </div>
           </div>
 
-          <!-- Section Filter Pills -->
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <div class="ts-pill-group">
-              <button class="ts-pill-btn ai-hub-focus-btn active" data-ai-target="all">Toàn bộ (All 3)</button>
-              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-validation">🛡️ 1. Validation 26-TA</button>
-              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-backtest">🧪 2. Astra Backtest</button>
-              <button class="ts-pill-btn ai-hub-focus-btn" data-ai-target="ai-sec-hub">🤖 3. 300-Agent Hub</button>
+          <!-- 3-Column Unified Grid -->
+          <div id="ai-hub-main-container" class="ai-hub-grid-3col">
+
+            <!-- MODULE 1: VALIDATION BOT (26 TA CONSENSUS GATE) -->
+            <div class="ai-hub-col" id="ai-sec-validation">
+              <div class="ai-hub-col-head">
+                <div class="ai-hub-col-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span>Validation Bot (26 TA)</span>
+                </div>
+                <span class="sh-badge sh-badge-emerald" id="val-status">Ready</span>
+              </div>
+
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" id="val-sym-input" class="sh-input-plain" value="BINANCE:BTCUSDT" style="flex: 1;">
+                <button class="sh-btn-primary sh-btn-sm" id="btn-run-validation" type="button">Evaluate 26 TA</button>
+              </div>
+
+              <!-- Consensus Gate Verdict -->
+              <div class="ai-hub-subcard">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12.5px; font-weight: 600; color: var(--sh-fg);">Consensus Gate Verdict</span>
+                  <span id="val-verdict-badge" class="action-badge action-neutral">PENDING</span>
+                </div>
+                <div class="grid-4" style="gap: 8px;">
+                  <div class="sh-stat-mini"><div class="stat-label">Trade Gate</div><div class="stat-value" id="val-gate" style="font-size: 12px;">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Buy Votes</div><div class="stat-value val-green" id="val-buy" style="font-size: 13px;">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Neutral</div><div class="stat-value" id="val-neutral" style="font-size: 13px;">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Sell Votes</div><div class="stat-value val-red" id="val-sell" style="font-size: 13px;">—</div></div>
+                </div>
+                <p id="val-reason" style="margin: 0; font-size: 12px; color: var(--sh-muted-fg); line-height: 1.45;"></p>
+              </div>
+
+              <!-- Quantitative Edge Statistics Card -->
+              <div class="ai-hub-subcard" id="val-edge-stats-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 12.5px; font-weight: 600; color: var(--sh-fg);">Edge Stats</span>
+                    <span class="sh-badge sh-badge-outline" style="height: 19px; font-size: 10px;">Wilson 95%</span>
+                  </div>
+                  <span id="edge-eval-range" style="font-size: 11px; color: var(--sh-subtle-fg);">History: —</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                  <div class="sh-stat-mini">
+                    <div class="stat-label">Prior High (PDH)</div>
+                    <div class="stat-value val-green" id="edge-pdh-rate" style="font-size: 13px;">—</div>
+                    <div style="font-size: 10px; color: var(--sh-subtle-fg);" id="edge-pdh-ci">CI: —</div>
+                    <div style="font-size: 10px; color: var(--sh-muted-fg);" id="edge-pdh-sub">Dist: —</div>
+                  </div>
+                  <div class="sh-stat-mini">
+                    <div class="stat-label">Prior Low (PDL)</div>
+                    <div class="stat-value val-red" id="edge-pdl-rate" style="font-size: 13px;">—</div>
+                    <div style="font-size: 10px; color: var(--sh-subtle-fg);" id="edge-pdl-ci">CI: —</div>
+                    <div style="font-size: 10px; color: var(--sh-muted-fg);" id="edge-pdl-sub">Dist: —</div>
+                  </div>
+                  <div class="sh-stat-mini">
+                    <div class="stat-label">Gap Fill Rate</div>
+                    <div class="stat-value val-yellow" id="edge-gap-rate" style="font-size: 13px;">—</div>
+                    <div style="font-size: 10px; color: var(--sh-subtle-fg);" id="edge-gap-ci">CI: —</div>
+                    <div style="font-size: 10px; color: var(--sh-muted-fg);" id="edge-gap-time">Time: —</div>
+                  </div>
+                  <div class="sh-stat-mini">
+                    <div class="stat-label">ORB Trend Exp</div>
+                    <div class="stat-value" id="edge-orb-rate" style="color: #fafafa; font-size: 13px;">—</div>
+                    <div style="font-size: 10px; color: var(--sh-subtle-fg);" id="edge-orb-ci">CI: —</div>
+                    <div style="font-size: 10px; color: var(--sh-muted-fg);" id="edge-orb-false">False: —</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Oscillators & MAs Tables -->
+              <div class="sh-table-card">
+                <div class="sh-table-card-head" style="padding: 10px 12px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--sh-fg);">Oscillators (11)</span>
+                  <span style="font-size: 11px; color: var(--sh-subtle-fg);">Động lượng &amp; Đảo chiều</span>
+                </div>
+                <div class="sh-table-scroll" style="max-height: 360px;">
+                  <table class="sh-table" id="table-osc"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
+                </div>
+              </div>
+
+              <div class="sh-table-card">
+                <div class="sh-table-card-head" style="padding: 10px 12px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--sh-fg);">Moving Averages (15)</span>
+                  <span style="font-size: 11px; color: var(--sh-subtle-fg);">Đường trung bình động</span>
+                </div>
+                <div class="sh-table-scroll" style="max-height: 440px;">
+                  <table class="sh-table" id="table-ma"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
+                </div>
+              </div>
             </div>
+
+            <!-- MODULE 2: ASTRA WALKFORWARD BACKTEST ENGINE -->
+            <div class="ai-hub-col" id="ai-sec-backtest">
+              <div class="ai-hub-col-head">
+                <div class="ai-hub-col-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v4l-5.2 8.7A2 2 0 0 0 6.5 19h11a2 2 0 0 0 1.7-3.3L14 7V3"/></svg>
+                  <span>Astra Backtest Engine</span>
+                </div>
+                <span class="sh-badge sh-badge-outline" id="bt-status">Ready</span>
+              </div>
+
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="bt-sym-input" class="sh-input-plain" value="BINANCE:BTCUSDT" style="width: 128px;">
+                <select id="bt-strat-select" class="sh-select" style="flex: 1;">
+                  <option value="supertrend">Supertrend (10, 3)</option>
+                  <option value="emacross">EMA Cross (9 / 21)</option>
+                  <option value="rsi">RSI Mean-Reversion (14)</option>
+                </select>
+                <button class="sh-btn-primary sh-btn-sm" id="btn-run-backtest" type="button">Test Hypothesis</button>
+              </div>
+
+              <!-- Performance Summary -->
+              <div class="ai-hub-subcard">
+                <span style="font-size: 12.5px; font-weight: 600; color: var(--sh-fg);">Strategy Performance Summary</span>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                  <div class="sh-stat-mini"><div class="stat-label">Net Profit</div><div class="stat-value" id="bt-profit">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Win Rate</div><div class="stat-value" id="bt-winrate">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Sharpe Ratio</div><div class="stat-value" id="bt-sharpe">—</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Max Drawdown</div><div class="stat-value" id="bt-drawdown">—</div></div>
+                </div>
+              </div>
+
+              <!-- Recent Simulated Trades Table -->
+              <div class="sh-table-card" style="flex: 1; display: flex; flex-direction: column;">
+                <div class="sh-table-card-head" style="padding: 10px 12px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--sh-fg);">Recent Simulated Trades</span>
+                </div>
+                <div class="sh-table-scroll" style="flex: 1; max-height: 650px;">
+                  <table class="sh-table" id="table-trades">
+                    <thead><tr><th>Type</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>PnL $</th><th>Capital</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE 3: 300-AGENT MULTI-TOKEN CLUSTER -->
+            <div class="ai-hub-col" id="ai-sec-hub">
+              <div class="ai-hub-col-head">
+                <div class="ai-hub-col-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>300-Agent Multi-Token Hub</span>
+                </div>
+                <span class="sh-badge sh-badge-emerald" id="hub-status-text">Hub Online</span>
+              </div>
+
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="sh-btn-primary sh-btn-sm" id="btn-hub-simulate" type="button" style="flex: 1; justify-content: center;">Simulate 300 Agents Feed</button>
+                <button class="sh-btn-outline sh-btn-sm" id="btn-hub-refresh" type="button">Refresh Hub</button>
+              </div>
+
+              <!-- Multiplexer Overview -->
+              <div class="ai-hub-subcard">
+                <span style="font-size: 12.5px; font-weight: 600; color: var(--sh-fg);">Multiplexer Connection Pool</span>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                  <div class="sh-stat-mini"><div class="stat-label">Active Agents</div><div class="stat-value" id="hub-agents-count">0</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Symbols Tracked</div><div class="stat-value" id="hub-symbols-count">0</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Feed Points</div><div class="stat-value" id="hub-cached-count">0</div></div>
+                  <div class="sh-stat-mini"><div class="stat-label">Stream Cost</div><div class="stat-value val-green">$0 (Free)</div></div>
+                </div>
+              </div>
+
+              <!-- Sub-Agent Live Feeds Table -->
+              <div class="sh-table-card" style="flex: 1; display: flex; flex-direction: column;">
+                <div class="sh-table-card-head" style="padding: 10px 12px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--sh-fg);">Sub-Agent Live Market Feeds</span>
+                </div>
+                <div class="sh-table-scroll" style="flex: 1; max-height: 650px;">
+                  <table class="sh-table" id="table-hub-feeds">
+                    <thead><tr><th>Symbol</th><th>Price</th><th>24h %</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
           </div>
-
-          <!-- Right Action: Run All AI Engines -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn active" id="btn-ai-run-all" style="background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700; padding: 5px 12px; font-size: 11px;">
-              ⚡ Run All AI Engines
-            </button>
-          </div>
-        </div>
-
-        <!-- Main 3-Column Unified Grid -->
-        <div id="ai-hub-main-container" class="ai-hub-grid-3col">
-
-          <!-- ==============================================
-               MODULE 1: VALIDATION BOT (26 TA CONSENSUS GATE)
-               ============================================== -->
-          <div class="ai-hub-col" id="ai-sec-validation">
-            <div class="ai-hub-col-head">
-              <div class="ai-hub-col-title">
-                <span style="color: #38bdf8;">🛡️</span>
-                <span>1. Validation Bot (26 TA)</span>
-              </div>
-              <span id="val-status" style="font-size: 11px; color: var(--accent-green); font-weight: 600;">Ready</span>
-            </div>
-
-            <!-- Controls bar -->
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <input type="text" id="val-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="flex: 1; padding: 4px 8px; font-size: 11px;">
-              <button class="btn active" id="btn-run-validation" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Evaluate 26 TA</button>
-            </div>
-
-            <!-- Consensus Gate Verdict Card -->
-            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">
-                <span>Consensus Gate Verdict</span>
-                <span id="val-verdict-badge" class="action-badge action-neutral">PENDING</span>
-              </div>
-              <div class="grid-4" style="gap: 6px;">
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Trade Gate</div><div class="stat-value" id="val-gate" style="font-size: 12px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Buy Votes</div><div class="stat-value val-green" id="val-buy" style="font-size: 12px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Neutral</div><div class="stat-value" id="val-neutral" style="font-size: 12px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Sell Votes</div><div class="stat-value val-red" id="val-sell" style="font-size: 12px;">--</div></div>
-              </div>
-              <p id="val-reason" style="margin-top: 8px; font-size: 11px; color: var(--text-secondary); line-height: 1.4;"></p>
-            </div>
-
-            <!-- Quantitative Edge Statistics Card (LuxAlgo edge-stats) -->
-            <div class="card" id="val-edge-stats-card" style="padding: 10px 12px; margin-bottom: 0; border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(14, 18, 30, 0.65);">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="color: #38bdf8; font-weight: 700;">📐 Edge Stats</span>
-                  <span class="ios-glass-pill" style="font-size: 8.5px; padding: 1px 5px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Wilson 95%</span>
-                </div>
-                <span id="edge-eval-range" style="font-size: 10px; color: var(--text-secondary);">History: --</span>
-              </div>
-
-              <div class="grid-4" style="gap: 6px; margin-top: 4px;">
-                <div class="stat-box" style="padding: 6px 8px;">
-                  <div class="stat-label" style="font-size: 8.5px;">Prior High (PDH)</div>
-                  <div class="stat-value val-green" id="edge-pdh-rate" style="font-size: 12px;">--</div>
-                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-pdh-ci">CI: --</div>
-                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-pdh-sub">Dist: --</div>
-                </div>
-                <div class="stat-box" style="padding: 6px 8px;">
-                  <div class="stat-label" style="font-size: 8.5px;">Prior Low (PDL)</div>
-                  <div class="stat-value val-red" id="edge-pdl-rate" style="font-size: 12px;">--</div>
-                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-pdl-ci">CI: --</div>
-                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-pdl-sub">Dist: --</div>
-                </div>
-                <div class="stat-box" style="padding: 6px 8px;">
-                  <div class="stat-label" style="font-size: 8.5px;">Gap Fill Rate</div>
-                  <div class="stat-value" style="color: #fbbf24; font-size: 12px;" id="edge-gap-rate">--</div>
-                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-gap-ci">CI: --</div>
-                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-gap-time">Time: --</div>
-                </div>
-                <div class="stat-box" style="padding: 6px 8px;">
-                  <div class="stat-label" style="font-size: 8.5px;">ORB Trend Exp</div>
-                  <div class="stat-value" style="color: #a855f7; font-size: 12px;" id="edge-orb-rate">--</div>
-                  <div style="font-size: 8.5px; color: var(--text-secondary);" id="edge-orb-ci">CI: --</div>
-                  <div style="font-size: 8.5px; color: #94a3b8;" id="edge-orb-false">False: --</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Oscillators & MAs Tables (expanded downwards to fit all 26 indicators without inner scrolling) -->
-            <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
-              <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
-                <div class="card-title" style="font-size: 11px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-weight: 700; color: #e2e8f0;">Oscillators (11 Indicators)</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Động lượng & Đảo chiều</span>
-                </div>
-                <div style="max-height: 410px; overflow-y: auto; scrollbar-width: thin;">
-                  <table id="table-osc" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
-                </div>
-              </div>
-              <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
-                <div class="card-title" style="font-size: 11px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-weight: 700; color: #e2e8f0;">Moving Averages (15 Indicators)</span>
-                  <span style="font-size: 9.5px; color: #94a3b8;">Đường trung bình động</span>
-                </div>
-                <div style="max-height: 550px; overflow-y: auto; scrollbar-width: thin;">
-                  <table id="table-ma" style="width: 100%; font-size: 11px;"><thead><tr><th>Indicator</th><th>Value</th><th>Signal</th></tr></thead><tbody></tbody></table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ==============================================
-               MODULE 2: ASTRA WALKFORWARD BACKTEST ENGINE
-               ============================================== -->
-          <div class="ai-hub-col" id="ai-sec-backtest">
-            <div class="ai-hub-col-head">
-              <div class="ai-hub-col-title">
-                <span style="color: #a855f7;">🧪</span>
-                <span>2. Astra Backtest Engine</span>
-              </div>
-              <span id="bt-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Ready</span>
-            </div>
-
-            <!-- Controls bar -->
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <input type="text" id="bt-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 120px; padding: 4px 8px; font-size: 11px;">
-              <select id="bt-strat-select" class="btn" style="outline: none; padding: 4px 6px; font-size: 10.5px; flex: 1;">
-                <option value="supertrend">Supertrend (10, 3)</option>
-                <option value="emacross">EMA Cross (9 / 21)</option>
-                <option value="rsi">RSI Mean-Reversion (14)</option>
-              </select>
-              <button class="btn active" id="btn-run-backtest" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Test Hypothesis</button>
-            </div>
-
-            <!-- Performance Summary Card -->
-            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">Strategy Performance Summary</div>
-              <div class="grid-4" style="gap: 6px;">
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Net Profit</div><div class="stat-value" id="bt-profit" style="font-size: 13px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Win Rate</div><div class="stat-value" id="bt-winrate" style="font-size: 13px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Sharpe</div><div class="stat-value" id="bt-sharpe" style="font-size: 13px;">--</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Max DD</div><div class="stat-value" id="bt-drawdown" style="font-size: 13px;">--</div></div>
-              </div>
-            </div>
-
-            <!-- Recent Simulated Trades Table -->
-            <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Recent Simulated Trades</div>
-              <div style="flex: 1; max-height: 650px; overflow-y: auto; scrollbar-width: thin;">
-                <table id="table-trades" style="width: 100%; font-size: 11px;">
-                  <thead><tr><th>Type</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>PnL $</th><th>Capital</th></tr></thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- ==============================================
-               MODULE 3: 300-AGENT MULTI-TOKEN CLUSTER
-               ============================================== -->
-          <div class="ai-hub-col" id="ai-sec-hub">
-            <div class="ai-hub-col-head">
-              <div class="ai-hub-col-title">
-                <span style="color: #10b981;">🤖</span>
-                <span>3. 300-Agent Multi-Token Hub</span>
-              </div>
-              <span id="hub-status-text" style="font-size: 11px; color: var(--accent-green); font-weight: 600;">Hub Online</span>
-            </div>
-
-            <!-- Controls bar -->
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <button class="btn active" id="btn-hub-simulate" style="padding: 4px 10px; font-size: 11px; flex: 1;">Simulate 300 Agents Feed</button>
-              <button class="btn" id="btn-hub-refresh" style="padding: 4px 10px; font-size: 11px;">Refresh Hub</button>
-            </div>
-
-            <!-- Multiplexer Overview Card -->
-            <div class="card" style="padding: 10px 12px; margin-bottom: 0;">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 8px;">Multiplexer Connection Pool (10x Signal Coverage)</div>
-              <div class="grid-4" style="gap: 6px;">
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Active Agents</div><div class="stat-value" id="hub-agents-count" style="font-size: 13px;">0</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Symbols</div><div class="stat-value" id="hub-symbols-count" style="font-size: 13px;">0</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Feed Points</div><div class="stat-value" id="hub-cached-count" style="font-size: 13px;">0</div></div>
-                <div class="stat-box" style="padding: 6px 8px;"><div class="stat-label" style="font-size: 9px;">Cost</div><div class="stat-value val-green" style="font-size: 13px;">$0 (Free)</div></div>
-              </div>
-            </div>
-
-            <!-- Sub-Agent Live Feeds Table -->
-            <div class="card" style="padding: 10px 12px; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
-              <div class="card-title" style="font-size: 11.5px; margin-bottom: 6px;">Sub-Agent Live Market Feeds</div>
-              <div style="flex: 1; max-height: 650px; overflow-y: auto; scrollbar-width: thin;">
-                <table id="table-hub-feeds" style="width: 100%; font-size: 11px;">
-                  <thead><tr><th>Symbol</th><th>Price</th><th>24h %</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
 
-    <!-- VIEW 4: REPLAY ENGINE (Phase 3 - Vela Replay Studio) -->
-    <div class="view-panel" id="view-replay" style="position: relative; width: 100%; height: 100%; overflow: hidden; flex-direction: column;">
-      <!-- Replay Controls Bar -->
-      <div class="controls-bar" style="padding: 6px 16px; background: rgba(12, 16, 26, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; z-index: 10; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <strong style="color: #38bdf8; font-size: 12px; display: flex; align-items: center; gap: 5px;">
-            <span>⏪ Market Replay Studio</span>
-            <span class="ios-glass-pill" style="font-size: 9px; padding: 1px 6px; background: rgba(56, 189, 248, 0.18); color: #38bdf8;">Vela Walkforward</span>
-          </strong>
-          <div class="hl-vdiv"></div>
-          <input type="text" id="rep-symbol-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 140px; padding: 3px 8px; font-size: 11px;">
-          <!-- Quick picks -->
-          <div style="display: flex; gap: 3px;">
-            <button class="rep-chip-btn btn active" data-sym="BINANCE:BTCUSDT" style="padding: 2px 6px; font-size: 10px;">BTC</button>
-            <button class="rep-chip-btn btn" data-sym="BINANCE:ETHUSDT" style="padding: 2px 6px; font-size: 10px;">ETH</button>
-            <button class="rep-chip-btn btn" data-sym="BINANCE:SOLUSDT" style="padding: 2px 6px; font-size: 10px;">SOL</button>
-            <button class="rep-chip-btn btn" data-sym="HYPERLIQUID:HYPE" style="padding: 2px 6px; font-size: 10px;">HYPE</button>
+    <!-- VIEW 4: REPLAY ENGINE (SHADCN/UI ZINC DARK) -->
+    <div class="view-panel sh-view" id="view-replay" style="position: relative; width: 100%; height: 100%; overflow: hidden; flex-direction: column;">
+      <!-- Top Control Bar -->
+      <div class="sh-rep-topbar">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <strong style="font-size: 14px; font-weight: 600; color: #fafafa; letter-spacing: -0.015em;">Replay Engine</strong>
+            <span class="sh-badge sh-badge-secondary">Walkforward</span>
           </div>
-          <div class="hl-vdiv"></div>
-          <!-- Timeframes -->
-          <div style="display: flex; gap: 2px;">
-            <button class="rep-tf-btn btn" data-tf="1" style="padding: 2px 6px; font-size: 10px;">1m</button>
-            <button class="rep-tf-btn btn" data-tf="5" style="padding: 2px 6px; font-size: 10px;">5m</button>
-            <button class="rep-tf-btn btn" data-tf="15" style="padding: 2px 6px; font-size: 10px;">15m</button>
-            <button class="rep-tf-btn btn active" data-tf="60" style="padding: 2px 6px; font-size: 10px;">1h</button>
-            <button class="rep-tf-btn btn" data-tf="240" style="padding: 2px 6px; font-size: 10px;">4h</button>
-            <button class="rep-tf-btn btn" data-tf="D" style="padding: 2px 6px; font-size: 10px;">D</button>
+
+          <span class="sh-filter-divider"></span>
+
+          <input type="text" id="rep-symbol-input" class="sh-input-plain" value="BINANCE:BTCUSDT" style="width: 152px; height: 28px; font-size: 12px;">
+
+          <div class="sh-filter-group">
+            <button class="rep-chip-btn sh-filter-chip active" type="button" data-sym="BINANCE:BTCUSDT">BTC</button>
+            <button class="rep-chip-btn sh-filter-chip" type="button" data-sym="BINANCE:ETHUSDT">ETH</button>
+            <button class="rep-chip-btn sh-filter-chip" type="button" data-sym="BINANCE:SOLUSDT">SOL</button>
+            <button class="rep-chip-btn sh-filter-chip" type="button" data-sym="HYPERLIQUID:HYPE">HYPE</button>
           </div>
-          <button class="btn" id="btn-rep-load" style="background: rgba(37, 99, 235, 0.3); color: #60a5fa; border: 1px solid #2563eb; padding: 2px 8px; font-size: 10.5px; font-weight: 700;">Load Chart</button>
+
+          <span class="sh-filter-divider"></span>
+
+          <div class="sh-filter-group">
+            <button class="rep-tf-btn sh-filter-chip" type="button" data-tf="1">1m</button>
+            <button class="rep-tf-btn sh-filter-chip" type="button" data-tf="5">5m</button>
+            <button class="rep-tf-btn sh-filter-chip" type="button" data-tf="15">15m</button>
+            <button class="rep-tf-btn sh-filter-chip active" type="button" data-tf="60">1h</button>
+            <button class="rep-tf-btn sh-filter-chip" type="button" data-tf="240">4h</button>
+            <button class="rep-tf-btn sh-filter-chip" type="button" data-tf="D">D</button>
+          </div>
+
+          <button class="sh-btn-primary sh-btn-sm" id="btn-rep-load" type="button">Load Chart</button>
         </div>
-        <span id="rep-status-text" style="font-size: 11px; color: #94a3b8;">Ready: 1000 bars loaded.</span>
+
+        <span id="rep-status-text" style="font-size: 12px; color: #a1a1aa; font-variant-numeric: tabular-nums;">Ready: 1000 bars loaded.</span>
       </div>
 
       <!-- Replay Chart Canvas -->
-      <div style="flex: 1; width: 100%; position: relative; height: calc(100% - 42px); overflow: hidden;">
+      <div style="flex: 1; width: 100%; position: relative; height: calc(100% - 48px); overflow: hidden; background: #09090b;">
         <div id="replay-chart-container" style="width: 100%; height: 100%; position: relative;"></div>
 
-        <!-- Floating iOS Liquid Glass Playback Controller (Docked Bottom Center) -->
-        <div class="ios-glass-panel" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 30; padding: 8px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 16px 40px rgba(0,0,0,0.7); pointer-events: auto; border: 1px solid rgba(255,255,255,0.18);">
-          <!-- Buttons Group -->
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <button class="btn" id="btn-rep-reset" title="Reset to start cut-off position" style="padding: 4px 8px; font-size: 11px;">⏮ Reset</button>
-            <button class="btn" id="btn-rep-step-back" title="Step back 1 bar" style="padding: 4px 8px; font-size: 11px;">⏪ -1 Bar</button>
-            <button class="btn active" id="btn-rep-play" title="Play / Pause Replay" style="padding: 4px 14px; font-size: 11.5px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399;">
-              <span style="font-size: 14px;">▶</span> <span>Play</span>
-            </button>
-            <button class="btn" id="btn-rep-step-fwd" title="Step forward 1 bar" style="padding: 4px 8px; font-size: 11px;">⏩ +1 Bar</button>
+        <!-- Floating Bottom Playback Dock -->
+        <div class="sh-rep-dock">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="sh-btn-outline sh-btn-sm" id="btn-rep-reset" type="button" title="Reset to start cut-off position">Reset</button>
+            <button class="sh-btn-outline sh-btn-sm" id="btn-rep-step-back" type="button" title="Step back 1 bar">-1 Bar</button>
+            <button class="sh-btn-primary sh-btn-sm" id="btn-rep-play" type="button" title="Play / Pause Replay">▶ Play</button>
+            <button class="sh-btn-outline sh-btn-sm" id="btn-rep-step-fwd" type="button" title="Step forward 1 bar">+1 Bar</button>
           </div>
 
-          <div class="hl-vdiv" style="height: 22px;"></div>
+          <span class="sh-filter-divider"></span>
 
-          <!-- Speed Selection -->
-          <div style="display: flex; align-items: center; gap: 2px;">
-            <span style="font-size: 10px; color: #94a3b8; font-weight: 700; margin-right: 2px;">SPEED:</span>
-            <button class="rep-speed-btn btn active" data-speed="1" style="padding: 2px 6px; font-size: 10px;">1x</button>
-            <button class="rep-speed-btn btn" data-speed="2" style="padding: 2px 6px; font-size: 10px;">2x</button>
-            <button class="rep-speed-btn btn" data-speed="5" style="padding: 2px 6px; font-size: 10px;">5x</button>
-            <button class="rep-speed-btn btn" data-speed="10" style="padding: 2px 6px; font-size: 10px;">10x</button>
+          <div class="sh-filter-group">
+            <span style="font-size: 11px; color: #71717a; font-weight: 500; margin-right: 4px;">Speed</span>
+            <button class="rep-speed-btn sh-filter-chip active" type="button" data-speed="1">1x</button>
+            <button class="rep-speed-btn sh-filter-chip" type="button" data-speed="2">2x</button>
+            <button class="rep-speed-btn sh-filter-chip" type="button" data-speed="5">5x</button>
+            <button class="rep-speed-btn sh-filter-chip" type="button" data-speed="10">10x</button>
           </div>
 
-          <div class="hl-vdiv" style="height: 22px;"></div>
+          <span class="sh-filter-divider"></span>
 
-          <!-- Timeline Slider -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="range" id="rep-slider" min="20" max="1000" value="750" style="width: 140px; cursor: pointer;">
-          </div>
+          <input type="range" id="rep-slider" min="20" max="1000" value="750">
 
-          <div class="hl-vdiv" style="height: 22px;"></div>
+          <span class="sh-filter-divider"></span>
 
-          <!-- Live Readout Stats -->
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+          <div style="display: flex; align-items: center; gap: 14px; font-size: 11.5px; font-variant-numeric: tabular-nums;">
             <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">CURRENT PRICE</span>
-              <strong id="rep-cur-price" style="color: #fff; font-family: monospace;">--</strong>
+              <span style="font-size: 9.5px; color: #71717a; text-transform: uppercase;">Price</span>
+              <strong id="rep-cur-price" style="color: #fafafa; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">—</strong>
             </div>
             <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">PNL CHANGE</span>
-              <strong id="rep-pnl-change" class="rep-stat-val" style="font-family: monospace;">--</strong>
+              <span style="font-size: 9.5px; color: #71717a; text-transform: uppercase;">Change</span>
+              <strong id="rep-pnl-change" class="rep-stat-val" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">—</strong>
             </div>
             <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 8px; color: #94a3b8; text-transform: uppercase;">BAR / TIME</span>
-              <span id="rep-bar-time" style="color: #cbd5e1; font-size: 10px;">--</span>
+              <span style="font-size: 9.5px; color: #71717a; text-transform: uppercase;">Time</span>
+              <span id="rep-bar-time" style="color: #a1a1aa; font-size: 11px;">—</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- VIEW 6: TELEGRAM ALERT & KELLY -->
-    <div class="view-panel" id="view-alert">
-      <div class="controls-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="alert-sym-input" class="search-input" value="BINANCE:BTCUSDT" style="width: 180px;">
-          <button class="btn active" id="btn-send-tg-alert" style="background: #2563eb; color: #fff; font-weight: 700;">✈️ Dispatch Alert to Connected Telegram</button>
-          <button class="btn" id="btn-configure-user-tg" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; font-weight: 700;">⚙️ Connect Your Telegram</button>
-        </div>
-        <span id="alert-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Status: Telegram Channel Not Connected</span>
-      </div>
+    <!-- VIEW 6: TELEGRAM ALERTS (SHADCN/UI ZINC DARK) -->
+    <div class="view-panel sh-view" id="view-alert">
+      <div class="sh-scroll">
+        <div class="sh-container">
 
-      <!-- User Telegram Connect Modal / Box -->
-      <div id="user-tg-connect-box" style="display: none; margin: 12px 16px; padding: 14px 18px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <strong style="color: #38bdf8; font-size: 13px;">📲 Connect Your Personal Telegram Channel / Chat</strong>
-          <span id="close-user-tg-box" style="cursor: pointer; color: #94a3b8; font-size: 14px; font-weight: bold;">✕</span>
-        </div>
-        <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">
-          For privacy and security, alerts are dispatched directly to your own Telegram. Enter your Telegram Bot Token and Chat ID below (stored only locally in your browser):
-        </p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 8px; align-items: flex-end;">
-          <div>
-            <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM BOT TOKEN (From @BotFather)</label>
-            <input type="password" id="user-tg-token-input" placeholder="e.g. 7123456789:AAH..." style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
+          <!-- Header -->
+          <div class="sh-header">
+            <div>
+              <h1 class="sh-title">Telegram Alerts</h1>
+              <p class="sh-subtitle">Kết nối bot Telegram cá nhân để nhận tín hiệu giao dịch kèm ảnh biểu đồ và báo cáo hiệu suất định kỳ.</p>
+            </div>
+            <div class="sh-header-actions">
+              <span class="sh-badge sh-badge-amber" id="alert-status">Chưa kết nối</span>
+              <button class="sh-btn-outline" id="btn-configure-user-tg" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Cấu hình Telegram</span>
+              </button>
+            </div>
           </div>
-          <div>
-            <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">TELEGRAM CHAT ID / CHANNEL ID</label>
-            <input type="text" id="user-tg-chat-input" placeholder="e.g. 1561044995 or @your_channel" style="width: 100%; background: #0b0e14; border: 1px solid #2b3040; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
-          </div>
-          <button class="btn active" id="btn-save-user-tg" style="padding: 7px 14px; font-size: 11px; background: #0284c7; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình</button>
-          <button class="btn" id="btn-test-user-tg" style="padding: 7px 12px; font-size: 11px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; font-weight: 700;">⚡ Test Bot</button>
-          <button class="btn" id="btn-del-user-tg" style="padding: 7px 12px; font-size: 11px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-weight: 700;">🗑️ Xóa</button>
-        </div>
-      </div>
 
-      <div class="panel-scroll">
-        <div class="card">
-          <div class="card-title">Kelly Criterion Position Sizing Engine</div>
-          <div class="grid-4">
-            <div class="stat-box"><div class="stat-label">Win Rate Assumed</div><div class="stat-value">62.0%</div></div>
-            <div class="stat-box"><div class="stat-label">Win/Loss Ratio</div><div class="stat-value">1.8 : 1</div></div>
-            <div class="stat-box"><div class="stat-label">Recommended Kelly Size</div><div class="stat-value val-yellow">20.4% Equity</div></div>
-            <div class="stat-box"><div class="stat-label">Max Risk Cap</div><div class="stat-value val-green">35% Capped</div></div>
+          <!-- Telegram Bot Setup Card (Toggled) -->
+          <div class="sh-card" id="user-tg-connect-box" style="display: none;">
+            <div class="sh-card-top" style="margin-bottom: 6px;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--sh-fg);">Kết nối Bot Telegram cá nhân</div>
+                <div class="sh-card-meta" style="margin-top: 2px;">Bot Token và Chat ID được lưu cục bộ trên trình duyệt và hồ sơ tài khoản để bảo mật riêng tư.</div>
+              </div>
+              <button class="sh-btn-ghost" id="close-user-tg-box" type="button" title="Đóng">✕</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 10px; align-items: flex-end; margin-top: 10px;">
+              <div>
+                <label style="display: block; font-size: 11px; color: var(--sh-muted-fg); margin-bottom: 5px; font-weight: 500;">Telegram Bot Token (từ @BotFather)</label>
+                <input type="password" id="user-tg-token-input" class="sh-input-plain" placeholder="7123456789:AAH..." style="width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 11px; color: var(--sh-muted-fg); margin-bottom: 5px; font-weight: 500;">Telegram Chat ID / Channel</label>
+                <input type="text" id="user-tg-chat-input" class="sh-input-plain" placeholder="1561044995 hoặc @your_channel" style="width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">
+              </div>
+              <button class="sh-btn-primary" id="btn-save-user-tg" type="button">Lưu cấu hình</button>
+              <button class="sh-btn-outline" id="btn-test-user-tg" type="button">Test Bot</button>
+              <button class="sh-btn-destructive" id="btn-del-user-tg" type="button">Xóa</button>
+            </div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Latest Generated Chart Snapshot</div>
-          <div id="alert-snapshot-preview" style="text-align: center; padding: 10px;">
-            <img id="snapshot-img" src="/public/alert_chart.png" style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border-color);">
+
+          <!-- Dispatch & Chart Snapshot Card -->
+          <div class="sh-card">
+            <div class="sh-card-top" style="margin-bottom: 14px; flex-wrap: wrap;">
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--sh-fg);">Gửi tín hiệu &amp; Ảnh biểu đồ</div>
+                <div class="sh-card-meta" style="margin-top: 2px;">Xuất ảnh snapshot kỹ thuật mới nhất và gửi trực tiếp tới kênh Telegram đã kết nối.</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="alert-sym-input" class="sh-input-plain" value="BINANCE:BTCUSDT" style="width: 190px;">
+                <button class="sh-btn-primary" id="btn-send-tg-alert" type="button">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <span>Gửi cảnh báo Telegram</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="alert-snapshot-preview" style="background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 14px; text-align: center;">
+              <img id="snapshot-img" src="/public/latest_alert_chart.png" onerror="this.src='/public/alert_chart.png'" style="max-width: 100%; border-radius: 6px; border: 1px solid #27272a;">
+            </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -3966,6 +4081,22 @@ const htmlContent = `<!DOCTYPE html>
   </footer>
 
   <script>
+    // Pre-declare Macro Calendar state before any synchronous session restore clicks view-macro
+    let currentMacroFilters = {
+      impact: 'ALL',
+      currency: 'ALL',
+      category: 'ALL',
+      search: '',
+      timeScope: 'UPCOMING_30D',
+      hidePast: true
+    };
+    let macroSelectedScenarioId = null;
+    let macroExpandedEventIds = new Set();
+    let macroScenarioCollapsed = false;
+    let macroLastPayload = null;
+    let macroNextEventTargetTime = null;
+    let macroCountdownInterval = null;
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -8479,15 +8610,15 @@ const htmlContent = `<!DOCTYPE html>
       const savedToken = localStorage.getItem('hyperview_user_tg_token');
       if (savedChat && savedToken) {
         if (tgStatus) {
-          tgStatus.textContent = '● Connected: Chat ID ' + savedChat;
-          tgStatus.style.color = 'var(--accent-green)';
+          tgStatus.textContent = 'Connected · Chat ' + savedChat;
+          tgStatus.className = 'sh-badge sh-badge-emerald';
         }
         if (inpTgChat) inpTgChat.value = savedChat;
         if (inpTgToken) inpTgToken.value = savedToken;
       } else {
         if (tgStatus) {
-          tgStatus.textContent = '⚠️ Not Connected (Click Connect Your Telegram)';
-          tgStatus.style.color = '#fbbf24';
+          tgStatus.textContent = 'Chưa kết nối';
+          tgStatus.className = 'sh-badge sh-badge-amber';
         }
       }
     }
@@ -8537,7 +8668,7 @@ const htmlContent = `<!DOCTYPE html>
           alert('Vui lòng nhập Bot Token và Chat ID trước khi test');
           return;
         }
-        btnTestTg.textContent = '⏳ Đang test...';
+        btnTestTg.textContent = 'Đang test...';
         btnTestTg.disabled = true;
         try {
           const res = await fetch('/api/user/telegram/test', {
@@ -8547,14 +8678,14 @@ const htmlContent = `<!DOCTYPE html>
           });
           const data = await res.json();
           if (data.success) {
-            alert('✅ Test thành công! Vui lòng kiểm tra tin nhắn xác nhận trên ứng dụng Telegram của bạn.');
+            alert('Test thành công! Vui lòng kiểm tra tin nhắn xác nhận trên Telegram.');
           } else {
-            alert('❌ Test thất bại: ' + (data.error || 'Lỗi không xác định'));
+            alert('Test thất bại: ' + (data.error || 'Lỗi không xác định'));
           }
         } catch (e) {
-          alert('❌ Lỗi kết nối: ' + e.message);
+          alert('Lỗi kết nối: ' + e.message);
         } finally {
-          btnTestTg.textContent = '⚡ Test Bot';
+          btnTestTg.textContent = 'Test Bot';
           btnTestTg.disabled = false;
         }
       });
@@ -9207,19 +9338,19 @@ const htmlContent = `<!DOCTYPE html>
       titleEl.textContent = "Journal Card — " + dateStr;
 
       if (!dayData || !dayData.trades || dayData.trades.length === 0) {
-        summaryEl.innerHTML = '<span style="color: #8c93a3; font-size: 12px;">No executed trades recorded on this day.</span>';
-        listEl.innerHTML = '<div style="text-align: center; color: #717684; padding: 20px; font-size: 12px;">Market idle or no setups matched entry confluence criteria.</div>';
+        summaryEl.innerHTML = '<span style="color: #a1a1aa; font-size: 12.5px;">No executed trades recorded on this day.</span>';
+        listEl.innerHTML = '<div style="text-align: center; color: #71717a; padding: 24px; font-size: 12.5px;">Market idle or no setups matched entry confluence criteria.</div>';
       } else {
         const p = dayData.pnl;
         const pClass = p >= 0 ? "val-green" : "val-red";
         const pSign = p >= 0 ? "+$" : "-$";
-        summaryEl.innerHTML = '<div style="background: #181b24; padding: 8px 12px; border-radius: 6px; border: 1px solid #232838;">' +
-            '<div style="font-size: 9px; color: #8c93a3; text-transform: uppercase;">Net P&L</div>' +
-            '<div style="font-size: 16px; font-weight: 800; font-family: monospace;" class="' + pClass + '">' + pSign + Math.abs(p).toFixed(2) + '</div>' +
+        summaryEl.innerHTML = '<div style="background: #09090b; padding: 10px 14px; border-radius: 8px; border: 1px solid #27272a;">' +
+            '<div style="font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em;">Net P&amp;L</div>' +
+            '<div style="font-size: 17px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; margin-top: 2px;" class="' + pClass + '">' + pSign + Math.abs(p).toFixed(2) + '</div>' +
           '</div>' +
-          '<div style="background: #181b24; padding: 8px 12px; border-radius: 6px; border: 1px solid #232838;">' +
-            '<div style="font-size: 9px; color: #8c93a3; text-transform: uppercase;">Total Trades</div>' +
-            '<div style="font-size: 16px; font-weight: 800; color: #fff;">' + dayData.trades.length + '</div>' +
+          '<div style="background: #09090b; padding: 10px 14px; border-radius: 8px; border: 1px solid #27272a;">' +
+            '<div style="font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em;">Total Trades</div>' +
+            '<div style="font-size: 17px; font-weight: 600; color: #fafafa; font-variant-numeric: tabular-nums; margin-top: 2px;">' + dayData.trades.length + '</div>' +
           '</div>';
 
         let tRows = "";
@@ -9227,39 +9358,41 @@ const htmlContent = `<!DOCTYPE html>
           const ep = t.entryPrice !== undefined ? t.entryPrice : t.entry;
           const xp = t.exitPrice !== undefined ? t.exitPrice : t.exit;
           const formatPrice = (val) => {
-            if (val === undefined || val === null || isNaN(val)) return "--";
+            if (val === undefined || val === null || isNaN(val)) return "—";
             const num = Number(val);
             if (num >= 1000) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
             if (num >= 1) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
             return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
           };
-          tRows += '<tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">' +
-            '<td style="padding: 8px 4px; color: #8c93a3;">' + (t.time || "--") + '</td>' +
-            '<td style="padding: 8px 4px; font-weight: 700; color: #fff;">' + t.symbol + '</td>' +
-            '<td style="padding: 8px 4px;"><span class="action-badge ' + (t.side === "LONG" ? "action-buy" : "action-sell") + '">' + t.side + '</span></td>' +
-            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">' + formatPrice(ep) + '</td>' +
-            '<td style="padding: 8px 4px; text-align: right; font-family: monospace;">' + formatPrice(xp) + '</td>' +
-            '<td style="padding: 8px 4px; text-align: right; font-weight: 700; font-family: monospace;" class="' + (t.pnl >= 0 ? "val-green" : "val-red") + '">' +
+          tRows += '<tr style="border-bottom: 1px solid rgba(39,39,42,0.65);">' +
+            '<td style="padding: 8px 10px; color: #a1a1aa;">' + (t.time || "—") + '</td>' +
+            '<td style="padding: 8px 10px; font-weight: 500; color: #fafafa;">' + t.symbol + '</td>' +
+            '<td style="padding: 8px 10px;"><span class="action-badge ' + (t.side === "LONG" ? "action-buy" : "action-sell") + '">' + t.side + '</span></td>' +
+            '<td style="padding: 8px 10px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">' + formatPrice(ep) + '</td>' +
+            '<td style="padding: 8px 10px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">' + formatPrice(xp) + '</td>' +
+            '<td style="padding: 8px 10px; text-align: right; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;" class="' + (t.pnl >= 0 ? "val-green" : "val-red") + '">' +
               (t.pnl >= 0 ? "+" : "") + "$" + (t.pnl ? t.pnl.toFixed(2) : "0.00") + ' (' + (t.pnlPercent || 0) + '%)' +
             '</td>' +
-            '<td style="padding: 8px 4px; color: #9ca3af; font-size: 10.5px;">' + (t.reason || t.strategy) + '</td>' +
+            '<td style="padding: 8px 10px; color: #a1a1aa; font-size: 11.5px;">' + (t.reason || t.strategy) + '</td>' +
           '</tr>';
         });
 
-        listEl.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">' +
-          '<thead>' +
-            '<tr style="border-bottom: 1px solid #222634; color: #8c93a3; font-size: 10px;">' +
-              '<th style="padding: 6px 4px; text-align: left;">TIME</th>' +
-              '<th style="padding: 6px 4px; text-align: left;">SYMBOL</th>' +
-              '<th style="padding: 6px 4px; text-align: left;">SIDE</th>' +
-              '<th style="padding: 6px 4px; text-align: right;">ENTRY</th>' +
-              '<th style="padding: 6px 4px; text-align: right;">EXIT</th>' +
-              '<th style="padding: 6px 4px; text-align: right;">NET PNL</th>' +
-              '<th style="padding: 6px 4px; text-align: left;">REASON / STRATEGY</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody>' + tRows + '</tbody>' +
-        '</table>';
+        listEl.innerHTML = '<div style="border: 1px solid #27272a; border-radius: 8px; overflow: hidden;">' +
+          '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">' +
+            '<thead style="background: #111114;">' +
+              '<tr style="border-bottom: 1px solid #27272a; color: #71717a; font-size: 11px;">' +
+                '<th style="padding: 8px 10px; text-align: left;">TIME</th>' +
+                '<th style="padding: 8px 10px; text-align: left;">SYMBOL</th>' +
+                '<th style="padding: 8px 10px; text-align: left;">SIDE</th>' +
+                '<th style="padding: 8px 10px; text-align: right;">ENTRY</th>' +
+                '<th style="padding: 8px 10px; text-align: right;">EXIT</th>' +
+                '<th style="padding: 8px 10px; text-align: right;">NET PNL</th>' +
+                '<th style="padding: 8px 10px; text-align: left;">REASON / STRATEGY</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + tRows + '</tbody>' +
+          '</table>' +
+        '</div>';
       }
 
       modal.style.display = "flex";
@@ -9372,21 +9505,6 @@ const htmlContent = `<!DOCTYPE html>
     }, 120);
 
     // --- Macro Calendar Client Logic (shadcn/ui Zinc Dark) ---
-    let currentMacroFilters = {
-      impact: 'ALL',
-      currency: 'ALL',
-      category: 'ALL',
-      search: '',
-      timeScope: 'UPCOMING_30D',
-      hidePast: true
-    };
-    let macroSelectedScenarioId = null;
-    let macroExpandedEventIds = new Set();
-    let macroScenarioCollapsed = false;
-    let macroLastPayload = null;
-    let macroNextEventTargetTime = null;
-    let macroCountdownInterval = null;
-
     function mcEscapeHtml(str) {
       return String(str || '')
         .replace(/&/g, '&amp;')
@@ -9942,62 +10060,74 @@ const htmlContent = `<!DOCTYPE html>
         const targetBarEl = document.getElementById('target-progress-bar');
 
         if (data.dailyStopLossHit) {
-          targetTextEl.textContent = '🛑 Daily Stop Loss Hit (-$' + Math.abs(data.dailyPnl).toFixed(2) + ' / -$' + (data.dailyStopLossMax || 180) + ') — Halted until 00:00 UTC+7';
-          targetTextEl.style.color = '#ef5350';
+          targetTextEl.textContent = 'Daily Stop Loss Hit (-$' + Math.abs(data.dailyPnl).toFixed(2) + ' / -$' + (data.dailyStopLossMax || 180) + ') — Halted until 00:00 UTC+7';
+          targetTextEl.style.color = '#f87171';
           targetBarEl.style.width = '100%';
-          targetBarEl.style.background = '#ef5350';
+          targetBarEl.style.background = '#ef4444';
         } else if (data.dailyTargetMaxHit) {
-          targetTextEl.textContent = '🏆 3% Max Target Reached (+$' + data.dailyPnl.toFixed(2) + ' >= $' + (data.dailyTargetMax || 300) + ') — Profit Locked for Today!';
-          targetTextEl.style.color = '#4ade80';
+          targetTextEl.textContent = '3% Max Target Reached (+$' + data.dailyPnl.toFixed(2) + ' >= $' + (data.dailyTargetMax || 300) + ') — Profit Locked for Today';
+          targetTextEl.style.color = '#34d399';
           targetBarEl.style.width = '100%';
-          targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #38bdf8)';
+          targetBarEl.style.background = '#10b981';
         } else if (data.dailyTargetHit) {
-          targetTextEl.textContent = '🎯 1% Target Achieved (+$' + data.dailyPnl.toFixed(2) + ') — 🛡️ SNIPER MODE (A+ Only, Max 2x)';
+          targetTextEl.textContent = '1% Target Achieved (+$' + data.dailyPnl.toFixed(2) + ') — Sniper Mode (A+ Only, Max 2x)';
           targetTextEl.style.color = '#38bdf8';
           targetBarEl.style.width = Math.min(100, Math.max(0, data.dailyTargetProgressPercent)) + '%';
-          targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #38bdf8)';
+          targetBarEl.style.background = '#38bdf8';
         } else {
           targetTextEl.textContent = data.dailyTargetProgressPercent + '% (+$' + data.dailyPnl.toFixed(2) + ' / $' + (data.dailyTargetMax || 300) + ' max)';
           targetTextEl.style.color = data.dailyPnl >= 0 ? '#fbbf24' : '#f87171';
           targetBarEl.style.width = Math.min(100, Math.max(0, data.dailyTargetProgressPercent)) + '%';
-          targetBarEl.style.background = 'linear-gradient(90deg, #26a69a, #4ade80, #fbbf24)';
+          targetBarEl.style.background = data.dailyPnl >= 0 ? '#10b981' : '#ef4444';
         }
 
-        // Auto trade button
+        // Auto trade button (Restrained shadcn/ui surface tint)
         const btnToggle = document.getElementById('btn-toggle-auto-trade');
         const statusEl = document.getElementById('paper-engine-status');
         if (data.autoTradeEnabled) {
           if (data.dailyStopLossHit) {
-            btnToggle.textContent = '🛑 Auto-Trade: STOP LOSS HIT (Halted)';
-            btnToggle.style.background = '#b91c1c';
-            statusEl.textContent = '● Daily Stop Loss Hit — Trading Halted until 00:00 UTC+7';
-            statusEl.style.color = '#ef5350';
+            btnToggle.textContent = '● Auto-Trade: Stop Loss Hit';
+            btnToggle.style.background = 'rgba(239, 68, 68, 0.12)';
+            btnToggle.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+            btnToggle.style.color = '#f87171';
+            statusEl.textContent = '● Stop Loss Hit — Halted until 00:00 UTC+7';
+            statusEl.className = 'sh-badge sh-badge-destructive';
           } else if (data.dailyTargetMaxHit) {
-            btnToggle.textContent = '🏆 Auto-Trade: 3% TARGET LOCKED';
-            btnToggle.style.background = '#059669';
-            statusEl.textContent = '● 3% Max Target Hit (+$' + data.dailyPnl.toFixed(2) + ') — Trading Locked to Preserve Gains';
-            statusEl.style.color = '#10b981';
+            btnToggle.textContent = '● Auto-Trade: 3% Target Locked';
+            btnToggle.style.background = 'rgba(16, 185, 129, 0.12)';
+            btnToggle.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+            btnToggle.style.color = '#34d399';
+            statusEl.textContent = '● 3% Target Hit (+$' + data.dailyPnl.toFixed(2) + ') — Locked';
+            statusEl.className = 'sh-badge sh-badge-emerald';
           } else if (data.dailyTargetHit) {
-            btnToggle.textContent = '🎯 Auto-Trade: TARGET MET (Sniper A+)';
-            btnToggle.style.background = '#0284c7';
-            statusEl.textContent = '● 1% Target Met — Sniper Mode Active (A+ Setups, Max 2x)';
-            statusEl.style.color = '#38bdf8';
+            btnToggle.textContent = '● Auto-Trade: Sniper A+';
+            btnToggle.style.background = 'rgba(56, 189, 248, 0.12)';
+            btnToggle.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+            btnToggle.style.color = '#38bdf8';
+            statusEl.textContent = '● 1% Target Met — Sniper Mode (Max 2x)';
+            statusEl.className = 'sh-badge sh-badge-sky';
           } else if (data.tradingMode && data.tradingMode.includes('DEFENSIVE')) {
-            btnToggle.textContent = '⚠️ Auto-Trade: DEFENSIVE (Risk Reduced)';
-            btnToggle.style.background = '#d97706';
-            statusEl.textContent = '● Defensive Mode (Drawdown protection, 1x Lev, 1 position)';
-            statusEl.style.color = '#fbbf24';
+            btnToggle.textContent = '● Auto-Trade: Defensive';
+            btnToggle.style.background = 'rgba(245, 158, 11, 0.12)';
+            btnToggle.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+            btnToggle.style.color = '#fbbf24';
+            statusEl.textContent = '● Defensive Mode (1x Lev, 1 pos)';
+            statusEl.className = 'sh-badge sh-badge-amber';
           } else {
-            btnToggle.textContent = '🟢 Auto-Trade: ACTIVE [Max 3x]';
-            btnToggle.style.background = '#22c55e';
-            statusEl.textContent = '● Auto-Engine Running (Adaptive Leverage up to 3x)';
-            statusEl.style.color = 'var(--accent-green)';
+            btnToggle.textContent = '● Auto-Trade: Active · Max 3x';
+            btnToggle.style.background = 'rgba(16, 185, 129, 0.12)';
+            btnToggle.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+            btnToggle.style.color = '#34d399';
+            statusEl.textContent = '● Engine Running (Adaptive up to 3x)';
+            statusEl.className = 'sh-badge sh-badge-emerald';
           }
         } else {
-          btnToggle.textContent = '🔴 Auto-Trade: PAUSED';
-          btnToggle.style.background = '#6b7280';
-          statusEl.textContent = '● Auto-Engine Paused';
-          statusEl.style.color = '#ef5350';
+          btnToggle.textContent = '○ Auto-Trade: Paused';
+          btnToggle.style.background = 'transparent';
+          btnToggle.style.borderColor = '#27272a';
+          btnToggle.style.color = '#a1a1aa';
+          statusEl.textContent = '○ Auto-Engine Paused';
+          statusEl.className = 'sh-badge sh-badge-outline';
         }
 
         // Open positions table
