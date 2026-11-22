@@ -1274,51 +1274,243 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     /* ========================================================
-       MACRO CALENDAR (PROLIQUID CALENDAR ENGINE) STYLES
+       MACRO CALENDAR (SHADCN/UI ZINC DARK DESIGN SYSTEM)
        ======================================================== */
-    .mc-dashboard {
-      flex: 1; overflow-y: auto; background: #0b0d13; padding: 18px 24px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "JetBrains Mono", sans-serif;
-      color: #e4e7eb; box-sizing: border-box;
-    }
-    .mc-dashboard::-webkit-scrollbar { width: 6px; }
-    .mc-dashboard::-webkit-scrollbar-thumb { background: #262933; border-radius: 3px; }
-    .mc-top-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
-    }
-    .mc-title-left {
-      display: flex; align-items: center; gap: 12px;
-    }
     .mc-pill-badge {
       font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.4px;
     }
-    .mc-impact-badge {
-      display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+    #view-macro {
+      --sh-bg: #09090b;
+      --sh-card: #0c0c0f;
+      --sh-surface: #111114;
+      --sh-muted: #18181b;
+      --sh-border: #27272a;
+      --sh-border-subtle: rgba(255, 255, 255, 0.08);
+      --sh-fg: #fafafa;
+      --sh-muted-fg: #a1a1aa;
+      --sh-subtle-fg: #71717a;
+      --sh-primary-fg: #18181b;
+      --sh-destructive: #ef4444;
+      --sh-amber: #f59e0b;
+      --sh-emerald: #10b981;
+      background: var(--sh-bg);
+      color: var(--sh-fg);
     }
-    .mc-impact-high {
-      background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+    #view-macro .sh-scroll {
+      flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
-    .mc-impact-med {
-      background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);
+    #view-macro .sh-scroll::-webkit-scrollbar { width: 6px; }
+    #view-macro .sh-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    #view-macro .sh-container {
+      max-width: 1380px; width: 100%; margin: 0 auto; padding: 24px 28px 40px;
+      display: flex; flex-direction: column; gap: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     }
-    .mc-impact-low {
-      background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2);
+    #view-macro .sh-header {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
     }
-    .mc-table-row {
-      border-bottom: 1px solid #1a1f2c; transition: background 0.15s;
+    #view-macro .sh-title {
+      font-size: 20px; font-weight: 600; letter-spacing: -0.025em; color: var(--sh-fg); margin: 0; line-height: 1.25;
     }
-    .mc-table-row:hover {
-      background: #141824;
+    #view-macro .sh-subtitle {
+      font-size: 13px; color: var(--sh-muted-fg); margin-top: 4px;
     }
-    .mc-table-row.mc-row-high {
-      background: rgba(239, 68, 68, 0.03);
+    #view-macro .sh-header-actions {
+      display: flex; align-items: center; gap: 8px;
     }
-    .mc-table-row.mc-row-high:hover {
-      background: rgba(239, 68, 68, 0.08) !important;
+    #view-macro .sh-btn-outline {
+      display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+      border-radius: 6px; border: 1px solid var(--sh-border); background: transparent;
+      color: var(--sh-fg); font-size: 12.5px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
     }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.15); }
+    #view-macro .sh-btn-outline:hover { background: var(--sh-muted); border-color: #3f3f46; }
+    #view-macro .sh-btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
+    #view-macro .sh-btn-outline.is-loading svg { animation: sh-spin 0.8s linear infinite; }
+    #view-macro .sh-btn-ghost {
+      display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px;
+      border-radius: 6px; border: none; background: transparent; color: var(--sh-muted-fg);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    #view-macro .sh-btn-ghost:hover { background: var(--sh-muted); color: var(--sh-fg); }
+    #view-macro .sh-kpi-grid {
+      display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 14px;
+    }
+    @media (max-width: 980px) {
+      #view-macro .sh-kpi-grid { grid-template-columns: 1fr; }
+    }
+    #view-macro .sh-card {
+      background: var(--sh-card); border: 1px solid var(--sh-border); border-radius: 10px;
+      padding: 16px 18px; display: flex; flex-direction: column;
+    }
+    #view-macro .sh-card-top {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    #view-macro .sh-card-label {
+      font-size: 12px; font-weight: 500; color: var(--sh-muted-fg);
+    }
+    #view-macro .sh-card-value {
+      font-size: 16px; font-weight: 600; color: var(--sh-fg); letter-spacing: -0.015em; line-height: 1.35;
+    }
+    #view-macro .sh-card-meta {
+      font-size: 12px; color: var(--sh-subtle-fg); line-height: 1.45; margin-top: 6px;
+    }
+    #view-macro .sh-timer {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 600;
+      color: var(--sh-fg); background: var(--sh-muted); border: 1px solid var(--sh-border);
+      padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+    }
+    #view-macro .sh-toolbar {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    #view-macro .sh-toolbar-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    #view-macro .sh-tabs-list {
+      display: inline-flex; align-items: center; background: var(--sh-muted); padding: 3px;
+      border-radius: 8px; border: 1px solid var(--sh-border-subtle); gap: 2px; flex-wrap: wrap;
+    }
+    #view-macro .sh-tab-trigger {
+      height: 28px; padding: 0 11px; border-radius: 6px; border: 1px solid transparent;
+      background: transparent; color: var(--sh-muted-fg); font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    #view-macro .sh-tab-trigger:hover:not(.active) { color: var(--sh-fg); }
+    #view-macro .sh-tab-trigger.active {
+      background: var(--sh-bg); color: var(--sh-fg); border-color: var(--sh-border);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+    #view-macro .sh-search-wrap {
+      position: relative; display: flex; align-items: center;
+    }
+    #view-macro .sh-search-icon {
+      position: absolute; left: 10px; color: var(--sh-subtle-fg); pointer-events: none;
+    }
+    #view-macro .sh-input {
+      height: 32px; width: 240px; padding: 0 10px 0 30px; border-radius: 6px;
+      border: 1px solid var(--sh-border); background: var(--sh-bg); color: var(--sh-fg);
+      font-size: 12.5px; outline: none; transition: border-color 0.15s;
+    }
+    #view-macro .sh-input::placeholder { color: var(--sh-subtle-fg); }
+    #view-macro .sh-input:focus { border-color: #52525b; }
+    #view-macro .sh-switch-label {
+      position: relative; display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--sh-muted-fg); cursor: pointer; user-select: none;
+    }
+    #view-macro .sh-switch-input {
+      position: absolute; opacity: 0; width: 0; height: 0;
+    }
+    #view-macro .sh-switch-track {
+      position: relative; width: 32px; height: 18px; background: #27272a; border-radius: 999px;
+      border: 1px solid #3f3f46; transition: background 0.15s, border-color 0.15s; flex-shrink: 0;
+    }
+    #view-macro .sh-switch-thumb {
+      position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%;
+      background: #a1a1aa; transition: transform 0.15s, background 0.15s;
+    }
+    #view-macro .sh-switch-input:checked + .sh-switch-track { background: #fafafa; border-color: #fafafa; }
+    #view-macro .sh-switch-input:checked + .sh-switch-track .sh-switch-thumb {
+      transform: translateX(14px); background: #09090b;
+    }
+    #view-macro .sh-filter-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    #view-macro .sh-filter-left {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    #view-macro .sh-filter-group {
+      display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    }
+    #view-macro .sh-filter-divider {
+      width: 1px; height: 16px; background: var(--sh-border); margin: 0 4px;
+    }
+    #view-macro .sh-filter-chip {
+      height: 26px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--sh-border);
+      background: transparent; color: var(--sh-muted-fg); font-size: 11.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.12s; white-space: nowrap;
+    }
+    #view-macro .sh-filter-chip:hover:not(.active) { background: var(--sh-muted); color: var(--sh-fg); }
+    #view-macro .sh-filter-chip.active {
+      background: var(--sh-fg); color: var(--sh-primary-fg); border-color: var(--sh-fg);
+    }
+    #view-macro .sh-badge {
+      display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px;
+      border-radius: 999px; font-size: 11px; font-weight: 500; border: 1px solid var(--sh-border);
+      white-space: nowrap; line-height: 1;
+    }
+    #view-macro .sh-badge-outline { background: transparent; color: var(--sh-muted-fg); }
+    #view-macro .sh-badge-secondary { background: var(--sh-muted); color: var(--sh-fg); border-color: transparent; }
+    #view-macro .sh-badge-destructive {
+      background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.28);
+    }
+    #view-macro .sh-badge-amber {
+      background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.28);
+    }
+    #view-macro .sh-badge-emerald {
+      background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.28);
+    }
+    #view-macro .sh-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    #view-macro .sh-table-card {
+      background: var(--sh-card); border: 1px solid var(--sh-border); border-radius: 10px; overflow: hidden;
+    }
+    #view-macro .sh-table-scroll {
+      overflow-x: auto; max-height: 540px; scrollbar-width: thin; scrollbar-color: #27272a transparent;
+    }
+    #view-macro .sh-table {
+      width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;
+    }
+    #view-macro .sh-table thead th {
+      position: sticky; top: 0; z-index: 5; background: var(--sh-surface); color: var(--sh-subtle-fg);
+      font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 10px 14px; border-bottom: 1px solid var(--sh-border); white-space: nowrap;
+    }
+    #view-macro .sh-date-group-row td {
+      background: #101013; color: var(--sh-muted-fg); font-size: 11.5px; font-weight: 600;
+      padding: 7px 14px; border-bottom: 1px solid var(--sh-border); border-top: 1px solid var(--sh-border);
+    }
+    #view-macro .sh-table-row {
+      border-bottom: 1px solid rgba(39, 39, 42, 0.65); transition: background 0.12s; cursor: pointer;
+    }
+    #view-macro .sh-table-row:hover { background: rgba(255, 255, 255, 0.03); }
+    #view-macro .sh-table-row.is-high td:first-child { box-shadow: inset 2px 0 0 #ef4444; }
+    #view-macro .sh-table-row.is-past { opacity: 0.55; }
+    #view-macro .sh-table-row.is-expanded { background: rgba(255, 255, 255, 0.035); }
+    #view-macro .sh-table-row td { padding: 11px 14px; vertical-align: middle; }
+    #view-macro .sh-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 12.5px;
+    }
+    #view-macro .sh-detail-row td {
+      background: #0a0a0c; padding: 12px 18px; border-bottom: 1px solid var(--sh-border);
+    }
+    #view-macro .sh-detail-box {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    #view-macro .sh-scenario-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px;
+    }
+    @media (max-width: 980px) {
+      #view-macro .sh-scenario-grid { grid-template-columns: 1fr; }
+    }
+    #view-macro .sh-scenario-item {
+      background: var(--sh-bg); border: 1px solid var(--sh-border); border-radius: 8px;
+      padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+    #view-macro .sh-scenario-cond {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px; color: var(--sh-fg); background: var(--sh-muted);
+      padding: 6px 9px; border-radius: 6px; border: 1px solid var(--sh-border-subtle);
+    }
+    #view-macro .sh-scenario-exec {
+      font-size: 12px; color: var(--sh-muted-fg); border-left: 2px solid var(--sh-border);
+      padding-left: 10px; line-height: 1.5; margin-top: auto;
+    }
+    @keyframes sh-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     /* ========================================================
@@ -2825,254 +3017,182 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- VIEW: MACRO CALENDAR (PROLIQUID CALENDAR ENGINE) -->
+    <!-- VIEW: MACRO CALENDAR (SHADCN/UI ZINC DARK) -->
     <div class="view-panel" id="view-macro">
-      <div class="mc-dashboard">
-        <!-- Top App Bar & Live Countdown Banner -->
-        <div class="mc-top-header">
-          <div class="mc-title-left">
-            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); display: flex; align-items: center; justify-content: center; font-size: 16px;">
-              ⚡
-            </div>
+      <div class="sh-scroll">
+        <div class="sh-container">
+
+          <!-- Zone 1: Page Header -->
+          <div class="sh-header">
             <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h1 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Macro & High-Impact Economic Calendar</h1>
-                <span class="mc-pill-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">PROLIQUID EDITION</span>
-                <span class="mc-pill-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">TIER-1 VOLATILITY</span>
+              <h1 class="sh-title">Macro Calendar</h1>
+              <p class="sh-subtitle">Lịch sự kiện vĩ mô, lãi suất ngân hàng trung ương và dữ liệu lạm phát tác động tới Crypto (UTC+7)</p>
+            </div>
+            <div class="sh-header-actions">
+              <span class="sh-badge sh-badge-outline" id="mc-sync-status">Đang đồng bộ...</span>
+              <button class="sh-btn-outline" id="btn-mc-refresh" type="button" title="Đồng bộ lại dữ liệu ForexFactory">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                <span>Sync Feed</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zone 2: 3 Dynamic KPI Cards -->
+          <div class="sh-kpi-grid">
+            <!-- KPI 1: Next High-Impact Catalyst -->
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Next High-Impact Catalyst</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="sh-badge sh-badge-outline" id="mc-kpi-risk-badge">Scheduled</span>
+                  <span class="sh-timer" id="mc-next-event-timer">--:--:--</span>
+                </div>
               </div>
-              <div style="font-size: 11px; color: #8c93a3; margin-top: 2px;">
-                Sự kiện vĩ mô, Quyết định Lãi suất FED, Báo cáo Lạm phát CPI/PPI & Bảng lương NFP gây bão thanh lý Crypto
+              <div class="sh-card-value" id="mc-next-event-title">Đang tải...</div>
+              <div class="sh-card-meta" id="mc-next-event-meta">—</div>
+            </div>
+
+            <!-- KPI 2: Next FOMC / Central Bank -->
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Next FOMC Decision</span>
+                <span class="sh-badge sh-badge-secondary">USD · FED</span>
               </div>
+              <div class="sh-card-value" id="mc-stat-fomc-date">—</div>
+              <div class="sh-card-meta" id="mc-stat-fomc-sub">—</div>
             </div>
-          </div>
 
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div id="mc-next-countdown-box" style="display: flex; align-items: center; gap: 10px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 14px; border-radius: 8px;">
-              <span style="font-size: 15px; animation: pulse-dot 1.5s infinite;">🚨</span>
-              <div>
-                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: #f87171; letter-spacing: 0.5px;">NEXT HIGH IMPACT EVENT</div>
-                <div id="mc-next-event-title" style="font-size: 12px; font-weight: 700; color: #fff; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading next catalyst...</div>
+            <!-- KPI 3: Next US Inflation Print -->
+            <div class="sh-card">
+              <div class="sh-card-top">
+                <span class="sh-card-label">Next US Inflation Print</span>
+                <span class="sh-badge sh-badge-secondary">CPI / PCE</span>
               </div>
-              <div id="mc-next-event-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #facc15; background: #161a24; padding: 4px 8px; border-radius: 6px; border: 1px solid #2a3040;">
-                --:--:--
+              <div class="sh-card-value" id="mc-stat-cpi-date">—</div>
+              <div class="sh-card-meta" id="mc-stat-cpi-sub">—</div>
+            </div>
+          </div>
+
+          <!-- Zone 3: Toolbar + Economic Events Table -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="sh-toolbar">
+              <!-- Toolbar Row 1: Timeframe Tabs + Search + Hide Past Switch -->
+              <div class="sh-toolbar-row">
+                <div class="sh-tabs-list" id="mc-filter-time-group" role="tablist">
+                  <button class="sh-tab-trigger active" type="button" data-mc-time="UPCOMING_30D">30 ngày tới</button>
+                  <button class="sh-tab-trigger" type="button" data-mc-time="THIS_WEEK">Tuần này</button>
+                  <button class="sh-tab-trigger" type="button" data-mc-time="UPCOMING_MONTH">Tháng này</button>
+                  <button class="sh-tab-trigger" type="button" data-mc-time="NEXT_MONTH">Tháng sau</button>
+                  <button class="sh-tab-trigger" type="button" data-mc-time="ALL">Tất cả</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                  <div class="sh-search-wrap">
+                    <svg class="sh-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="mc-search-input" class="sh-input" placeholder="Tìm sự kiện (CPI, FOMC, NFP...)">
+                  </div>
+
+                  <label class="sh-switch-label" for="mc-toggle-hide-past">
+                    <input type="checkbox" id="mc-toggle-hide-past" class="sh-switch-input" checked>
+                    <span class="sh-switch-track"><span class="sh-switch-thumb"></span></span>
+                    <span>Ẩn tin đã qua</span>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            <button class="ts-btn-outline" id="btn-mc-refresh" title="Làm mới lịch vĩ mô từ ForexFactory Feed" style="padding: 7px 12px; display: flex; align-items: center; gap: 6px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              Refresh Feed
-            </button>
-          </div>
-        </div>
+              <!-- Toolbar Row 2: Faceted Filter Chips + Result Summary -->
+              <div class="sh-filter-bar">
+                <div class="sh-filter-left">
+                  <div class="sh-filter-group" id="mc-filter-impact-group">
+                    <button class="sh-filter-chip active" type="button" data-mc-impact="ALL">Tất cả mức độ</button>
+                    <button class="sh-filter-chip" type="button" data-mc-impact="HIGH">High</button>
+                    <button class="sh-filter-chip" type="button" data-mc-impact="HIGH_MED">High &amp; Med</button>
+                  </div>
 
-        <!-- 4 Macro KPI Stat Cards -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
-          <!-- Card 1: High Impact Count -->
-          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">HIGH IMPACT CATALYSTS</span>
-              <span style="font-size: 14px;">🔥</span>
-            </div>
-            <div class="stat-value" id="mc-stat-high-count" style="font-size: 18px; font-weight: 800; color: #f87171;">-- Events</div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">FED Decisions, CPI, PPI, NFP</div>
-          </div>
+                  <span class="sh-filter-divider"></span>
 
-          <!-- Card 2: Next FOMC -->
-          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">NEXT FOMC RATE DECISION</span>
-              <span style="font-size: 14px;">🏛️</span>
-            </div>
-            <div class="stat-value" id="mc-stat-fomc-date" style="font-size: 16px; font-weight: 800; color: #f59e0b;">Oct 28, 2026</div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Dự báo hạ lãi suất 4.50% (-25 bps)</div>
-          </div>
+                  <div class="sh-filter-group" id="mc-filter-curr-group">
+                    <button class="sh-filter-chip active" type="button" data-mc-curr="ALL">Tất cả tiền tệ</button>
+                    <button class="sh-filter-chip" type="button" data-mc-curr="USD">USD</button>
+                    <button class="sh-filter-chip" type="button" data-mc-curr="EUR">EUR</button>
+                    <button class="sh-filter-chip" type="button" data-mc-curr="GBP">GBP</button>
+                    <button class="sh-filter-chip" type="button" data-mc-curr="JPY">JPY</button>
+                  </div>
 
-          <!-- Card 3: Next CPI / Inflation -->
-          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">NEXT US INFLATION PRINT</span>
-              <span style="font-size: 14px;">📊</span>
-            </div>
-            <div class="stat-value" id="mc-stat-cpi-date" style="font-size: 16px; font-weight: 800; color: #38bdf8;">Nov 12, 2026</div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Báo cáo CPI m/m & y/y (Dự báo 2.5%)</div>
-          </div>
+                  <span class="sh-filter-divider"></span>
 
-          <!-- Card 4: Volatility Warning / Advisory -->
-          <div class="stat-box" style="background: #12151e; border: 1px solid #1f2433; border-radius: 8px; padding: 12px 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="stat-label" style="font-size: 10.5px; font-weight: 700; color: #8c93a3;">CRYPTO PERP RISK LEVEL</span>
-              <span style="font-size: 14px;">🛡️</span>
-            </div>
-            <div class="stat-value" style="font-size: 15px; font-weight: 800; color: #10b981;">ELEVATED VOLATILITY</div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Tránh đòn bẩy cao 15p trước & sau tin đỏ</div>
-          </div>
-        </div>
+                  <div class="sh-filter-group" id="mc-filter-cat-group">
+                    <button class="sh-filter-chip active" type="button" data-mc-cat="ALL">Tất cả nhóm</button>
+                    <button class="sh-filter-chip" type="button" data-mc-cat="FED & Central Bank">Central Banks</button>
+                    <button class="sh-filter-chip" type="button" data-mc-cat="Inflation (CPI/PPI)">Inflation</button>
+                    <button class="sh-filter-chip" type="button" data-mc-cat="Employment & NFP">Jobs</button>
+                    <button class="sh-filter-chip" type="button" data-mc-cat="Growth & GDP">Growth</button>
+                  </div>
 
-        <!-- Filter Toolbar -->
-        <div class="ts-toolbar" style="margin-bottom: 14px; gap: 10px; flex-wrap: wrap;">
-          <!-- Filter Time Scope (Mặc định: Chỉ hiện các tin tiếp theo trong tháng, tự động lọc bỏ tin đã qua) -->
-          <div class="ts-pill-group" id="mc-filter-time-group">
-            <button class="ts-pill-btn active" data-mc-time="UPCOMING_MONTH" style="color: #38bdf8; font-weight: 700;">⚡ Tin Tiếp Theo Trong Tháng</button>
-            <button class="ts-pill-btn" data-mc-time="CURRENT_MONTH">📅 Cả Tháng Này</button>
-            <button class="ts-pill-btn" data-mc-time="NEXT_MONTH">🔮 Tháng Sau</button>
-            <button class="ts-pill-btn" data-mc-time="UPCOMING_30D">⏱️ 30 Ngày Tới</button>
-            <button class="ts-pill-btn" data-mc-time="ALL">🌐 Tất Cả</button>
-          </div>
+                  <button class="sh-btn-ghost" id="btn-mc-reset-filters" type="button" style="display: none;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <span>Reset</span>
+                  </button>
+                </div>
 
-          <!-- Filter Impact -->
-          <div class="ts-pill-group" id="mc-filter-impact-group">
-            <button class="ts-pill-btn active" data-mc-impact="ALL">All Impacts</button>
-            <button class="ts-pill-btn" data-mc-impact="HIGH" style="color: #f87171; font-weight: 700;">🔥 High Impact Only</button>
-            <button class="ts-pill-btn" data-mc-impact="HIGH_MED">⚡ High & Medium</button>
-          </div>
-
-          <!-- Filter Currency -->
-          <div class="ts-pill-group" id="mc-filter-curr-group">
-            <button class="ts-pill-btn active" data-mc-curr="ALL">All Currencies</button>
-            <button class="ts-pill-btn" data-mc-curr="USD">🇺🇸 USD (Crypto Primary)</button>
-            <button class="ts-pill-btn" data-mc-curr="EUR">🇪🇺 EUR</button>
-            <button class="ts-pill-btn" data-mc-curr="GBP">🇬🇧 GBP</button>
-            <button class="ts-pill-btn" data-mc-curr="JPY">🇯🇵 JPY (Carry Trade)</button>
-          </div>
-
-          <!-- Filter Category -->
-          <div class="ts-pill-group" id="mc-filter-cat-group">
-            <button class="ts-pill-btn active" data-mc-cat="ALL">All Categories</button>
-            <button class="ts-pill-btn" data-mc-cat="FED & Central Bank">🏛️ FED & Rates</button>
-            <button class="ts-pill-btn" data-mc-cat="Inflation (CPI/PPI)">📊 CPI & PPI</button>
-            <button class="ts-pill-btn" data-mc-cat="Corporate Earnings">🏢 US Earnings (Tesla/Meta)</button>
-            <button class="ts-pill-btn" data-mc-cat="Employment & NFP">💼 NFP & Jobs</button>
-            <button class="ts-pill-btn" data-mc-cat="Housing & Real Estate">🏡 Nhà đất & Xây dựng</button>
-            <button class="ts-pill-btn" data-mc-cat="Growth & GDP">📈 PMI & GDP</button>
-          </div>
-
-          <!-- Search Input -->
-          <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
-            <input type="text" id="mc-search-input" class="search-input" placeholder="🔍 Search event (CPI, Powell, FOMC, PPI)..." style="width: 250px; font-size: 11.5px; padding: 5px 10px;">
-          </div>
-        </div>
-
-        <!-- Table Scope & Status Info Bar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #131722; border: 1px solid #1e2638; border-radius: 8px 8px 0 0; padding: 10px 16px; border-bottom: 1px solid #1c2130;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse-dot 1.5s infinite;"></span>
-            <span id="mc-scope-indicator" style="font-size: 12px; font-weight: 700; color: #fff;">
-              ⚡ Lịch Vĩ Mô: Đang hiển thị các tin tiếp theo trong tháng
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: #8c93a3;">
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-              <input type="checkbox" id="mc-toggle-hide-past" checked style="accent-color: #38bdf8; cursor: pointer;">
-              <span>Tự động loại bỏ tin đã qua (Hide Past)</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Calendar Events Table Container -->
-        <div style="background: #10131b; border: 1px solid #1c2130; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; margin-bottom: 18px;">
-          <div style="overflow-x: auto; max-height: 520px; scrollbar-width: thin;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
-              <thead style="background: #161b26; color: #8c93a3; position: sticky; top: 0; z-index: 5;">
-                <tr style="border-bottom: 1px solid #22283a; height: 36px;">
-                  <th style="padding: 8px 12px; font-weight: 700; width: 140px;">TIME (UTC+7 / UTC)</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 90px; text-align: center;">CURRENCY</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 110px; text-align: center;">IMPACT</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 280px;">EVENT CATALYST</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">ACTUAL</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">FORECAST</th>
-                  <th style="padding: 8px 12px; font-weight: 700; width: 80px; text-align: right;">PREVIOUS</th>
-                  <th style="padding: 8px 12px; font-weight: 700;">CRYPTO VOLATILITY & PLAYBOOK ADVISORY</th>
-                </tr>
-              </thead>
-              <tbody id="mc-events-tbody">
-                <!-- Dynamically Rendered Rows -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Live Actionable Macro Intelligence: Scenario Matrix & Historical Reaction Engine -->
-        <div style="background: #11141e; border: 1px solid #1c2232; border-radius: 8px; padding: 18px 20px; margin-bottom: 24px;">
-          <!-- Top Controls & Segment Tabs -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #1c2232; padding-bottom: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center; font-size: 14px;">
-                🎯
-              </div>
-              <div>
-                <h3 style="font-size: 14px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
-                  <span>Macro Tactical Intelligence: Dự Phóng Kịch Bản & Phản Ứng BTC</span>
-                  <span class="mc-pill-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">LIVE ACTIONABLE</span>
-                </h3>
-                <div style="font-size: 11px; color: #8c93a3; margin-top: 2px;">
-                  Dự phóng 3 chiều cho tin đỏ tiếp theo & Thống kê biên độ quét râu thực chứng của Bitcoin
+                <div style="font-size: 12px; color: var(--sh-subtle-fg); font-variant-numeric: tabular-nums;" id="mc-result-count">
+                  Đang tải dữ liệu...
                 </div>
               </div>
             </div>
 
-            <!-- Segment Switcher Buttons -->
-            <div class="ts-pill-group" id="mc-intel-view-group">
-              <button class="ts-pill-btn active" data-intel-view="both">👁️ Xem Cả Hai</button>
-              <button class="ts-pill-btn" data-intel-view="scenario">⚡ Kịch Bản 3 Chiều Tin Đỏ</button>
-              <button class="ts-pill-btn" data-intel-view="history">📊 Lịch Sử Quét Nến BTC</button>
+            <!-- Events Table Card -->
+            <div class="sh-table-card">
+              <div class="sh-table-scroll">
+                <table class="sh-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 118px;">Time (UTC+7)</th>
+                      <th style="width: 78px;">CCY</th>
+                      <th style="width: 102px;">Impact</th>
+                      <th>Event</th>
+                      <th style="width: 96px; text-align: right;">Actual</th>
+                      <th style="width: 96px; text-align: right;">Forecast</th>
+                      <th style="width: 96px; text-align: right;">Previous</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mc-events-tbody">
+                    <!-- Dynamically rendered rows -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- Section A: Next Catalyst 3-Scenario Matrix -->
-          <div id="mc-sec-scenario" style="margin-bottom: 20px;">
-            <!-- Next Catalyst Header Box -->
-            <div style="background: #161b28; border: 1px solid #242c3f; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 20px;">⚡</span>
-                <div>
-                  <div style="font-size: 10px; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px;">TIN ĐỎ TIẾP THEO ĐANG ĐƯỢC DỰ PHÓNG</div>
-                  <div id="mc-scenario-event-title" style="font-size: 14px; font-weight: 800; color: #fff;">Đang tải tin tiếp theo...</div>
-                  <div id="mc-scenario-meta" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Đang tính toán kịch bản...</div>
+          <!-- Zone 4: Collapsible Dynamic Catalyst Playbook Card -->
+          <div class="sh-card" id="mc-scenario-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-size: 14px; font-weight: 600; color: var(--sh-fg);">Catalyst Playbook</span>
+                  <span id="mc-scenario-badges" style="display: inline-flex; align-items: center; gap: 6px;"></span>
                 </div>
+                <div id="mc-scenario-event-title" style="font-size: 15px; font-weight: 600; color: var(--sh-fg); margin-top: 6px;">Đang tải sự kiện trọng tâm...</div>
+                <div id="mc-scenario-meta" style="font-size: 12px; color: var(--sh-muted-fg); margin-top: 3px;">Nhấn vào một sự kiện bất kỳ trong bảng để xem kịch bản phản ứng 3 chiều.</div>
               </div>
-              <div id="mc-scenario-guard-box" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 12px; border-radius: 6px; font-size: 11px; color: #4ade80; display: flex; align-items: center; gap: 6px;">
-                <span>🛡️</span><span id="mc-scenario-guard-text">Pure Loss Guard: Tự động hạ 50% đòn bẩy 15p quanh giờ tin</span>
-              </div>
-            </div>
 
-            <!-- 3 Scenario Cards Grid -->
-            <div id="mc-scenario-cards-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
-              <!-- Dynamically Populated Cards -->
-            </div>
-          </div>
-
-          <!-- Section B: Historical Reaction Engine -->
-          <div id="mc-sec-history">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 15px;">📊</span>
-                <span style="font-size: 13px; font-weight: 700; color: #fff;">Thống Kê Phản Ứng Thực Tế Của Bitcoin (5 Kỳ Tin Đỏ Gần Nhất)</span>
+                <button class="sh-btn-ghost" id="btn-mc-scenario-reset" type="button" style="display: none;">Về tin tiếp theo</button>
+                <button class="sh-btn-outline" id="btn-mc-scenario-toggle" type="button" style="height: 28px; font-size: 12px;">Thu gọn</button>
               </div>
-              <div style="font-size: 11px; color: #64748b;">Dữ liệu nến 15M & 4H thực chứng phục vụ đặt Stop Loss an toàn</div>
             </div>
 
-            <!-- Historical Table -->
-            <div style="overflow-x: auto; border: 1px solid #1c2230; border-radius: 6px; background: #0c0f17;">
-              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 11.5px;">
-                <thead style="background: #141924; color: #8c93a3; border-bottom: 1px solid #1e2536;">
-                  <tr style="height: 34px;">
-                    <th style="padding: 6px 12px; font-weight: 700; width: 180px;">SỰ KIỆN & NGÀY</th>
-                    <th style="padding: 6px 12px; font-weight: 700; width: 140px; text-align: center;">KẾT QUẢ KỲ ĐÓ</th>
-                    <th style="padding: 6px 12px; font-weight: 700; width: 130px; text-align: right;">BIÊN ĐỘ NẾN 15M</th>
-                    <th style="padding: 6px 12px; font-weight: 700; width: 180px;">HƯỚNG BẪY RÂU (15M)</th>
-                    <th style="padding: 6px 12px; font-weight: 700; width: 140px; text-align: right;">XU HƯỚNG 4H</th>
-                    <th style="padding: 6px 12px; font-weight: 700; width: 150px; text-align: right;">SL AN TOÀN</th>
-                    <th style="padding: 6px 12px; font-weight: 700;">BÀI HỌC THỰC CHIẾN</th>
-                  </tr>
-                </thead>
-                <tbody id="mc-historical-tbody">
-                  <!-- Dynamically Populated Historical Rows -->
-                </tbody>
-              </table>
+            <div id="mc-scenario-body">
+              <div id="mc-scenario-cards-grid" class="sh-scenario-grid">
+                <!-- Dynamically populated 3 scenario columns -->
+              </div>
+              <div id="mc-scenario-risk-note" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--sh-border-subtle); font-size: 12px; color: var(--sh-subtle-fg);">
+                —
+              </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
 
@@ -9251,46 +9371,98 @@ const htmlContent = `<!DOCTYPE html>
       renderMacroCalendar();
     }, 120);
 
-    // --- Proliquid Macro Calendar Client Logic ---
+    // --- Macro Calendar Client Logic (shadcn/ui Zinc Dark) ---
     let currentMacroFilters = {
       impact: 'ALL',
       currency: 'ALL',
       category: 'ALL',
       search: '',
-      timeScope: 'UPCOMING_MONTH',
+      timeScope: 'UPCOMING_30D',
       hidePast: true
     };
+    let macroSelectedScenarioId = null;
+    let macroExpandedEventIds = new Set();
+    let macroScenarioCollapsed = false;
+    let macroLastPayload = null;
     let macroNextEventTargetTime = null;
     let macroCountdownInterval = null;
 
-    const FLAG_MAP = {
-      USD: '🇺🇸',
-      EUR: '🇪🇺',
-      GBP: '🇬🇧',
-      JPY: '🇯🇵',
-      CAD: '🇨🇦',
-      AUD: '🇦🇺',
-      CNY: '🇨🇳',
-      CHF: '🇨🇭',
-      NZD: '🇳🇿',
-      ALL: '🌐',
-    };
+    function mcEscapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function mcFormatSyncLabel(lastFetched) {
+      if (!lastFetched) return 'Schedule mode';
+      const diffMins = Math.floor((Date.now() - lastFetched) / 60000);
+      if (diffMins < 1) return 'Synced just now';
+      if (diffMins < 60) return 'Synced ' + diffMins + 'm ago';
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return 'Synced ' + diffHours + 'h ago';
+      return 'Synced ' + new Date(lastFetched).toLocaleDateString('vi-VN');
+    }
+
+    function mcUpdateResetButton() {
+      const resetBtn = document.getElementById('btn-mc-reset-filters');
+      if (!resetBtn) return;
+      const dirty = (
+        currentMacroFilters.impact !== 'ALL' ||
+        currentMacroFilters.currency !== 'ALL' ||
+        currentMacroFilters.category !== 'ALL' ||
+        (currentMacroFilters.search && currentMacroFilters.search.trim() !== '')
+      );
+      resetBtn.style.display = dirty ? 'inline-flex' : 'none';
+    }
+
+    function mcResetFacetFilters() {
+      currentMacroFilters.impact = 'ALL';
+      currentMacroFilters.currency = 'ALL';
+      currentMacroFilters.category = 'ALL';
+      currentMacroFilters.search = '';
+
+      const searchEl = document.getElementById('mc-search-input');
+      if (searchEl) searchEl.value = '';
+
+      document.querySelectorAll('#mc-filter-impact-group .sh-filter-chip').forEach(b => {
+        b.classList.toggle('active', b.dataset.mcImpact === 'ALL');
+      });
+      document.querySelectorAll('#mc-filter-curr-group .sh-filter-chip').forEach(b => {
+        b.classList.toggle('active', b.dataset.mcCurr === 'ALL');
+      });
+      document.querySelectorAll('#mc-filter-cat-group .sh-filter-chip').forEach(b => {
+        b.classList.toggle('active', b.dataset.mcCat === 'ALL');
+      });
+      mcUpdateResetButton();
+    }
 
     function startMacroCountdown() {
       if (macroCountdownInterval) clearInterval(macroCountdownInterval);
-      const timerEl = document.getElementById("mc-next-event-timer");
+      const timerEl = document.getElementById('mc-next-event-timer');
+      const riskBadgeEl = document.getElementById('mc-kpi-risk-badge');
       if (!timerEl) return;
 
       function updateClock() {
-        if (!macroNextEventTargetTime) {
-          timerEl.textContent = "--:--:--";
+        if (!macroNextEventTargetTime || Number.isNaN(macroNextEventTargetTime)) {
+          timerEl.textContent = '--:--:--';
+          if (riskBadgeEl) {
+            riskBadgeEl.className = 'sh-badge sh-badge-outline';
+            riskBadgeEl.textContent = 'No Data';
+          }
           return;
         }
         const now = Date.now();
         const diff = macroNextEventTargetTime - now;
         if (diff <= 0) {
-          timerEl.textContent = "HAPPENING NOW 🔴";
-          timerEl.style.color = "#ef4444";
+          timerEl.textContent = 'LIVE NOW';
+          timerEl.style.color = '#f87171';
+          if (riskBadgeEl) {
+            riskBadgeEl.className = 'sh-badge sh-badge-destructive';
+            riskBadgeEl.innerHTML = '<span class="sh-dot" style="background:#ef4444;"></span><span>Live Now</span>';
+          }
           return;
         }
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -9299,15 +9471,260 @@ const htmlContent = `<!DOCTYPE html>
         const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
         if (days > 0) {
-          timerEl.textContent = days + "d " + hours.toString().padStart(2, '0') + "h " + mins.toString().padStart(2, '0') + "m " + secs.toString().padStart(2, '0') + "s";
+          timerEl.textContent = days + 'd ' + hours.toString().padStart(2, '0') + 'h ' + mins.toString().padStart(2, '0') + 'm';
         } else {
-          timerEl.textContent = hours.toString().padStart(2, '0') + "h " + mins.toString().padStart(2, '0') + "m " + secs.toString().padStart(2, '0') + "s";
+          timerEl.textContent = hours.toString().padStart(2, '0') + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
         }
-        timerEl.style.color = diff < (2 * 60 * 60 * 1000) ? "#ef4444" : "#facc15";
+
+        if (diff < (2 * 60 * 60 * 1000)) {
+          timerEl.style.color = '#f87171';
+          if (riskBadgeEl) {
+            riskBadgeEl.className = 'sh-badge sh-badge-destructive';
+            riskBadgeEl.innerHTML = '<span class="sh-dot" style="background:#ef4444;"></span><span>Imminent</span>';
+          }
+        } else if (diff < (24 * 60 * 60 * 1000)) {
+          timerEl.style.color = '#fbbf24';
+          if (riskBadgeEl) {
+            riskBadgeEl.className = 'sh-badge sh-badge-amber';
+            riskBadgeEl.innerHTML = '<span class="sh-dot" style="background:#f59e0b;"></span><span>Today</span>';
+          }
+        } else {
+          timerEl.style.color = '#fafafa';
+          if (riskBadgeEl) {
+            riskBadgeEl.className = 'sh-badge sh-badge-outline';
+            riskBadgeEl.innerHTML = '<span class="sh-dot" style="background:#71717a;"></span><span>Scheduled</span>';
+          }
+        }
       }
 
       updateClock();
       macroCountdownInterval = setInterval(updateClock, 1000);
+    }
+
+    function mcRenderScenarioMatrix(scenData) {
+      const titleEl = document.getElementById('mc-scenario-event-title');
+      const badgesEl = document.getElementById('mc-scenario-badges');
+      const metaEl = document.getElementById('mc-scenario-meta');
+      const grid = document.getElementById('mc-scenario-cards-grid');
+      const riskNoteEl = document.getElementById('mc-scenario-risk-note');
+      const resetScenBtn = document.getElementById('btn-mc-scenario-reset');
+
+      if (!scenData || !scenData.scenarios) {
+        if (titleEl) titleEl.textContent = 'Chưa có sự kiện vĩ mô sắp tới';
+        if (grid) grid.innerHTML = '';
+        return;
+      }
+
+      if (titleEl) titleEl.textContent = scenData.eventTitle || '';
+      if (badgesEl) {
+        const imp = scenData.impact || 'Medium';
+        const impClass = imp === 'High' ? 'sh-badge-destructive' : (imp === 'Medium' ? 'sh-badge-amber' : 'sh-badge-outline');
+        const customBadge = macroSelectedScenarioId ? '<span class="sh-badge sh-badge-secondary">Đang xem từ bảng</span>' : '';
+        badgesEl.innerHTML =
+          '<span class="sh-badge sh-badge-secondary">' + mcEscapeHtml(scenData.country || 'USD') + '</span>' +
+          '<span class="sh-badge ' + impClass + '">' + mcEscapeHtml(imp) + ' Impact</span>' +
+          customBadge;
+      }
+      if (metaEl) {
+        metaEl.textContent =
+          (scenData.dateFormatted || '') +
+          '  |  Forecast: ' + (scenData.forecast || '—') +
+          '  |  Previous: ' + (scenData.previous || '—') +
+          (scenData.summary ? ' — ' + scenData.summary : '');
+      }
+      if (resetScenBtn) {
+        resetScenBtn.style.display = macroSelectedScenarioId ? 'inline-flex' : 'none';
+      }
+      if (riskNoteEl) {
+        riskNoteEl.textContent = scenData.riskNote || '';
+      }
+      if (grid) {
+        grid.innerHTML = scenData.scenarios.map(s => {
+          const isBull = s.tier === 'BULLISH';
+          const isBear = s.tier === 'BEARISH';
+          const badgeCls = isBull ? 'sh-badge-emerald' : (isBear ? 'sh-badge-destructive' : 'sh-badge-amber');
+          const dotColor = isBull ? '#10b981' : (isBear ? '#ef4444' : '#f59e0b');
+          const borderColor = isBull ? 'rgba(16, 185, 129, 0.35)' : (isBear ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)');
+          return '<div class="sh-scenario-item">' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">' +
+              '<span style="font-size: 13.5px; font-weight: 600; color: var(--sh-fg);">' + mcEscapeHtml(s.title) + '</span>' +
+              '<span class="sh-badge ' + badgeCls + '"><span class="sh-dot" style="background:' + dotColor + ';"></span><span>' + mcEscapeHtml(s.label) + '</span></span>' +
+            '</div>' +
+            '<div class="sh-scenario-cond">' + mcEscapeHtml(s.condition) + '</div>' +
+            '<div style="font-size: 12.5px; color: var(--sh-muted-fg); line-height: 1.5;">' + mcEscapeHtml(s.reaction) + '</div>' +
+            '<div class="sh-scenario-exec" style="border-left-color: ' + borderColor + ';">' +
+              '<strong style="color: var(--sh-fg); font-weight: 500;">Playbook:</strong> ' + mcEscapeHtml(s.execution) +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    function mcRenderEventsTable(events) {
+      const tbody = document.getElementById('mc-events-tbody');
+      if (!tbody) return;
+
+      if (!events || events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--sh-muted-fg);">' +
+          '<div style="font-size: 14px; font-weight: 600; color: var(--sh-fg); margin-bottom: 6px;">Không có sự kiện phù hợp bộ lọc</div>' +
+          '<div style="font-size: 12.5px; color: var(--sh-subtle-fg); margin-bottom: 16px;">Thử mở rộng phạm vi thời gian sang 30 ngày tới hoặc đặt lại các bộ lọc hiện tại.</div>' +
+          '<div style="display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;">' +
+            '<button class="sh-btn-outline" id="btn-mc-empty-30d" type="button">Xem 30 ngày tới</button>' +
+            '<button class="sh-btn-outline" id="btn-mc-empty-reset" type="button">Đặt lại bộ lọc</button>' +
+          '</div>' +
+        '</td></tr>';
+
+        document.getElementById('btn-mc-empty-30d')?.addEventListener('click', () => {
+          document.querySelector('[data-mc-time="UPCOMING_30D"]')?.click();
+        });
+        document.getElementById('btn-mc-empty-reset')?.addEventListener('click', () => {
+          mcResetFacetFilters();
+          renderMacroCalendar();
+        });
+        return;
+      }
+
+      const now = Date.now();
+      let lastGroupKey = '';
+      let rowsHtml = '';
+
+      events.forEach((ev) => {
+        const evDateObj = new Date(ev.date);
+        const evTime = evDateObj.getTime();
+        const isPast = evTime < now;
+        const isHigh = ev.impact === 'High';
+        const isMed = ev.impact === 'Medium';
+        const isExpanded = macroExpandedEventIds.has(ev.id);
+
+        // Date group header
+        const groupKey = evDateObj.toLocaleDateString('en-CA');
+        if (groupKey !== lastGroupKey) {
+          lastGroupKey = groupKey;
+          const groupLabel = evDateObj.toLocaleDateString('vi-VN', {
+            weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+          });
+          rowsHtml += '<tr class="sh-date-group-row"><td colspan="7">' + mcEscapeHtml(groupLabel) + '</td></tr>';
+        }
+
+        const timeOnlyStr = evDateObj.toLocaleTimeString('vi-VN', {
+          hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        let relLabel = '';
+        if (isPast) {
+          relLabel = '<span style="color: var(--sh-subtle-fg);">Past</span>';
+        } else {
+          const diffMins = Math.round((evTime - now) / 60000);
+          if (diffMins < 60) {
+            relLabel = '<span style="color: #f87171;">in ' + diffMins + 'm</span>';
+          } else {
+            const diffHours = Math.round(diffMins / 60);
+            if (diffHours < 24) {
+              relLabel = '<span style="color: #fbbf24;">in ' + diffHours + 'h</span>';
+            } else {
+              const diffDays = Math.round(diffHours / 24);
+              relLabel = '<span style="color: var(--sh-muted-fg);">in ' + diffDays + 'd</span>';
+            }
+          }
+        }
+
+        let impactBadgeHtml = '<span class="sh-badge sh-badge-outline"><span class="sh-dot" style="background:#71717a;"></span><span>Low</span></span>';
+        if (isHigh) {
+          impactBadgeHtml = '<span class="sh-badge sh-badge-destructive"><span class="sh-dot" style="background:#ef4444;"></span><span>High</span></span>';
+        } else if (isMed) {
+          impactBadgeHtml = '<span class="sh-badge sh-badge-amber"><span class="sh-dot" style="background:#f59e0b;"></span><span>Medium</span></span>';
+        }
+
+        const rowClasses = ['sh-table-row'];
+        if (isHigh) rowClasses.push('is-high');
+        if (isPast) rowClasses.push('is-past');
+        if (isExpanded) rowClasses.push('is-expanded');
+
+        const actualCell = ev.actual
+          ? '<span style="color: #34d399; font-weight: 600;">' + mcEscapeHtml(ev.actual) + '</span>'
+          : '<span style="color: var(--sh-subtle-fg);">—</span>';
+
+        rowsHtml += '<tr class="' + rowClasses.join(' ') + '" data-event-id="' + mcEscapeHtml(ev.id) + '">' +
+          '<td class="sh-num" style="text-align: left;">' +
+            '<div style="font-weight: 600; color: var(--sh-fg);">' + mcEscapeHtml(timeOnlyStr) + '</div>' +
+            '<div style="font-size: 11px; margin-top: 2px;">' + relLabel + '</div>' +
+          '</td>' +
+          '<td>' +
+            '<span class="sh-badge sh-badge-secondary">' + mcEscapeHtml(ev.country || 'USD') + '</span>' +
+          '</td>' +
+          '<td>' + impactBadgeHtml + '</td>' +
+          '<td>' +
+            '<div style="font-weight: 500; color: var(--sh-fg); line-height: 1.4;">' + mcEscapeHtml(ev.title) + '</div>' +
+            '<div style="font-size: 11.5px; color: var(--sh-subtle-fg); margin-top: 2px;">' + mcEscapeHtml(ev.category || 'General') + '</div>' +
+          '</td>' +
+          '<td class="sh-num">' + actualCell + '</td>' +
+          '<td class="sh-num" style="color: var(--sh-fg);">' + mcEscapeHtml(ev.forecast || '—') + '</td>' +
+          '<td class="sh-num" style="color: var(--sh-muted-fg);">' + mcEscapeHtml(ev.previous || '—') + '</td>' +
+        '</tr>';
+
+        if (isExpanded) {
+          const sourceLabel = ev.source === 'live' ? 'Live ForexFactory Feed' : 'Tier-1 Macro Schedule';
+          rowsHtml += '<tr class="sh-detail-row">' +
+            '<td colspan="7">' +
+              '<div class="sh-detail-box">' +
+                '<div style="flex: 1; min-width: 260px;">' +
+                  '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' +
+                    '<span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sh-subtle-fg);">Crypto Transmission Note</span>' +
+                    '<span class="sh-badge sh-badge-outline">' + mcEscapeHtml(sourceLabel) + '</span>' +
+                  '</div>' +
+                  '<div style="font-size: 12.5px; color: var(--sh-muted-fg); line-height: 1.55;">' +
+                    mcEscapeHtml(ev.cryptoImpact || 'Theo dõi phản ứng tỷ giá và cấu trúc nến 15M/1H sau khi công bố số liệu.') +
+                  '</div>' +
+                '</div>' +
+                '<button class="sh-btn-outline btn-mc-inspect-scenario" type="button" data-scenario-id="' + mcEscapeHtml(ev.id) + '" style="flex-shrink: 0;">' +
+                  '<span>Xem kịch bản 3 chiều</span>' +
+                '</button>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        }
+      });
+
+      tbody.innerHTML = rowsHtml;
+
+      tbody.querySelectorAll('.sh-table-row[data-event-id]').forEach(rowEl => {
+        rowEl.addEventListener('click', () => {
+          const evId = rowEl.dataset.eventId;
+          if (!evId) return;
+          if (macroExpandedEventIds.has(evId)) {
+            macroExpandedEventIds.delete(evId);
+          } else {
+            macroExpandedEventIds.add(evId);
+          }
+          mcRenderEventsTable(events);
+        });
+      });
+
+      tbody.querySelectorAll('.btn-mc-inspect-scenario').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const scId = btn.dataset.scenarioId;
+          if (!scId) return;
+          macroSelectedScenarioId = scId;
+          if (macroScenarioCollapsed) {
+            macroScenarioCollapsed = false;
+            const bodyEl = document.getElementById('mc-scenario-body');
+            const toggleBtn = document.getElementById('btn-mc-scenario-toggle');
+            if (bodyEl) bodyEl.style.display = 'block';
+            if (toggleBtn) toggleBtn.textContent = 'Thu gọn';
+          }
+          try {
+            const resp = await fetch('/api/macro/scenario?id=' + encodeURIComponent(scId));
+            const json = await resp.json();
+            if (json && json.success && json.scenarioMatrix) {
+              mcRenderScenarioMatrix(json.scenarioMatrix);
+              document.getElementById('mc-scenario-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          } catch (err) {
+            console.error('Failed to load event scenario:', err);
+          }
+        });
+      });
     }
 
     async function renderMacroCalendar() {
@@ -9320,273 +9737,94 @@ const htmlContent = `<!DOCTYPE html>
           timeScope: currentMacroFilters.timeScope,
           hidePast: currentMacroFilters.hidePast ? 'true' : 'false',
         });
+        if (macroSelectedScenarioId) {
+          params.set('scenarioEventId', macroSelectedScenarioId);
+        }
 
         const res = await fetch('/api/macro/events?' + params.toString());
         const data = await res.json();
         if (!data.success) return;
 
-        // 1. Update Next High Impact Event Banner
-        const nextEv = data.nextHighImpact;
+        macroLastPayload = data;
+        const summary = data.summary || {};
+
+        // 1. Update Sync Badge
+        const syncEl = document.getElementById('mc-sync-status');
+        if (syncEl) syncEl.textContent = mcFormatSyncLabel(data.lastFetched);
+
+        // 2. Update KPI 1 (Next High-Impact Catalyst)
+        const nextEv = summary.nextHighImpact || data.nextHighImpact;
+        const nextTitleEl = document.getElementById('mc-next-event-title');
+        const nextMetaEl = document.getElementById('mc-next-event-meta');
         if (nextEv) {
-          const nextTitle = document.getElementById("mc-next-event-title");
-          if (nextTitle) {
-            const flag = FLAG_MAP[nextEv.country] || '🌐';
-            nextTitle.textContent = flag + " " + nextEv.country + ": " + nextEv.title;
+          if (nextTitleEl) nextTitleEl.textContent = (nextEv.country || 'USD') + ' · ' + nextEv.title;
+          if (nextMetaEl) {
+            const evDateStr = new Date(nextEv.date).toLocaleString('vi-VN', {
+              weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+            });
+            nextMetaEl.textContent = evDateStr + ' (UTC+7) · Forecast: ' + (nextEv.forecast || '—') + ' · Prev: ' + (nextEv.previous || '—');
           }
           macroNextEventTargetTime = new Date(nextEv.date).getTime();
           startMacroCountdown();
+        } else {
+          if (nextTitleEl) nextTitleEl.textContent = 'Không có tin đỏ sắp tới';
+          if (nextMetaEl) nextMetaEl.textContent = 'Nhấn Sync Feed để cập nhật lịch mới nhất.';
+          macroNextEventTargetTime = null;
+          startMacroCountdown();
         }
 
-        // 2. Update Scope Indicator
-        const indicator = document.getElementById("mc-scope-indicator");
-        if (indicator) {
-          const mLabel = data.currentMonthLabel || 'Tháng này';
-          if (currentMacroFilters.timeScope === 'UPCOMING_MONTH') {
-            indicator.innerHTML = '⚡ Đang hiển thị: <strong style="color: #38bdf8;">' + data.count + ' sự kiện tiếp theo</strong> trong ' + mLabel + ' <span style="color: #64748b; font-weight: normal;">(Đã tự động loại bỏ các tin đã qua)</span>';
-          } else if (currentMacroFilters.timeScope === 'CURRENT_MONTH') {
-            indicator.innerHTML = '📅 Đang hiển thị: <strong style="color: #facc15;">' + data.count + ' sự kiện</strong> trong cả ' + mLabel + (currentMacroFilters.hidePast ? ' (Ẩn tin đã qua)' : ' (Bao gồm cả tin đã qua)');
-          } else if (currentMacroFilters.timeScope === 'NEXT_MONTH') {
-            indicator.innerHTML = '🔮 Đang hiển thị: <strong style="color: #c084fc;">' + data.count + ' sự kiện</strong> của Tháng Kế Tiếp';
-          } else if (currentMacroFilters.timeScope === 'UPCOMING_30D') {
-            indicator.innerHTML = '⏱️ Đang hiển thị: <strong style="color: #38bdf8;">' + data.count + ' sự kiện sắp tới</strong> trong vòng 30 ngày';
-          } else {
-            indicator.innerHTML = '🌐 Đang hiển thị toàn bộ: <strong style="color: #fff;">' + data.count + ' sự kiện</strong>';
-          }
-        }
-
-        // 3. Update KPI Stats
-        const highEventsCount = data.events.filter(e => e.impact === 'High').length;
-        const statHighCount = document.getElementById("mc-stat-high-count");
-        if (statHighCount) statHighCount.textContent = highEventsCount + " Events";
-
-        // Find Next FOMC
-        let nextFomc = data.events.find(e => {
-          const t = new Date(e.date).getTime();
-          return t >= (Date.now() - 15 * 60 * 1000) && e.country === 'USD' && (e.title.includes('FOMC') || e.title.includes('Fed '));
-        });
-        if (!nextFomc && data.nextHighImpact && (data.nextHighImpact.title.includes('FOMC') || data.nextHighImpact.title.includes('Fed '))) {
-          nextFomc = data.nextHighImpact;
-        }
-        const statFomcDate = document.getElementById("mc-stat-fomc-date");
-        if (statFomcDate) {
+        // 3. Update KPI 2 (Next FOMC)
+        const nextFomc = summary.nextFomc;
+        const fomcDateEl = document.getElementById('mc-stat-fomc-date');
+        const fomcSubEl = document.getElementById('mc-stat-fomc-sub');
+        if (fomcDateEl) {
           if (nextFomc) {
-            const d = new Date(nextFomc.date);
-            statFomcDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const sub = statFomcDate.nextElementSibling;
-            if (sub) {
-              sub.textContent = nextFomc.title.includes('Minutes') ? 'Biên bản cuộc họp FOMC chi tiết' : 'Dự báo hạ lãi suất 4.25% (-25 bps)';
+            fomcDateEl.textContent = new Date(nextFomc.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            if (fomcSubEl) {
+              fomcSubEl.textContent = nextFomc.title + (nextFomc.forecast ? ' · Dự báo ' + nextFomc.forecast : '');
             }
           } else {
-            statFomcDate.textContent = 'Dec 16, 2026';
-            const sub = statFomcDate.nextElementSibling;
-            if (sub) sub.textContent = 'Họp FOMC cuối năm & Dot Plot';
+            fomcDateEl.textContent = '—';
+            if (fomcSubEl) fomcSubEl.textContent = 'Chưa có lịch FOMC trong dữ liệu';
           }
         }
 
-        // Find Next US CPI / PCE Inflation (Strictly USD only)
-        const nextCpi = data.events.find(e => {
-          const t = new Date(e.date).getTime();
-          return t >= (Date.now() - 15 * 60 * 1000) && e.country === 'USD' && (e.title.includes('CPI') || e.title.includes('PCE'));
-        });
-        const statCpiDate = document.getElementById("mc-stat-cpi-date");
-        if (statCpiDate && nextCpi) {
-          const d = new Date(nextCpi.date);
-          statCpiDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          const subText = statCpiDate.nextElementSibling;
-          if (subText) {
-            subText.textContent = nextCpi.title.includes('PCE')
-              ? 'Core PCE Lạm phát (Dự báo ' + (nextCpi.forecast || '0.2%') + ') | CPI tiếp theo: Nov 12'
-              : 'Báo cáo CPI m/m & y/y (Dự báo ' + (nextCpi.forecast || '2.5%') + ')';
-          }
-        }
-
-        // 4. Render Events Table
-        const tbody = document.getElementById("mc-events-tbody");
-        if (!tbody) return;
-
-        if (data.events.length === 0) {
-          const mLabel = data.currentMonthLabel || 'tháng này';
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px 20px; color: #8c93a3;">' +
-            '<div style="font-size: 26px; margin-bottom: 8px;">🎉</div>' +
-            '<div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px;">Toàn bộ sự kiện vĩ mô của ' + mLabel + ' đã diễn ra!</div>' +
-            '<div style="font-size: 11px; color: #64748b; margin-bottom: 14px;">Không còn tin đỏ nào chưa ra trong tháng này. Hệ thống sẽ tự động chuyển sang tháng mới khi bắt đầu chu kỳ kế tiếp.</div>' +
-            '<button class="ts-pill-btn" id="btn-mc-goto-next-month" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700; padding: 6px 14px; cursor: pointer;">👉 Xem trước lịch Tháng Kế Tiếp</button>' +
-          '</td></tr>';
-          document.getElementById('btn-mc-goto-next-month')?.addEventListener('click', () => {
-            const nextBtn = document.querySelector('[data-mc-time="NEXT_MONTH"]');
-            if (nextBtn) nextBtn.click();
-          });
-          return;
-        }
-
-        const now = Date.now();
-        let rowsHtml = '';
-
-        data.events.forEach((ev) => {
-          const evTime = new Date(ev.date).getTime();
-          const isPast = evTime < now;
-          const isHigh = ev.impact === 'High';
-          const isMed = ev.impact === 'Medium';
-          const flag = FLAG_MAP[ev.country] || '🌐';
-
-          // Format Time in UTC+7 (Vietnam)
-          const localTimeStr = new Date(ev.date).toLocaleString('vi-VN', {
-            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-          });
-
-          // Relative countdown string
-          let relativeStr = '';
-          if (isPast) {
-            relativeStr = '<span style="font-size: 10px; color: #64748b; font-weight: 600;">PAST</span>';
-          } else {
-            const diffHours = Math.round((evTime - now) / (1000 * 60 * 60));
-            if (diffHours < 24) {
-              relativeStr = '<span style="font-size: 10px; color: #facc15; font-weight: 700;">in ' + diffHours + 'h</span>';
-            } else {
-              const diffDays = Math.round(diffHours / 24);
-              relativeStr = '<span style="font-size: 10px; color: #38bdf8; font-weight: 600;">in ' + diffDays + 'd</span>';
+        // 4. Update KPI 3 (Next US Inflation Print)
+        const nextInf = summary.nextInflation;
+        const cpiDateEl = document.getElementById('mc-stat-cpi-date');
+        const cpiSubEl = document.getElementById('mc-stat-cpi-sub');
+        if (cpiDateEl) {
+          if (nextInf) {
+            cpiDateEl.textContent = new Date(nextInf.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            if (cpiSubEl) {
+              cpiSubEl.textContent = nextInf.title + (nextInf.forecast ? ' · Dự báo ' + nextInf.forecast : '');
             }
-          }
-
-          // Impact badge
-          let impactBadgeHtml = '';
-          if (isHigh) {
-            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-high">🔥 HIGH</span>';
-          } else if (isMed) {
-            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-med">⚡ MED</span>';
           } else {
-            impactBadgeHtml = '<span class="mc-impact-badge mc-impact-low">LOW</span>';
-          }
-
-          // Highlight important keywords in title
-          let styledTitle = ev.title;
-          const keywords = ['FOMC', 'FED', 'Powell', 'CPI', 'PPI', 'NFP', 'Non-Farm', 'Unemployment', 'BOJ', 'ECB', 'Rate Decision'];
-          keywords.forEach(kw => {
-            const reg = new RegExp('(' + kw + ')', 'gi');
-            styledTitle = styledTitle.replace(reg, '<strong style="color: #facc15;">$1</strong>');
-          });
-
-          const rowClass = 'mc-table-row ' + (isHigh ? 'mc-row-high' : '');
-          const opacityStyle = isPast ? 'opacity: 0.65;' : '';
-
-          rowsHtml += '<tr class="' + rowClass + '" style="' + opacityStyle + '">' +
-            '<td style="padding: 10px 12px; font-family: monospace; font-size: 11px;">' +
-              '<div style="font-weight: 700; color: #fff;">' + localTimeStr + '</div>' +
-              '<div style="margin-top: 2px;">' + relativeStr + '</div>' +
-            '</td>' +
-            '<td style="padding: 10px 12px; text-align: center;">' +
-              '<div style="display: inline-flex; align-items: center; gap: 4px; background: #161c28; border: 1px solid #28324a; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px;">' +
-                '<span>' + flag + '</span><span>' + ev.country + '</span>' +
-              '</div>' +
-            '</td>' +
-            '<td style="padding: 10px 12px; text-align: center;">' +
-              impactBadgeHtml +
-            '</td>' +
-            '<td style="padding: 10px 12px;">' +
-              '<div style="font-weight: 600; color: #f1f5f9; font-size: 12px; line-height: 1.4;">' + styledTitle + '</div>' +
-              '<div style="font-size: 10px; color: #64748b; margin-top: 2px;">' + (ev.category || 'General') + '</div>' +
-            '</td>' +
-            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; font-weight: 700; color: #10b981;">' +
-              (ev.actual ? '<span style="background: rgba(16, 185, 129, 0.15); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(16, 185, 129, 0.3);">' + ev.actual + '</span>' : '<span style="color: #64748b;">--</span>') +
-            '</td>' +
-            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; color: #cbd5e1;">' +
-              (ev.forecast || '--') +
-            '</td>' +
-            '<td style="padding: 10px 12px; text-align: right; font-family: monospace; color: #94a3b8;">' +
-              (ev.previous || '--') +
-            '</td>' +
-            '<td style="padding: 10px 12px; font-size: 11px; line-height: 1.45; color: #94a3b8;">' +
-              '<div style="display: flex; align-items: flex-start; gap: 6px;">' +
-                '<span style="color: ' + (isHigh ? '#f87171' : '#38bdf8') + '; font-size: 12px;">↳</span>' +
-                '<span style="color: ' + (isHigh ? '#e2e8f0' : '#94a3b8') + ';">' + (ev.cryptoImpact || 'Theo dõi tỷ giá USD và biến động nến 15M sau tin.') + '</span>' +
-              '</div>' +
-            '</td>' +
-          '</tr>';
-        });
-
-        tbody.innerHTML = rowsHtml;
-
-        // 5. Render Next Catalyst 3-Scenario Matrix
-        const scenData = data.scenarioMatrix;
-        if (scenData && scenData.scenarios) {
-          const titleEl = document.getElementById("mc-scenario-event-title");
-          if (titleEl) titleEl.textContent = scenData.eventTitle;
-          const metaEl = document.getElementById("mc-scenario-meta");
-          if (metaEl) metaEl.textContent = scenData.dateFormatted + ' • ' + scenData.country + ' | Dự báo: ' + (scenData.forecast || '--') + ' | Kỳ trước: ' + (scenData.previous || '--') + ' • ' + (scenData.catalystSummary || '');
-          const guardEl = document.getElementById("mc-scenario-guard-text");
-          if (guardEl && scenData.circuitBreakerNotice) guardEl.textContent = scenData.circuitBreakerNotice;
-
-          const grid = document.getElementById("mc-scenario-cards-grid");
-          if (grid) {
-            grid.innerHTML = scenData.scenarios.map(s => {
-              return '<div style="background: #0d1017; border: 1px solid ' + s.borderColor + '; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">' +
-                '<div>' +
-                  '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">' +
-                    '<span style="font-size: 13px; font-weight: 800; color: ' + s.badgeColor + ';">' + s.name + '</span>' +
-                    '<span style="font-size: 10.5px; font-weight: 800; background: ' + s.bgTint + '; color: ' + s.badgeColor + '; border: 1px solid ' + s.borderColor + '; padding: 2px 8px; border-radius: 12px;">Xác suất ' + s.probability + '</span>' +
-                  '</div>' +
-                  '<div style="font-size: 11px; color: #f1f5f9; font-weight: 700; margin-bottom: 6px; background: rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 4px; border: 1px solid #1e2536;">' +
-                    '📊 Điều kiện: <span style="color: #facc15;">' + s.condition + '</span>' +
-                  '</div>' +
-                  '<div style="font-size: 11px; color: #94a3b8; line-height: 1.45; margin-bottom: 6px;">' +
-                    '🏛️ <strong>Vĩ mô:</strong> ' + s.macroReaction +
-                  '</div>' +
-                  '<div style="font-size: 11px; color: #cbd5e1; line-height: 1.45; margin-bottom: 10px;">' +
-                    '📈 <strong>BTC Phản ứng:</strong> <span style="color: ' + s.badgeColor + '; font-weight: 600;">' + s.btcAction + '</span>' +
-                  '</div>' +
-                '</div>' +
-                '<div style="background: rgba(0,0,0,0.35); border-left: 3px solid ' + s.badgeColor + '; padding: 7px 10px; border-radius: 0 4px 4px 0; font-size: 10.5px; color: #e2e8f0; line-height: 1.45;">' +
-                  '🎯 <strong>Playbook:</strong> ' + s.actionPlaybook +
-                '</div>' +
-              '</div>';
-            }).join('');
+            cpiDateEl.textContent = '—';
+            if (cpiSubEl) cpiSubEl.textContent = 'Chưa có lịch CPI/PCE trong dữ liệu';
           }
         }
 
-        // 6. Render Historical Reaction Engine Table
-        const histList = data.historicalReactions;
-        const hTbody = document.getElementById("mc-historical-tbody");
-        if (hTbody && histList && Array.isArray(histList)) {
-          hTbody.innerHTML = histList.map(h => {
-            const isProfit = h.post4hTrend.startsWith('+');
-            return '<tr style="border-bottom: 1px solid #19202e; height: 38px;">' +
-              '<td style="padding: 8px 12px;">' +
-                '<div style="font-weight: 700; color: #fff;">' + h.event + '</div>' +
-                '<div style="font-size: 10px; color: #64748b;">' + h.date + '</div>' +
-              '</td>' +
-              '<td style="padding: 8px 12px; text-align: center;">' +
-                '<div style="font-family: monospace; font-weight: 700; color: #facc15;">' + h.actual + ' <span style="color: #64748b; font-weight: normal;">(Dự báo ' + h.forecast + ')</span></div>' +
-                '<div style="font-size: 9.5px; color: #8c93a3;">' + h.outcomeType + '</div>' +
-              '</td>' +
-              '<td style="padding: 8px 12px; text-align: right; font-family: monospace; font-weight: 700; color: #f87171;">' +
-                h.candle15mVol +
-              '</td>' +
-              '<td style="padding: 8px 12px;">' +
-                '<span style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;">' +
-                  h.wickDirection +
-                '</span>' +
-              '</td>' +
-              '<td style="padding: 8px 12px; text-align: right; font-family: monospace; font-weight: 700; color: ' + (isProfit ? '#10b981' : '#f87171') + ';">' +
-                h.post4hTrend +
-              '</td>' +
-              '<td style="padding: 8px 12px; text-align: right; font-family: monospace; color: #38bdf8; font-weight: 700;">' +
-                h.safeStopDist +
-              '</td>' +
-              '<td style="padding: 8px 12px; font-size: 10.5px; color: #cbd5e1; line-height: 1.4;">' +
-                h.keyTakeaway +
-              '</td>' +
-            '</tr>';
-          }).join('');
+        // 5. Update Result Summary
+        const resultCountEl = document.getElementById('mc-result-count');
+        if (resultCountEl) {
+          const highFilteredCount = (data.events || []).filter(e => e.impact === 'High').length;
+          resultCountEl.textContent = data.count + ' events · ' + highFilteredCount + ' high · UTC+7';
         }
+        mcUpdateResetButton();
+
+        // 6. Render Events Table & Playbook
+        mcRenderEventsTable(data.events || []);
+        mcRenderScenarioMatrix(data.scenarioMatrix);
       } catch (err) {
         console.error('Error rendering macro calendar:', err);
       }
     }
 
-    // Filter event listeners for Macro Calendar
-    document.querySelectorAll('#mc-filter-time-group .ts-pill-btn').forEach(btn => {
+    // Filter & action listeners for Macro Calendar
+    document.querySelectorAll('#mc-filter-time-group .sh-tab-trigger').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#mc-filter-time-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mc-filter-time-group .sh-tab-trigger').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentMacroFilters.timeScope = btn.dataset.mcTime;
         renderMacroCalendar();
@@ -9598,44 +9836,36 @@ const htmlContent = `<!DOCTYPE html>
       renderMacroCalendar();
     });
 
-    // Segment Switcher for Macro Tactical Intelligence
-    document.querySelectorAll('#mc-intel-view-group .ts-pill-btn').forEach(btn => {
+    document.querySelectorAll('#mc-filter-impact-group .sh-filter-chip').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#mc-intel-view-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const view = btn.dataset.intelView;
-        const secScen = document.getElementById('mc-sec-scenario');
-        const secHist = document.getElementById('mc-sec-history');
-        if (secScen) secScen.style.display = (view === 'both' || view === 'scenario') ? 'block' : 'none';
-        if (secHist) secHist.style.display = (view === 'both' || view === 'history') ? 'block' : 'none';
-      });
-    });
-
-    document.querySelectorAll('#mc-filter-impact-group .ts-pill-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#mc-filter-impact-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mc-filter-impact-group .sh-filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentMacroFilters.impact = btn.dataset.mcImpact;
         renderMacroCalendar();
       });
     });
 
-    document.querySelectorAll('#mc-filter-curr-group .ts-pill-btn').forEach(btn => {
+    document.querySelectorAll('#mc-filter-curr-group .sh-filter-chip').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#mc-filter-curr-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mc-filter-curr-group .sh-filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentMacroFilters.currency = btn.dataset.mcCurr;
         renderMacroCalendar();
       });
     });
 
-    document.querySelectorAll('#mc-filter-cat-group .ts-pill-btn').forEach(btn => {
+    document.querySelectorAll('#mc-filter-cat-group .sh-filter-chip').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#mc-filter-cat-group .ts-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mc-filter-cat-group .sh-filter-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentMacroFilters.category = btn.dataset.mcCat;
         renderMacroCalendar();
       });
+    });
+
+    document.getElementById('btn-mc-reset-filters')?.addEventListener('click', () => {
+      mcResetFacetFilters();
+      renderMacroCalendar();
     });
 
     let mcSearchTimeout = null;
@@ -9643,18 +9873,42 @@ const htmlContent = `<!DOCTYPE html>
       clearTimeout(mcSearchTimeout);
       mcSearchTimeout = setTimeout(() => {
         currentMacroFilters.search = e.target.value;
+        mcUpdateResetButton();
         renderMacroCalendar();
-      }, 250);
+      }, 220);
+    });
+
+    document.getElementById('btn-mc-scenario-toggle')?.addEventListener('click', () => {
+      macroScenarioCollapsed = !macroScenarioCollapsed;
+      const bodyEl = document.getElementById('mc-scenario-body');
+      const toggleBtn = document.getElementById('btn-mc-scenario-toggle');
+      if (bodyEl) bodyEl.style.display = macroScenarioCollapsed ? 'none' : 'block';
+      if (toggleBtn) toggleBtn.textContent = macroScenarioCollapsed ? 'Mở rộng' : 'Thu gọn';
+    });
+
+    document.getElementById('btn-mc-scenario-reset')?.addEventListener('click', async () => {
+      macroSelectedScenarioId = null;
+      await renderMacroCalendar();
     });
 
     document.getElementById('btn-mc-refresh')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-mc-refresh');
-      if (btn) btn.innerHTML = '🔄 Syncing...';
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+        const labelSpan = btn.querySelector('span');
+        if (labelSpan) labelSpan.textContent = 'Syncing...';
+      }
       try {
         await fetch('/api/macro/refresh', { method: 'POST' });
         await renderMacroCalendar();
       } finally {
-        if (btn) btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Refresh Feed';
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('is-loading');
+          const labelSpan = btn.querySelector('span');
+          if (labelSpan) labelSpan.textContent = 'Sync Feed';
+        }
       }
     });
 
@@ -12203,8 +12457,14 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/macro/events') {
     try {
       const q = parsedUrl.query || {};
-      const timeScope = q.timeScope || 'UPCOMING_MONTH';
+      const timeScope = q.timeScope || 'UPCOMING_30D';
       const hidePast = q.hidePast !== 'false';
+
+      // Trigger non-blocking background refresh if stale (> cacheInterval)
+      if ((Date.now() - macroCalendarInstance.lastFetched) > macroCalendarInstance.cacheInterval) {
+        macroCalendarInstance.syncEvents(false).catch(() => {});
+      }
+
       const events = macroCalendarInstance.getFilteredEvents({
         currency: q.currency || 'ALL',
         impact: q.impact || 'ALL',
@@ -12213,9 +12473,10 @@ const server = http.createServer(async (req, res) => {
         timeScope: timeScope,
         hidePast: hidePast,
       });
-      const nextHigh = macroCalendarInstance.getNextHighImpactEvent();
-      const scenarioMatrix = macroCalendarInstance.getScenarioMatrix(nextHigh);
-      const historicalReactions = macroCalendarInstance.getHistoricalReactions();
+      const summary = macroCalendarInstance.getSummaryMeta();
+      const scenarioTarget = (q.scenarioEventId && macroCalendarInstance.getEventById(q.scenarioEventId)) || summary.nextHighImpact;
+      const scenarioMatrix = macroCalendarInstance.getScenarioMatrix(scenarioTarget);
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({
         success: true,
@@ -12223,13 +12484,11 @@ const server = http.createServer(async (req, res) => {
         timeScope: timeScope,
         hidePast: hidePast,
         currentMonthLabel: new Date().toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }),
-        currentMonthIndex: new Date().getMonth(),
-        currentYear: new Date().getFullYear(),
         totalAll: macroCalendarInstance.events.length,
         lastFetched: macroCalendarInstance.lastFetched,
-        nextHighImpact: nextHigh,
+        summary: summary,
+        nextHighImpact: summary.nextHighImpact,
         scenarioMatrix: scenarioMatrix,
-        historicalReactions: historicalReactions,
         events: events,
       }));
     } catch (e) {
@@ -12241,13 +12500,30 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/macro/refresh') {
     try {
       await macroCalendarInstance.syncEvents(true);
-      const nextHigh = macroCalendarInstance.getNextHighImpactEvent();
+      const summary = macroCalendarInstance.getSummaryMeta();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({
         success: true,
         message: 'Macro Calendar synchronized successfully',
         count: macroCalendarInstance.events.length,
-        nextHighImpact: nextHigh,
+        summary: summary,
+        nextHighImpact: summary.nextHighImpact,
+      }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/macro/scenario') {
+    try {
+      const q = parsedUrl.query || {};
+      const target = (q.id && macroCalendarInstance.getEventById(q.id)) || macroCalendarInstance.getNextHighImpactEvent();
+      const scenarioMatrix = macroCalendarInstance.getScenarioMatrix(target);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        scenarioMatrix: scenarioMatrix,
       }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -12510,4 +12786,6 @@ server.listen(PORT, () => {
   startDailyScheduler();
   // Auto-start monthly report Telegram scheduler (Month-end midnight trigger)
   startMonthlyReportScheduler();
+  // Non-blocking initial macro calendar feed sync on startup
+  macroCalendarInstance.syncEvents(false).catch(() => {});
 });
