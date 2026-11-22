@@ -1028,14 +1028,14 @@ const htmlContent = `<!DOCTYPE html>
        TRADESYNC JOURNALING DASHBOARD STYLES (SHADCN ZINC DARK)
        ======================================================== */
     .ts-dashboard {
-      flex: 1; overflow-y: auto; background: #09090b; padding: 20px 28px 32px;
+      flex: 1; overflow-y: auto; background: #09090b; padding: 18px 24px 28px;
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
       color: #fafafa; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
     .ts-dashboard::-webkit-scrollbar { width: 6px; }
     .ts-dashboard::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
     .ts-dashboard-inner {
-      max-width: none; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+      max-width: 1620px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;
     }
 
     /* Top Header & Toolbar within Journal */
@@ -1122,8 +1122,8 @@ const htmlContent = `<!DOCTYPE html>
       .ts-kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-kpi-card {
-      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 16px 18px;
-      display: flex; flex-direction: column; justify-content: space-between; min-height: 118px;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 110px;
     }
     .ts-kpi-head {
       display: flex; justify-content: space-between; align-items: center; font-size: 11px;
@@ -1164,8 +1164,8 @@ const htmlContent = `<!DOCTYPE html>
       .ts-perf-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-perf-card {
-      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 16px 18px;
-      display: flex; flex-direction: column; justify-content: space-between; height: 158px; position: relative; overflow: hidden;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
+      display: flex; flex-direction: column; justify-content: space-between; height: 148px; position: relative; overflow: hidden;
     }
     .ts-perf-head {
       display: flex; justify-content: space-between; align-items: center; font-size: 11px;
@@ -1223,7 +1223,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     .ts-cal-col-head.weekly { color: #a1a1aa; }
     .ts-cal-cell {
-      background: #09090b; border: 1px solid #27272a; border-radius: 8px; min-height: 92px; padding: 9px 11px;
+      background: #09090b; border: 1px solid #27272a; border-radius: 8px; min-height: 82px; padding: 8px 10px;
       display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: background 0.12s, border-color 0.12s; position: relative;
     }
     .ts-cal-cell:hover {
@@ -1252,7 +1252,7 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 10.5px; color: #71717a; text-align: center; font-weight: 500;
     }
     .ts-weekly-cell {
-      background: #111114; border: 1px solid #27272a; border-radius: 8px; min-height: 92px; padding: 9px 11px;
+      background: #111114; border: 1px solid #27272a; border-radius: 8px; min-height: 82px; padding: 8px 10px;
       display: flex; flex-direction: column; justify-content: space-between; text-align: center;
     }
     .ts-weekly-title {
@@ -1316,8 +1316,8 @@ const htmlContent = `<!DOCTYPE html>
     .sh-view .sh-scroll::-webkit-scrollbar { width: 6px; }
     .sh-view .sh-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
     .sh-view .sh-container {
-      max-width: none; width: 100%; min-height: 100%; margin: 0 auto; padding: 20px 28px 32px;
-      display: flex; flex-direction: column; gap: 18px;
+      max-width: 1620px; width: 100%; margin: 0 auto; padding: 18px 24px 28px;
+      display: flex; flex-direction: column; gap: 16px;
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     }
     .sh-view .sh-header {
@@ -1553,7 +1553,7 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 13.5px; font-weight: 600; color: var(--sh-fg);
     }
     .sh-view .sh-table-scroll {
-      overflow-x: auto; max-height: max(480px, calc(100vh - 380px)); scrollbar-width: thin; scrollbar-color: #27272a transparent;
+      overflow-x: auto; max-height: max(420px, calc(100vh - 420px)); scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
     .sh-view table,
     .sh-view .sh-table {
@@ -2825,12 +2825,12 @@ const htmlContent = `<!DOCTYPE html>
           </div>
 
           <!-- Completed Trades & Strategy Execution Log -->
-          <div class="sh-grid-2" style="flex: 1; align-items: stretch;">
+          <div class="sh-grid-2" style="align-items: stretch;">
             <div class="sh-table-card" style="display: flex; flex-direction: column;">
               <div class="sh-table-card-head">
                 <span class="sh-table-card-title">Completed Trades History</span>
               </div>
-              <div class="sh-table-scroll" style="flex: 1; min-height: 360px; max-height: max(460px, calc(100vh - 460px));">
+              <div class="sh-table-scroll" style="flex: 1; min-height: 300px; max-height: max(380px, calc(100vh - 520px));">
                 <table class="sh-table" id="table-paper-trades">
                   <thead>
                     <tr>
@@ -2853,7 +2853,7 @@ const htmlContent = `<!DOCTYPE html>
                 <span class="sh-card-label" style="color: var(--sh-fg); font-size: 13.5px; font-weight: 600;">Strategy Execution Log</span>
                 <span class="sh-badge sh-badge-sky" id="paper-logs-status">● Live Event Stream</span>
               </div>
-              <div id="paper-logs-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #a1a1aa; line-height: 1.6; flex: 1; min-height: 360px; max-height: max(460px, calc(100vh - 460px)); overflow-y: auto; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 12px; scrollbar-width: thin;">
+              <div id="paper-logs-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #a1a1aa; line-height: 1.6; flex: 1; min-height: 300px; max-height: max(380px, calc(100vh - 520px)); overflow-y: auto; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 12px; scrollbar-width: thin;">
                 <div>[PaperTrader] Engine initialized with $10,000.00 fund.</div>
               </div>
             </div>
@@ -3673,7 +3673,7 @@ const htmlContent = `<!DOCTYPE html>
             </div>
 
             <div id="alert-snapshot-preview" style="background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 14px; text-align: center;">
-              <img id="snapshot-img" src="/public/latest_alert_chart.png" onerror="this.src='/public/alert_chart.png'" style="max-width: 100%; max-height: 68vh; width: auto; border-radius: 6px; border: 1px solid #27272a;">
+              <img id="snapshot-img" src="/public/latest_alert_chart.png" onerror="this.src='/public/alert_chart.png'" style="max-width: 100%; max-height: 60vh; width: auto; border-radius: 6px; border: 1px solid #27272a;">
             </div>
           </div>
 
