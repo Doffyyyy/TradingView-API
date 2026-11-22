@@ -1028,14 +1028,14 @@ const htmlContent = `<!DOCTYPE html>
        TRADESYNC JOURNALING DASHBOARD STYLES (SHADCN ZINC DARK)
        ======================================================== */
     .ts-dashboard {
-      flex: 1; overflow-y: auto; background: #09090b; padding: 24px 28px 40px;
+      flex: 1; overflow-y: auto; background: #09090b; padding: 20px 28px 32px;
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
       color: #fafafa; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
     .ts-dashboard::-webkit-scrollbar { width: 6px; }
     .ts-dashboard::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
     .ts-dashboard-inner {
-      max-width: 1380px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+      max-width: none; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
     }
 
     /* Top Header & Toolbar within Journal */
@@ -1122,8 +1122,8 @@ const htmlContent = `<!DOCTYPE html>
       .ts-kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-kpi-card {
-      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
-      display: flex; flex-direction: column; justify-content: space-between; min-height: 112px;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 16px 18px;
+      display: flex; flex-direction: column; justify-content: space-between; min-height: 118px;
     }
     .ts-kpi-head {
       display: flex; justify-content: space-between; align-items: center; font-size: 11px;
@@ -1164,8 +1164,8 @@ const htmlContent = `<!DOCTYPE html>
       .ts-perf-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .ts-perf-card {
-      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 14px 16px;
-      display: flex; flex-direction: column; justify-content: space-between; height: 146px; position: relative; overflow: hidden;
+      background: #0c0c0f; border: 1px solid #27272a; border-radius: 10px; padding: 16px 18px;
+      display: flex; flex-direction: column; justify-content: space-between; height: 158px; position: relative; overflow: hidden;
     }
     .ts-perf-head {
       display: flex; justify-content: space-between; align-items: center; font-size: 11px;
@@ -1223,7 +1223,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     .ts-cal-col-head.weekly { color: #a1a1aa; }
     .ts-cal-cell {
-      background: #09090b; border: 1px solid #27272a; border-radius: 8px; min-height: 76px; padding: 7px 9px;
+      background: #09090b; border: 1px solid #27272a; border-radius: 8px; min-height: 92px; padding: 9px 11px;
       display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: background 0.12s, border-color 0.12s; position: relative;
     }
     .ts-cal-cell:hover {
@@ -1252,7 +1252,7 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 10.5px; color: #71717a; text-align: center; font-weight: 500;
     }
     .ts-weekly-cell {
-      background: #111114; border: 1px solid #27272a; border-radius: 8px; min-height: 76px; padding: 7px 9px;
+      background: #111114; border: 1px solid #27272a; border-radius: 8px; min-height: 92px; padding: 9px 11px;
       display: flex; flex-direction: column; justify-content: space-between; text-align: center;
     }
     .ts-weekly-title {
@@ -1316,8 +1316,8 @@ const htmlContent = `<!DOCTYPE html>
     .sh-view .sh-scroll::-webkit-scrollbar { width: 6px; }
     .sh-view .sh-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
     .sh-view .sh-container {
-      max-width: 1380px; width: 100%; margin: 0 auto; padding: 24px 28px 40px;
-      display: flex; flex-direction: column; gap: 20px;
+      max-width: none; width: 100%; min-height: 100%; margin: 0 auto; padding: 20px 28px 32px;
+      display: flex; flex-direction: column; gap: 18px;
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     }
     .sh-view .sh-header {
@@ -1553,7 +1553,7 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 13.5px; font-weight: 600; color: var(--sh-fg);
     }
     .sh-view .sh-table-scroll {
-      overflow-x: auto; max-height: 540px; scrollbar-width: thin; scrollbar-color: #27272a transparent;
+      overflow-x: auto; max-height: max(480px, calc(100vh - 380px)); scrollbar-width: thin; scrollbar-color: #27272a transparent;
     }
     .sh-view table,
     .sh-view .sh-table {
@@ -1566,10 +1566,6 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;
       padding: 10px 14px; border-bottom: 1px solid var(--sh-border); white-space: nowrap;
     }
-    .sh-view #table-paper-positions th,
-    .sh-view #table-paper-positions td {
-      padding: 10px 8px;
-    }
     .sh-view table tbody tr,
     .sh-view .sh-table tbody tr {
       border-bottom: 1px solid rgba(39, 39, 42, 0.65); transition: background 0.12s;
@@ -1577,9 +1573,13 @@ const htmlContent = `<!DOCTYPE html>
     .sh-view table tbody tr:hover,
     .sh-view .sh-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
     .sh-view table tbody td,
-    .sh-view .sh-table tbody td,
-    .sh-view #table-paper-positions td {
+    .sh-view .sh-table tbody td {
       padding: 10px 14px; vertical-align: middle; font-size: 12.5px;
+      font-variant-numeric: tabular-nums; border-bottom: 1px solid rgba(39, 39, 42, 0.65);
+    }
+    .sh-view #table-paper-positions th,
+    .sh-view #table-paper-positions td {
+      padding: 10px 10px; vertical-align: middle; font-size: 12.5px;
       font-variant-numeric: tabular-nums; border-bottom: 1px solid rgba(39, 39, 42, 0.65);
     }
     .sh-view .sh-date-group-row td {
@@ -2825,12 +2825,12 @@ const htmlContent = `<!DOCTYPE html>
           </div>
 
           <!-- Completed Trades & Strategy Execution Log -->
-          <div class="sh-grid-2">
+          <div class="sh-grid-2" style="flex: 1; align-items: stretch;">
             <div class="sh-table-card" style="display: flex; flex-direction: column;">
               <div class="sh-table-card-head">
                 <span class="sh-table-card-title">Completed Trades History</span>
               </div>
-              <div class="sh-table-scroll" style="max-height: 460px;">
+              <div class="sh-table-scroll" style="flex: 1; min-height: 360px; max-height: max(460px, calc(100vh - 460px));">
                 <table class="sh-table" id="table-paper-trades">
                   <thead>
                     <tr>
@@ -2853,7 +2853,7 @@ const htmlContent = `<!DOCTYPE html>
                 <span class="sh-card-label" style="color: var(--sh-fg); font-size: 13.5px; font-weight: 600;">Strategy Execution Log</span>
                 <span class="sh-badge sh-badge-sky" id="paper-logs-status">● Live Event Stream</span>
               </div>
-              <div id="paper-logs-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #a1a1aa; line-height: 1.6; flex: 1; min-height: 300px; max-height: 460px; overflow-y: auto; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 12px; scrollbar-width: thin;">
+              <div id="paper-logs-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #a1a1aa; line-height: 1.6; flex: 1; min-height: 360px; max-height: max(460px, calc(100vh - 460px)); overflow-y: auto; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 12px; scrollbar-width: thin;">
                 <div>[PaperTrader] Engine initialized with $10,000.00 fund.</div>
               </div>
             </div>
@@ -3673,7 +3673,7 @@ const htmlContent = `<!DOCTYPE html>
             </div>
 
             <div id="alert-snapshot-preview" style="background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 14px; text-align: center;">
-              <img id="snapshot-img" src="/public/latest_alert_chart.png" onerror="this.src='/public/alert_chart.png'" style="max-width: 100%; border-radius: 6px; border: 1px solid #27272a;">
+              <img id="snapshot-img" src="/public/latest_alert_chart.png" onerror="this.src='/public/alert_chart.png'" style="max-width: 100%; max-height: 68vh; width: auto; border-radius: 6px; border: 1px solid #27272a;">
             </div>
           </div>
 
@@ -4081,7 +4081,7 @@ const htmlContent = `<!DOCTYPE html>
   </footer>
 
   <script>
-    // Pre-declare Macro Calendar state before any synchronous session restore clicks view-macro
+    // Pre-declare Macro Calendar & Journal state before any synchronous session restore clicks tabs
     let currentMacroFilters = {
       impact: 'ALL',
       currency: 'ALL',
@@ -4096,6 +4096,116 @@ const htmlContent = `<!DOCTYPE html>
     let macroLastPayload = null;
     let macroNextEventTargetTime = null;
     let macroCountdownInterval = null;
+
+    const MARCH_2026_DEMO_DAYS = {
+      "2026-03-03": {
+        pnl: 100.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 82450.0, exitPrice: 82950.0, pnl: 60.0, pnlPercent: 1.5, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.5%)", time: "10:24 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2680.0, exitPrice: 2720.0, pnl: 40.0, pnlPercent: 1.5, strategy: "Fibo Golden Pocket", reason: "Take Profit hit (+1.5%)", time: "02:15 PM" }
+        ]
+      },
+      "2026-03-05": {
+        pnl: 240.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 114.2, exitPrice: 116.5, pnl: 240.0, pnlPercent: 2.0, strategy: "Supertrend + MACD", reason: "Trailing Stop hit at high (+2.0%)", time: "11:40 AM" }
+        ]
+      },
+      "2026-03-07": {
+        pnl: 130.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83100.0, exitPrice: 83750.0, pnl: 80.0, pnlPercent: 1.2, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.2%)", time: "09:12 AM" },
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 91.5, exitPrice: 92.8, pnl: 50.0, pnlPercent: 1.4, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.4%)", time: "04:30 PM" }
+        ]
+      },
+      "2026-03-10": {
+        pnl: 360.0,
+        trades: [
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2710.0, exitPrice: 2785.0, pnl: 360.0, pnlPercent: 2.76, strategy: "Supertrend + MACD", reason: "Trend Runner Take Profit (+2.76%)", time: "08:45 AM" }
+        ]
+      },
+      "2026-03-11": {
+        pnl: 110.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 115.0, exitPrice: 116.2, pnl: 60.0, pnlPercent: 1.04, strategy: "Supertrend Momentum", reason: "Trailing Stop (+1.04%)", time: "11:15 AM" },
+          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.25, exitPrice: 4.34, pnl: 50.0, pnlPercent: 2.12, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+2.12%)", time: "03:50 PM" }
+        ]
+      },
+      "2026-03-12": {
+        pnl: 270.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83500.0, exitPrice: 84600.0, pnl: 270.0, pnlPercent: 1.32, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.32%)", time: "02:20 PM" }
+        ]
+      },
+      "2026-03-13": {
+        pnl: 300.0,
+        trades: [
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 92.0, exitPrice: 93.6, pnl: 120.0, pnlPercent: 1.74, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.74%)", time: "09:05 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2740.0, exitPrice: 2780.0, pnl: 100.0, pnlPercent: 1.46, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.46%)", time: "01:30 PM" },
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 116.5, exitPrice: 118.0, pnl: 80.0, pnlPercent: 1.29, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.29%)", time: "06:10 PM" }
+        ]
+      },
+      "2026-03-14": {
+        pnl: 40.0,
+        trades: [
+          { symbol: "BINANCE:BNBUSDT", side: "LONG", entryPrice: 780.0, exitPrice: 788.0, pnl: 40.0, pnlPercent: 1.02, strategy: "Supertrend Momentum", reason: "Trailing Stop hit (+1.02%)", time: "10:00 AM" }
+        ]
+      },
+      "2026-03-15": {
+        pnl: 615.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 84000.0, exitPrice: 85400.0, pnl: 350.0, pnlPercent: 1.67, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.67%)", time: "08:20 AM" },
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 117.0, exitPrice: 121.2, pnl: 265.0, pnlPercent: 3.59, strategy: "Sniper A+ Setup", reason: "Trend Runner TP (+3.59%)", time: "02:40 PM" }
+        ]
+      },
+      "2026-03-16": {
+        pnl: 480.0,
+        trades: [
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2760.0, exitPrice: 2840.0, pnl: 280.0, pnlPercent: 2.9, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.9%)", time: "11:10 AM" },
+          { symbol: "BINANCE:TAOUSDT", side: "LONG", entryPrice: 300.0, exitPrice: 312.0, pnl: 200.0, pnlPercent: 4.0, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+4.0%)", time: "05:15 PM" }
+        ]
+      },
+      "2026-03-17": {
+        pnl: 400.0,
+        trades: [
+          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 93.0, exitPrice: 95.5, pnl: 250.0, pnlPercent: 2.69, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.69%)", time: "09:30 AM" },
+          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.30, exitPrice: 4.45, pnl: 150.0, pnlPercent: 3.49, strategy: "Supertrend Momentum", reason: "Take Profit hit (+3.49%)", time: "03:00 PM" }
+        ]
+      },
+      "2026-03-18": {
+        pnl: -400.0,
+        trades: [
+          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 85200.0, exitPrice: 84350.0, pnl: -220.0, pnlPercent: -1.0, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-1.0%)", time: "10:15 AM" },
+          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2830.0, exitPrice: 2802.0, pnl: -180.0, pnlPercent: -0.99, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-0.99%)", time: "01:45 PM" }
+        ]
+      },
+      "2026-03-19": {
+        pnl: 250.0,
+        trades: [
+          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 118.5, exitPrice: 121.5, pnl: 250.0, pnlPercent: 2.53, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.53%)", time: "11:20 AM" }
+        ]
+      }
+    };
+    let currentJournalMode = "sim6m";
+    let currentSelectedDate = "2026-10-04";
+    let cachedPaperStatus = null;
+    let cachedSim6mData = null;
+    let lastSimFetchStatus = 0;
+    let currentJournalDaysMap = {};
+    let simActiveMonthIndex = 10;
+    const simMonthList = [
+      { name: "January 2026", year: 2026, month: 0, prefix: "2026-01" },
+      { name: "February 2026", year: 2026, month: 1, prefix: "2026-02" },
+      { name: "March 2026", year: 2026, month: 2, prefix: "2026-03" },
+      { name: "April 2026", year: 2026, month: 3, prefix: "2026-04" },
+      { name: "May 2026", year: 2026, month: 4, prefix: "2026-05" },
+      { name: "June 2026", year: 2026, month: 5, prefix: "2026-06" },
+      { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
+      { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
+      { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" },
+      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10" },
+      { name: "November 2026", year: 2026, month: 10, prefix: "2026-11", isLive: true }
+    ];
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -8821,103 +8931,6 @@ const htmlContent = `<!DOCTYPE html>
     });
 
     // --- Tradesync Journaling Dashboard Client Logic ---
-    const MARCH_2026_DEMO_DAYS = {
-      "2026-03-03": {
-        pnl: 100.0,
-        trades: [
-          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 82450.0, exitPrice: 82950.0, pnl: 60.0, pnlPercent: 1.5, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.5%)", time: "10:24 AM" },
-          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2680.0, exitPrice: 2720.0, pnl: 40.0, pnlPercent: 1.5, strategy: "Fibo Golden Pocket", reason: "Take Profit hit (+1.5%)", time: "02:15 PM" }
-        ]
-      },
-      "2026-03-05": {
-        pnl: 240.0,
-        trades: [
-          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 114.2, exitPrice: 116.5, pnl: 240.0, pnlPercent: 2.0, strategy: "Supertrend + MACD", reason: "Trailing Stop hit at high (+2.0%)", time: "11:40 AM" }
-        ]
-      },
-      "2026-03-07": {
-        pnl: 130.0,
-        trades: [
-          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83100.0, exitPrice: 83750.0, pnl: 80.0, pnlPercent: 1.2, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.2%)", time: "09:12 AM" },
-          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 91.5, exitPrice: 92.8, pnl: 50.0, pnlPercent: 1.4, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.4%)", time: "04:30 PM" }
-        ]
-      },
-      "2026-03-10": {
-        pnl: 360.0,
-        trades: [
-          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2710.0, exitPrice: 2785.0, pnl: 360.0, pnlPercent: 2.76, strategy: "Supertrend + MACD", reason: "Trend Runner Take Profit (+2.76%)", time: "08:45 AM" }
-        ]
-      },
-      "2026-03-11": {
-        pnl: 110.0,
-        trades: [
-          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 115.0, exitPrice: 116.2, pnl: 60.0, pnlPercent: 1.04, strategy: "Supertrend Momentum", reason: "Trailing Stop (+1.04%)", time: "11:15 AM" },
-          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.25, exitPrice: 4.34, pnl: 50.0, pnlPercent: 2.12, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+2.12%)", time: "03:50 PM" }
-        ]
-      },
-      "2026-03-12": {
-        pnl: 270.0,
-        trades: [
-          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 83500.0, exitPrice: 84600.0, pnl: 270.0, pnlPercent: 1.32, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.32%)", time: "02:20 PM" }
-        ]
-      },
-      "2026-03-13": {
-        pnl: 300.0,
-        trades: [
-          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 92.0, exitPrice: 93.6, pnl: 120.0, pnlPercent: 1.74, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+1.74%)", time: "09:05 AM" },
-          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2740.0, exitPrice: 2780.0, pnl: 100.0, pnlPercent: 1.46, strategy: "Supertrend Momentum", reason: "Take Profit hit (+1.46%)", time: "01:30 PM" },
-          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 116.5, exitPrice: 118.0, pnl: 80.0, pnlPercent: 1.29, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.29%)", time: "06:10 PM" }
-        ]
-      },
-      "2026-03-14": {
-        pnl: 40.0,
-        trades: [
-          { symbol: "BINANCE:BNBUSDT", side: "LONG", entryPrice: 780.0, exitPrice: 788.0, pnl: 40.0, pnlPercent: 1.02, strategy: "Supertrend Momentum", reason: "Trailing Stop hit (+1.02%)", time: "10:00 AM" }
-        ]
-      },
-      "2026-03-15": {
-        pnl: 615.0,
-        trades: [
-          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 84000.0, exitPrice: 85400.0, pnl: 350.0, pnlPercent: 1.67, strategy: "Supertrend + MACD", reason: "Take Profit hit (+1.67%)", time: "08:20 AM" },
-          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 117.0, exitPrice: 121.2, pnl: 265.0, pnlPercent: 3.59, strategy: "Sniper A+ Setup", reason: "Trend Runner TP (+3.59%)", time: "02:40 PM" }
-        ]
-      },
-      "2026-03-16": {
-        pnl: 480.0,
-        trades: [
-          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2760.0, exitPrice: 2840.0, pnl: 280.0, pnlPercent: 2.9, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.9%)", time: "11:10 AM" },
-          { symbol: "BINANCE:TAOUSDT", side: "LONG", entryPrice: 300.0, exitPrice: 312.0, pnl: 200.0, pnlPercent: 4.0, strategy: "Sniper A+ Setup", reason: "Take Profit hit (+4.0%)", time: "05:15 PM" }
-        ]
-      },
-      "2026-03-17": {
-        pnl: 400.0,
-        trades: [
-          { symbol: "BYBIT:HYPEUSDT", side: "LONG", entryPrice: 93.0, exitPrice: 95.5, pnl: 250.0, pnlPercent: 2.69, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.69%)", time: "09:30 AM" },
-          { symbol: "BINANCE:NEARUSDT", side: "LONG", entryPrice: 4.30, exitPrice: 4.45, pnl: 150.0, pnlPercent: 3.49, strategy: "Supertrend Momentum", reason: "Take Profit hit (+3.49%)", time: "03:00 PM" }
-        ]
-      },
-      "2026-03-18": {
-        pnl: -400.0,
-        trades: [
-          { symbol: "BINANCE:BTCUSDT", side: "LONG", entryPrice: 85200.0, exitPrice: 84350.0, pnl: -220.0, pnlPercent: -1.0, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-1.0%)", time: "10:15 AM" },
-          { symbol: "BINANCE:ETHUSDT", side: "LONG", entryPrice: 2830.0, exitPrice: 2802.0, pnl: -180.0, pnlPercent: -0.99, strategy: "Supertrend + MACD", reason: "Stop Loss hit (-0.99%)", time: "01:45 PM" }
-        ]
-      },
-      "2026-03-19": {
-        pnl: 250.0,
-        trades: [
-          { symbol: "BINANCE:SOLUSDT", side: "LONG", entryPrice: 118.5, exitPrice: 121.5, pnl: 250.0, pnlPercent: 2.53, strategy: "Supertrend + MACD", reason: "Take Profit hit (+2.53%)", time: "11:20 AM" }
-        ]
-      }
-    };
-
-    let currentJournalMode = "sim6m";
-    let currentSelectedDate = "2026-10-04";
-    let cachedPaperStatus = null;
-    let cachedSim6mData = null;
-    let lastSimFetchStatus = 0;
-    let currentJournalDaysMap = {};
-
     async function loadSim6mData(forceRefresh = false) {
       if (forceRefresh) cachedSim6mData = null;
       if (cachedSim6mData) return cachedSim6mData;
@@ -8933,21 +8946,6 @@ const htmlContent = `<!DOCTYPE html>
       }
       return null;
     }
-
-    let simActiveMonthIndex = 10; // Default to current month: November 2026 (index 10: 0=Jan, ..., 9=Oct, 10=Nov)
-    const simMonthList = [
-      { name: "January 2026", year: 2026, month: 0, prefix: "2026-01" },
-      { name: "February 2026", year: 2026, month: 1, prefix: "2026-02" },
-      { name: "March 2026", year: 2026, month: 2, prefix: "2026-03" },
-      { name: "April 2026", year: 2026, month: 3, prefix: "2026-04" },
-      { name: "May 2026", year: 2026, month: 4, prefix: "2026-05" },
-      { name: "June 2026", year: 2026, month: 5, prefix: "2026-06" },
-      { name: "July 2026", year: 2026, month: 6, prefix: "2026-07" },
-      { name: "August 2026", year: 2026, month: 7, prefix: "2026-08" },
-      { name: "September 2026", year: 2026, month: 8, prefix: "2026-09" },
-      { name: "October 2026", year: 2026, month: 9, prefix: "2026-10" },
-      { name: "November 2026", year: 2026, month: 10, prefix: "2026-11", isLive: true }
-    ];
 
     async function renderJournalDashboard() {
       const modeSelect = document.getElementById("ts-month-mode");
