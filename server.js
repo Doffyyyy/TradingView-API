@@ -22,6 +22,7 @@ const { authSecurityInstance } = require('./src/extensions/authSecurity');
 const { userProfileManager } = require('./src/extensions/userProfileManager');
 const { variationalConnector } = require('./src/extensions/variational');
 const { getLoginPageHtml } = require('./src/views/loginPage');
+const { stockProvider, isStockSymbol } = require('./src/extensions/stockProvider');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -161,27 +162,50 @@ function getHistory(symbol, timeframe, range = 1000) {
     querySymbol = 'TVC:GOLD';
   } else if (querySymbol === 'NVDA' || querySymbol.includes('NVDA')) {
     querySymbol = 'NASDAQ:NVDA';
+  } else if (querySymbol.toUpperCase() === 'ANT' || querySymbol.toUpperCase() === 'ANTHROPIC' || querySymbol.toUpperCase() === 'NASDAQ:ANT') {
+    querySymbol = 'NASDAQ:ANT';
   } else if (querySymbol.toUpperCase() === 'BTSE:OILUSD' || querySymbol.toUpperCase() === 'OILUSD') {
     querySymbol = 'BTSE:OILUSD.P';
   } else if (querySymbol.toUpperCase().includes('BRENT')) {
     querySymbol = 'HIP3XYZ:BRENTOILUSDC.P';
   }
 
-  // Fast CEX REST Kline loader for Binance pairs (sub-120ms latency)
-  const isBinance = querySymbol.startsWith('BINANCE:') ||
-    ((querySymbol.endsWith('USDT') || querySymbol.endsWith('USDC') || querySymbol.endsWith('BTC')) && !querySymbol.includes('BYBIT:') && !querySymbol.includes('INDEX:') && !querySymbol.includes('TVC:'));
+  // Dedicated Stock Exchange Provider (NASDAQ, NYSE, AMEX, ARCA, global exchanges)
+  if (isStockSymbol(querySymbol)) {
+    return new Promise(async (resolve) => {
+      try {
+        const resData = await stockProvider.getBars(querySymbol, normTf, Math.min(range || 1000, 5000));
+        if (resData && resData.candles && resData.candles.length > 0) {
+          serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+          prewarmServerTimeframes(symbol);
+          return resolve(resData);
+        }
+      } catch (e) {}
+      // Fallback to TradingView WS if stock provider encounters error
+      return fetchFromTradingViewWS(querySymbol, normTf, range, cacheKey, resolve);
+    });
+  }
+
+  // Fast CEX REST Kline loader for Binance pairs (Spot or Futures .P)
+  const isBinance = !isStockSymbol(querySymbol) && (
+    querySymbol.startsWith('BINANCE:') ||
+    ((querySymbol.endsWith('USDT') || querySymbol.endsWith('USDC') || querySymbol.endsWith('BTC')) && !querySymbol.includes('BYBIT:') && !querySymbol.includes('INDEX:') && !querySymbol.includes('TVC:'))
+  );
   if (isBinance) {
     const bInterval = mapTfToBinanceInterval(normTf);
     if (bInterval) {
       return new Promise(async (resolve) => {
         try {
           const axios = require('axios');
+          const isBinancePerp = querySymbol.toUpperCase().startsWith('BINANCE:') && querySymbol.toUpperCase().endsWith('.P');
           let pair = querySymbol.replace(/^BINANCE:/i, '').replace(/\.P$/i, '').toUpperCase();
           const lim = Math.min(range || 1000, 1000);
-          const urls = [
-            `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`,
-            `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`
-          ];
+          const urls = isBinancePerp
+            ? [`https://fapi.binance.com/fapi/v1/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`]
+            : [
+                `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`,
+                `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${bInterval}&limit=${lim}`
+              ];
           for (const url of urls) {
             try {
               const res = await axios.get(url, { timeout: 3500 });
@@ -4379,6 +4403,13 @@ const htmlContent = `<!DOCTYPE html>
     let binanceWs = null;
     let binanceWsActivePair = null;
 
+    const CLIENT_STOCK_EXCHANGES = ['NASDAQ:', 'NYSE:', 'AMEX:', 'ARCA:', 'BATS:', 'CBOE:', 'TSX:', 'LSE:', 'HKEX:', 'TSE:', 'XETR:', 'ASX:'];
+    function isClientStockSymbol(sym) {
+      if (!sym) return false;
+      const u = String(sym).toUpperCase();
+      return CLIENT_STOCK_EXCHANGES.some(p => u.startsWith(p));
+    }
+
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
       if (c.includes(':')) c = c.split(':')[1];
@@ -5355,7 +5386,7 @@ const htmlContent = `<!DOCTYPE html>
           const c1 = 1 - c2 - c3;
 
           const ss = new Array(hlc3.length).fill(hlc3[0]);
-          if (hlc3.length > 1) ss[1] = hlc3[1];
+          if (hlc3.length > 1) ss[1] = hlc3[0];
           for (let i = 2; i < hlc3.length; i++) {
             ss[i] = c1 * hlc3[i] + c2 * ss[i - 1] + c3 * ss[i - 2];
           }
@@ -5370,8 +5401,8 @@ const htmlContent = `<!DOCTYPE html>
               variance += diff * diff;
             }
             const sd = Math.sqrt(variance / (i - start + 1)) || (ss[i] * 0.015);
-            rzUpperData.push({ time: candles[i].time, value: parseFloat((ss[i] + sd * 2.415).toFixed(4)) });
-            rzLowerData.push({ time: candles[i].time, value: parseFloat((ss[i] - sd * 2.415).toFixed(4)) });
+            rzUpperData.push({ time: candles[i].time, value: parseFloat(Math.max(0.0001, ss[i] + sd * 2.415).toFixed(4)) });
+            rzLowerData.push({ time: candles[i].time, value: parseFloat(Math.max(0.0001, ss[i] - sd * 2.415).toFixed(4)) });
           }
 
           luxRzUpperSeries = chart.addLineSeries({
@@ -5379,6 +5410,7 @@ const htmlContent = `<!DOCTYPE html>
             lineWidth: 1,
             lineStyle: LightweightCharts.LineStyle.Dashed,
             title: 'Lux Reversal Upper',
+            autoscaleInfoProvider: () => null,
           });
           luxRzUpperSeries.setData(rzUpperData);
 
@@ -5387,6 +5419,7 @@ const htmlContent = `<!DOCTYPE html>
             lineWidth: 1,
             lineStyle: LightweightCharts.LineStyle.Dashed,
             title: 'Lux Reversal Lower',
+            autoscaleInfoProvider: () => null,
           });
           luxRzLowerSeries.setData(rzLowerData);
         }
@@ -5509,6 +5542,7 @@ const htmlContent = `<!DOCTYPE html>
 
         for (let i = 0; i < n; i++) {
           const c = candles[i];
+          if (i < initB - 1) continue;
           const eH = emaH[i];
           const eL = emaL[i];
           const e200 = ema200[i];
@@ -6057,6 +6091,10 @@ const htmlContent = `<!DOCTYPE html>
       'NASDAQ:NVDA': 'nvidia',
       'NVDA': 'nvidia',
       'BINANCE:NVDAUSDT.P': 'nvidia',
+      'NASDAQ:ANT': 'anthropic',
+      'ANT': 'anthropic',
+      'ANTHROPIC': 'anthropic',
+      'BINANCE:ANTUSDT.P': 'anthropic',
     };
 
     const DEFAULT_WATCHLIST = [
@@ -6069,6 +6107,7 @@ const htmlContent = `<!DOCTYPE html>
       { symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', logoId: 'indices/s-and-p-500' },
       { symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', logoId: 'metal/gold' },
       { symbol: 'NASDAQ:NVDA', name: 'NVDA', exchange: 'NASDAQ', logoId: 'nvidia' },
+      { symbol: 'NASDAQ:ANT', name: 'ANT', exchange: 'NASDAQ', logoId: 'anthropic' },
       { symbol: 'NASDAQ:SPCX', name: 'SPCX', exchange: 'NASDAQ', logoId: 'spacex' },
       { symbol: 'BINANCE:ZECUSDT', name: 'ZECUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCZEC' },
       { symbol: 'BINANCE:TAOUSDT', name: 'TAOUSDT', exchange: 'BINANCE', logoId: 'crypto/XTVCTAOB' },
@@ -6088,6 +6127,89 @@ const htmlContent = `<!DOCTYPE html>
       { symbol: 'OKX:OKBUSDT', name: 'OKBUSDT', exchange: 'OKX', logoId: 'crypto/XTVCOKB' },
     ];
 
+    function normalizeWatchlistEntries(list) {
+      if (!Array.isArray(list)) return [];
+      const seen = new Set();
+      const out = [];
+      for (const rawItem of list) {
+        if (!rawItem || !rawItem.symbol) continue;
+        let item = { ...rawItem };
+        const symUp = String(item.symbol).toUpperCase();
+        const nameUp = String(item.name || '').toUpperCase();
+
+        if (item.symbol === 'BINANCE:ARB' || item.name === 'ARB' || item.symbol === 'ARB') {
+          item = {
+            symbol: 'BINANCE:ARBUSDT',
+            name: 'ARBUSDT',
+            exchange: 'BINANCE',
+            logoId: 'crypto/XTVCARBI',
+          };
+        } else if (item.symbol && item.symbol.includes('HYPE')) {
+          item = {
+            symbol: 'HYPERLIQUID:HYPE',
+            name: 'HYPE',
+            exchange: 'HYPERLIQUID',
+            logoId: 'crypto/XTVCHYPEH',
+          };
+        } else if (item.symbol && item.symbol.includes('PUMP')) {
+          item = {
+            symbol: 'BINANCE:PUMPUSDT',
+            name: 'PUMP',
+            exchange: 'BINANCE',
+            logoId: 'crypto/XTVCPUMPF',
+          };
+        } else if (item.symbol && (item.symbol.includes('SP500') || item.symbol.includes('SPX') || item.name === 'SP500' || item.name === 'SPX')) {
+          item = {
+            symbol: 'INDEX:SPX',
+            name: 'SP500',
+            exchange: 'INDEX',
+            logoId: 'indices/s-and-p-500',
+          };
+        } else if (item.symbol && (item.symbol.includes('GOLD') || item.symbol.includes('XAU') || item.name === 'GOLD' || item.name === 'XAUUSD')) {
+          item = {
+            symbol: 'TVC:GOLD',
+            name: 'GOLD',
+            exchange: 'TVC',
+            logoId: 'metal/gold',
+          };
+        } else if (item.symbol && (item.symbol.includes('NVDA') || item.name === 'NVDA')) {
+          item = {
+            symbol: 'NASDAQ:NVDA',
+            name: 'NVDA',
+            exchange: 'NASDAQ',
+            logoId: 'nvidia',
+          };
+        } else if (
+          symUp === 'BINANCE:ANTUSDT.P' ||
+          symUp === 'BINANCE:ANTUSDC' ||
+          symUp === 'BINANCE:ANTUSDC.P' ||
+          symUp === 'BINANCE:ANTUSDT' ||
+          symUp === 'ANT-USDC' ||
+          symUp === 'ANTUSDC' ||
+          symUp === 'ANTUSDT.P' ||
+          nameUp === 'ANT-USDC' ||
+          nameUp === 'ANTUSDC' ||
+          nameUp === 'ANTUSDT.P'
+        ) {
+          item = {
+            symbol: 'NASDAQ:ANT',
+            name: 'ANT',
+            exchange: 'NASDAQ',
+            logoId: 'anthropic',
+          };
+        }
+
+        if (!item.logoId && LOGO_MAP[item.symbol]) {
+          item.logoId = LOGO_MAP[item.symbol];
+        }
+        if (!seen.has(item.symbol)) {
+          seen.add(item.symbol);
+          out.push(item);
+        }
+      }
+      return out;
+    }
+
     let customWatchlist = [];
     try {
       const saved = localStorage.getItem('tv_custom_watchlist_v4') || localStorage.getItem('tv_custom_watchlist_v3');
@@ -6096,62 +6218,9 @@ const htmlContent = `<!DOCTYPE html>
       customWatchlist = DEFAULT_WATCHLIST;
     }
 
-    // Auto-fix any incomplete or invalid symbols from previous adds (e.g. BINANCE:ARB -> BINANCE:ARBUSDT, HYPE -> Hyperliquid native)
-    customWatchlist = customWatchlist.map(item => {
-      if (item.symbol === 'BINANCE:ARB' || item.name === 'ARB' || item.symbol === 'ARB') {
-        return {
-          symbol: 'BINANCE:ARBUSDT',
-          name: 'ARBUSDT',
-          exchange: 'BINANCE',
-          logoId: 'crypto/XTVCARBI',
-        };
-      }
-      if (item.symbol && item.symbol.includes('HYPE')) {
-        return {
-          symbol: 'HYPERLIQUID:HYPE',
-          name: 'HYPE',
-          exchange: 'HYPERLIQUID',
-          logoId: 'crypto/XTVCHYPEH',
-        };
-      }
-      if (item.symbol && item.symbol.includes('PUMP')) {
-        return {
-          symbol: 'BINANCE:PUMPUSDT',
-          name: 'PUMP',
-          exchange: 'BINANCE',
-          logoId: 'crypto/XTVCPUMPF',
-        };
-      }
-      if (item.symbol && (item.symbol.includes('SP500') || item.symbol.includes('SPX') || item.name === 'SP500' || item.name === 'SPX')) {
-        return {
-          symbol: 'INDEX:SPX',
-          name: 'SP500',
-          exchange: 'INDEX',
-          logoId: 'indices/s-and-p-500',
-        };
-      }
-      if (item.symbol && (item.symbol.includes('GOLD') || item.symbol.includes('XAU') || item.name === 'GOLD' || item.name === 'XAUUSD')) {
-        return {
-          symbol: 'TVC:GOLD',
-          name: 'GOLD',
-          exchange: 'TVC',
-          logoId: 'metal/gold',
-        };
-      }
-      if (item.symbol && (item.symbol.includes('NVDA') || item.name === 'NVDA')) {
-        return {
-          symbol: 'NASDAQ:NVDA',
-          name: 'NVDA',
-          exchange: 'NASDAQ',
-          logoId: 'nvidia',
-        };
-      }
-      if (!item.logoId && LOGO_MAP[item.symbol]) {
-        item.logoId = LOGO_MAP[item.symbol];
-      }
-      return item;
-    });
-        if (!customWatchlist.some(w => w.name === 'SP500' || (w.symbol && (w.symbol.includes('SPX') || w.symbol.includes('SP500'))))) {
+    // Auto-fix any incomplete or invalid symbols from previous adds (e.g. BINANCE:ARB, BINANCE:ANTUSDT.P -> NASDAQ:ANT)
+    customWatchlist = normalizeWatchlistEntries(customWatchlist);
+    if (!customWatchlist.some(w => w.name === 'SP500' || (w.symbol && (w.symbol.includes('SPX') || w.symbol.includes('SP500'))))) {
       customWatchlist.push({ symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', logoId: 'indices/s-and-p-500' });
     }
     if (!customWatchlist.some(w => w.name === 'GOLD' || (w.symbol && (w.symbol.includes('GOLD') || w.symbol.includes('XAU'))))) {
@@ -6159,6 +6228,9 @@ const htmlContent = `<!DOCTYPE html>
     }
     if (!customWatchlist.some(w => w.name === 'NVDA' || (w.symbol && w.symbol.includes('NVDA')))) {
       customWatchlist.push({ symbol: 'NASDAQ:NVDA', name: 'NVDA', exchange: 'NASDAQ', logoId: 'nvidia' });
+    }
+    if (!customWatchlist.some(w => w.symbol === 'NASDAQ:ANT' || w.name === 'ANT')) {
+      customWatchlist.push({ symbol: 'NASDAQ:ANT', name: 'ANT', exchange: 'NASDAQ', logoId: 'anthropic' });
     }
     saveWatchlist();
 
@@ -6202,7 +6274,11 @@ const htmlContent = `<!DOCTYPE html>
           if (res.ok) {
             const data = await res.json();
             if (data.watchlist && Array.isArray(data.watchlist) && data.watchlist.length > 0) {
-              customWatchlist = data.watchlist;
+              const beforeJson = JSON.stringify(data.watchlist);
+              customWatchlist = normalizeWatchlistEntries(data.watchlist);
+              if (JSON.stringify(customWatchlist) !== beforeJson) {
+                saveWatchlist();
+              }
               if (window.multiChartManagerInstance) {
                 window.multiChartManagerInstance.populateWatchlistTokens(customWatchlist);
               }
@@ -6214,7 +6290,7 @@ const htmlContent = `<!DOCTYPE html>
         const key = getWatchlistStorageKey();
         const saved = localStorage.getItem(key) || localStorage.getItem('tv_custom_watchlist_v4');
         if (saved) {
-          customWatchlist = JSON.parse(saved);
+          customWatchlist = normalizeWatchlistEntries(JSON.parse(saved));
         }
       } catch (e) {}
       if (window.multiChartManagerInstance) {
@@ -6361,27 +6437,36 @@ const htmlContent = `<!DOCTYPE html>
       if (currentSymbol === targetSym && currentTimeframe === targetTf) {
         eventSource = new EventSource('/api/stream?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf));
         eventSource.onmessage = (e) => {
-          const d = JSON.parse(e.data);
-          if (d.candle) {
-            lastLoadedCandle = d.candle;
-            candleSeries.update(d.candle);
-            volumeSeries.update({
-              time: d.candle.time,
-              value: d.candle.volume || 0,
-              color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
-            });
-            if (!isCrosshairHovering) {
-              setLegendOHLC(d.candle);
+          if (currentSymbol !== targetSym || currentTimeframe !== targetTf) return;
+          try {
+            const d = JSON.parse(e.data);
+            if (d && d.candle && d.candle.time) {
+              if (lastLoadedCandle && d.candle.time < lastLoadedCandle.time) return;
+              lastLoadedCandle = d.candle;
+              candleSeries.update(d.candle);
+              volumeSeries.update({
+                time: d.candle.time,
+                value: d.candle.volume || 0,
+                color: d.candle.close >= d.candle.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
+              });
+              if (!isCrosshairHovering) {
+                setLegendOHLC(d.candle);
+              }
+              if (typeof syncLivePriceToWatchlist === 'function') {
+                syncLivePriceToWatchlist(currentSymbol, d.candle.close);
+              }
+              if (currentCandlesCache.length > 0) {
+                const lastCached = currentCandlesCache[currentCandlesCache.length - 1];
+                if (lastCached && d.candle.time === lastCached.time) {
+                  currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
+                } else if (!lastCached || d.candle.time > lastCached.time) {
+                  currentCandlesCache.push(d.candle);
+                }
+                updateActiveIndicators(currentCandlesCache);
+                updateProviewTitle(currentSymbol, d.candle.close);
+              }
             }
-            if (typeof syncLivePriceToWatchlist === 'function') {
-              syncLivePriceToWatchlist(currentSymbol, d.candle.close);
-            }
-            if (currentCandlesCache.length > 0) {
-              currentCandlesCache[currentCandlesCache.length - 1] = d.candle;
-              updateActiveIndicators(currentCandlesCache);
-              updateProviewTitle(currentSymbol, d.candle.close);
-            }
-          }
+          } catch (err) {}
         };
       }
     }
@@ -6501,7 +6586,12 @@ const htmlContent = `<!DOCTYPE html>
 
         // 1. Restore Symbol & Timeframe
         if (s.symbol) {
-          currentSymbol = s.symbol;
+          const symUp = String(s.symbol).toUpperCase();
+          if (symUp === 'BINANCE:ANTUSDT.P' || symUp === 'BINANCE:ANTUSDC' || symUp === 'BINANCE:ANTUSDC.P' || symUp === 'BINANCE:ANTUSDT' || symUp === 'ANT-USDC' || symUp === 'ANTUSDC' || symUp === 'ANTUSDT.P') {
+            currentSymbol = 'NASDAQ:ANT';
+          } else {
+            currentSymbol = s.symbol;
+          }
         }
         if (s.timeframe) {
           currentTimeframe = s.timeframe;
@@ -7182,6 +7272,11 @@ const htmlContent = `<!DOCTYPE html>
         if (btnConfirm) btnConfirm.textContent = 'Add';
         return;
       }
+      if (rawUp === 'ANT' || rawUp === 'NASDAQ:ANT' || rawUp === 'ANTHROPIC') {
+        addResolvedToken('NASDAQ:ANT', 'ANT', 'NASDAQ', 'anthropic');
+        if (btnConfirm) btnConfirm.textContent = 'Add';
+        return;
+      }
 
       try {
         const res = await fetch('/api/search?q=' + encodeURIComponent(raw));
@@ -7686,7 +7781,7 @@ const htmlContent = `<!DOCTYPE html>
     function subscribeHlWebSocket(coin) {
       if (typeof WebSocket === 'undefined' || typeof hlWs === 'undefined' || !hlWs || hlWs.readyState !== WebSocket.OPEN) return;
       // Do not subscribe non-crypto indices or stocks to Hyperliquid crypto orderbook
-      if (currentSymbol && (currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:') || currentSymbol.startsWith('NASDAQ:') || currentSymbol.startsWith('NYSE:'))) {
+      if (currentSymbol && (isClientStockSymbol(currentSymbol) || currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:'))) {
         if (hlWsActiveCoin) {
           try {
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'l2Book', coin: hlWsActiveCoin } }));
@@ -7757,7 +7852,19 @@ const htmlContent = `<!DOCTYPE html>
     function subscribeBinanceWebSocket(sym) {
       if (typeof WebSocket === 'undefined') return;
       if (!sym) return;
-      let pair = sym.toUpperCase();
+      const symUp = String(sym).toUpperCase();
+      const isBinancePerp = symUp.startsWith('BINANCE:') && symUp.endsWith('.P');
+      const isNonBinance = isClientStockSymbol(sym) ||
+        ['INDEX:', 'TVC:', 'BYBIT:', 'OKX:', 'COINBASE:', 'HYPERLIQUID:', 'HIP3XYZ:', 'METEORA:', 'ORCA:', 'CRYPTO:', 'MEXC:'].some(p => symUp.startsWith(p));
+      if (isNonBinance) {
+        if (binanceWs) {
+          try { binanceWs.close(); } catch (e) {}
+          binanceWs = null;
+          binanceWsActivePair = null;
+        }
+        return;
+      }
+      let pair = symUp;
       if (pair.includes(':')) pair = pair.split(':')[1];
       if (pair.endsWith('.P')) pair = pair.slice(0, -2);
       if (!pair.endsWith('USDT') && !pair.endsWith('USDC') && !pair.endsWith('FDUSD')) {
@@ -7769,16 +7876,20 @@ const htmlContent = `<!DOCTYPE html>
         return;
       }
       const streamPair = pair.toLowerCase();
-      if (binanceWsActivePair === streamPair && binanceWs && binanceWs.readyState === WebSocket.OPEN) {
+      const wsKey = (isBinancePerp ? 'f_' : 's_') + streamPair;
+      if (binanceWsActivePair === wsKey && binanceWs && binanceWs.readyState === WebSocket.OPEN) {
         return;
       }
       if (binanceWs) {
         try { binanceWs.close(); } catch (e) {}
         binanceWs = null;
       }
-      binanceWsActivePair = streamPair;
+      binanceWsActivePair = wsKey;
       try {
-        binanceWs = new WebSocket('wss://stream.binance.com:9443/ws/' + streamPair + '@trade');
+        const streamUrl = isBinancePerp
+          ? ('wss://fstream.binance.com/ws/' + streamPair + '@aggTrade')
+          : ('wss://stream.binance.com:9443/ws/' + streamPair + '@trade');
+        binanceWs = new WebSocket(streamUrl);
         binanceWs.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -7796,7 +7907,7 @@ const htmlContent = `<!DOCTYPE html>
           } catch (e) {}
         };
         binanceWs.onclose = () => {
-          if (binanceWsActivePair === streamPair) {
+          if (binanceWsActivePair === wsKey) {
             setTimeout(() => subscribeBinanceWebSocket(currentSymbol), 4000);
           }
         };
@@ -7808,43 +7919,66 @@ const htmlContent = `<!DOCTYPE html>
 
     async function updateDockData() {
       const c = currentDockCoin;
-      // 1. Fetch Orderbook (HTTP Fallback if WS connecting)
-      try {
-        const res = await fetch('/api/hyperliquid/book?coin=' + encodeURIComponent(c));
-        const b = await res.json();
-        if (b && b.bids && b.asks) {
-          renderOrderbookData(b.bids, b.asks, b.bestAsk, b.bestBid);
-        }
-      } catch (e) {}
+      const isNonCryptoMarket = isClientStockSymbol(currentSymbol) ||
+        (currentSymbol && (currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:')));
 
-      // 2. Fetch Screener
-      try {
-        const res = await fetch('/api/hyperliquid/screener?coin=' + encodeURIComponent(c));
-        const scr = await res.json();
-        if (scr && scr.m5 && scr.m15) {
-          document.getElementById('scr-trades-5m').textContent = scr.m5.trades;
-          document.getElementById('scr-trades-15m').textContent = scr.m15.trades;
+      if (!isNonCryptoMarket) {
+        // 1. Fetch Orderbook (HTTP Fallback if WS connecting)
+        try {
+          const res = await fetch('/api/hyperliquid/book?coin=' + encodeURIComponent(c));
+          const b = await res.json();
+          if (b && b.bids && b.asks) {
+            renderOrderbookData(b.bids, b.asks, b.bestAsk, b.bestBid);
+          }
+        } catch (e) {}
 
-          const chg5El = document.getElementById('scr-chg-5m');
-          chg5El.textContent = scr.m5.changePercent;
-          chg5El.className = 'scr-val ' + (scr.m5.rawChangePercent >= 0 ? 'val-green' : 'val-red');
+        // 2. Fetch Screener
+        try {
+          const res = await fetch('/api/hyperliquid/screener?coin=' + encodeURIComponent(c));
+          const scr = await res.json();
+          if (scr && scr.m5 && scr.m15) {
+            document.getElementById('scr-trades-5m').textContent = scr.m5.trades;
+            document.getElementById('scr-trades-15m').textContent = scr.m15.trades;
 
-          const chg15El = document.getElementById('scr-chg-15m');
-          chg15El.textContent = scr.m15.changePercent;
-          chg15El.className = 'scr-val ' + (scr.m15.rawChangePercent >= 0 ? 'val-green' : 'val-red');
+            const chg5El = document.getElementById('scr-chg-5m');
+            chg5El.textContent = scr.m5.changePercent;
+            chg5El.className = 'scr-val ' + (scr.m5.rawChangePercent >= 0 ? 'val-green' : 'val-red');
 
-          document.getElementById('scr-vol-5m').textContent = scr.m5.volume;
-          document.getElementById('scr-vol-15m').textContent = scr.m15.volume;
+            const chg15El = document.getElementById('scr-chg-15m');
+            chg15El.textContent = scr.m15.changePercent;
+            chg15El.className = 'scr-val ' + (scr.m15.rawChangePercent >= 0 ? 'val-green' : 'val-red');
 
-          const vd5El = document.getElementById('scr-vdelta-5m');
-          vd5El.textContent = scr.m5.volumeDelta;
-          vd5El.className = 'scr-val ' + (scr.m5.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
+            document.getElementById('scr-vol-5m').textContent = scr.m5.volume;
+            document.getElementById('scr-vol-15m').textContent = scr.m15.volume;
 
-          const vd15El = document.getElementById('scr-vdelta-15m');
-          vd15El.textContent = scr.m15.volumeDelta;
-          vd15El.className = 'scr-val ' + (scr.m15.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
-        }
-      } catch (e) {}
+            const vd5El = document.getElementById('scr-vdelta-5m');
+            vd5El.textContent = scr.m5.volumeDelta;
+            vd5El.className = 'scr-val ' + (scr.m5.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
+
+            const vd15El = document.getElementById('scr-vdelta-15m');
+            vd15El.textContent = scr.m15.volumeDelta;
+            vd15El.className = 'scr-val ' + (scr.m15.rawVolumeDelta >= 0 ? 'val-green' : 'val-red');
+          }
+        } catch (e) {}
+      } else {
+        const asksEl = document.getElementById('ob-asks-list');
+        if (asksEl) asksEl.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-secondary);font-size:11px;">Stock / Index feed (No HL L2 book)</div>';
+        const bidsEl = document.getElementById('ob-bids-list');
+        if (bidsEl) bidsEl.innerHTML = '';
+        const spValEl = document.getElementById('ob-spread-val');
+        if (spValEl) spValEl.textContent = '--';
+        const spBpEl = document.getElementById('ob-spread-bp');
+        if (spBpEl) spBpEl.textContent = '';
+        const maxD = document.getElementById('ob-max-depth');
+        if (maxD) maxD.textContent = '--';
+        ['scr-trades-5m', 'scr-trades-15m', 'scr-chg-5m', 'scr-chg-15m', 'scr-vol-5m', 'scr-vol-15m', 'scr-vdelta-5m', 'scr-vdelta-15m'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.textContent = '--';
+            el.className = 'scr-val';
+          }
+        });
+      }
 
       // 3. Fetch Account (Live USDC Wallet or $10k Paper Portfolio)
       try {
@@ -8289,9 +8423,56 @@ const htmlContent = `<!DOCTYPE html>
       });
     });
 
-    // --- Hyperliquid Ticker Bar & Header Logic ---
+    // --- Hyperliquid & Stock Ticker Bar / Header Logic ---
     async function updateTickerBar(coin) {
       if (!coin || coin !== currentDockCoin) return;
+      if (isClientStockSymbol(currentSymbol)) {
+        try {
+          const res = await fetch('/api/stock/ticker?symbol=' + encodeURIComponent(currentSymbol));
+          const t = await res.json();
+          if (!t || !t.rawLast || !isClientStockSymbol(currentSymbol)) return;
+          const rawL = t.rawLast;
+          const rawChg = t.rawChange || 0;
+          const lastStr = t.last || formatTokenPrice(rawL);
+          const chgStr = t.change || ((rawChg >= 0 ? '+' : '') + rawChg.toFixed(2) + '%');
+
+          const lastEl = document.getElementById('hl-stat-last');
+          if (lastEl) lastEl.textContent = '$' + String(lastStr).replace(/^\$/, '');
+          const idxEl = document.getElementById('hl-stat-index');
+          if (idxEl) idxEl.textContent = t.index && t.index !== '--' ? t.index : '$' + String(lastStr).replace(/^\$/, '');
+          const chgEl = document.getElementById('hl-stat-change');
+          if (chgEl) {
+            chgEl.textContent = chgStr;
+            chgEl.className = 'hl-stat-val ' + (rawChg >= 0 ? 'val-green' : 'val-red');
+          }
+          const volEl = document.getElementById('hl-stat-volume');
+          if (volEl) volEl.textContent = t.volume || '--';
+          const oiEl = document.getElementById('hl-stat-oi');
+          if (oiEl) oiEl.textContent = '--';
+          const fundEl = document.getElementById('hl-stat-funding');
+          if (fundEl) {
+            fundEl.textContent = '--';
+            fundEl.className = '';
+          }
+          const mcapEl = document.getElementById('hl-stat-mcap');
+          if (mcapEl) mcapEl.textContent = '--';
+          const fdvEl = document.getElementById('hl-stat-fdv');
+          if (fdvEl) fdvEl.textContent = '--';
+
+          const titleEl = document.getElementById('active-symbol-title');
+          if (titleEl && t.symbol) titleEl.textContent = t.symbol;
+          const exEl = document.getElementById('active-exchange-badge');
+          if (exEl && t.exchange) exEl.textContent = t.exchange;
+
+          if (typeof syncLivePriceToWatchlist === 'function') {
+            syncLivePriceToWatchlist(currentSymbol, rawL, rawChg);
+          }
+          if (typeof updateProviewTitle === 'function') {
+            updateProviewTitle(t.symbol || coin, rawL > 0 ? rawL : null, rawChg);
+          }
+        } catch (e) {}
+        return;
+      }
       try {
         const res = await fetch('/api/hyperliquid/ticker?coin=' + encodeURIComponent(coin));
         const t = await res.json();
@@ -11620,33 +11801,42 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (list.length === 0) {
-        try {
-          const resCrypto = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
-            params: { text: q, search_type: 'crypto' },
-            headers: { origin: 'https://www.tradingview.com' },
-            timeout: 4000,
-          });
-          if (resCrypto.data && resCrypto.data.symbols) {
-            list = resCrypto.data.symbols.map(formatResult);
-          }
-        } catch (e) {}
-      }
-
-      if (list.length === 0) {
-        try {
-          const resAll = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+        const [resAllSettled, resCryptoSettled] = await Promise.allSettled([
+          axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
             params: { text: q },
             headers: { origin: 'https://www.tradingview.com' },
             timeout: 4000,
-          });
-          if (resAll.data && resAll.data.symbols) {
-            list = resAll.data.symbols.map(formatResult);
+          }),
+          axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+            params: { text: q, search_type: 'crypto' },
+            headers: { origin: 'https://www.tradingview.com' },
+            timeout: 4000,
+          }),
+        ]);
+        const seen = new Set();
+        const combined = [];
+        const addItems = (resSettled) => {
+          if (resSettled.status === 'fulfilled' && resSettled.value?.data?.symbols) {
+            for (const rawSym of resSettled.value.data.symbols) {
+              const formatted = formatResult(rawSym);
+              if (!seen.has(formatted.symbol)) {
+                seen.add(formatted.symbol);
+                combined.push(formatted);
+              }
+            }
           }
-        } catch (e) {}
+        };
+        addItems(resAllSettled);
+        addItems(resCryptoSettled);
+        list = combined;
       }
 
-      const preferred = ['BINANCE', 'BYBIT', 'OKX', 'COINBASE', 'NASDAQ'];
+      const qUp = q.toUpperCase();
+      const preferred = ['NASDAQ', 'NYSE', 'AMEX', 'ARCA', 'BATS', 'BINANCE', 'BYBIT', 'OKX', 'COINBASE', 'HYPERLIQUID'];
       list.sort((a, b) => {
+        const aExact = a.name.toUpperCase() === qUp ? 0 : 1;
+        const bExact = b.name.toUpperCase() === qUp ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
         const aPref = preferred.indexOf(a.exchange);
         const bPref = preferred.indexOf(b.exchange);
         if (aPref !== -1 && bPref !== -1) return aPref - bPref;
@@ -11655,7 +11845,7 @@ const server = http.createServer(async (req, res) => {
         return 0;
       });
 
-      if (q.toUpperCase() === 'NVDA' || q.toUpperCase() === 'NASDAQ:NVDA') {
+      if (qUp === 'NVDA' || qUp === 'NASDAQ:NVDA') {
         list = list.filter(item => item.symbol !== 'NASDAQ:NVDA');
         list.unshift({
           symbol: 'NASDAQ:NVDA',
@@ -11663,6 +11853,17 @@ const server = http.createServer(async (req, res) => {
           exchange: 'NASDAQ',
           description: 'NVIDIA Corporation',
           logoId: 'nvidia',
+        });
+      }
+
+      if (qUp === 'ANT' || qUp === 'NASDAQ:ANT' || qUp === 'ANTHROPIC') {
+        list = list.filter(item => item.symbol !== 'NASDAQ:ANT');
+        list.unshift({
+          symbol: 'NASDAQ:ANT',
+          name: 'ANT',
+          exchange: 'NASDAQ',
+          description: 'Anthropic, PBC Class A',
+          logoId: 'anthropic',
         });
       }
 
@@ -11716,15 +11917,40 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ prices }));
       }
 
-      // 2. Binance Public Data API (Lightning fast, non-blocked, no 429)
+      // 2. Binance Public Data API (Spot vs Futures .P)
       const binanceMap = {};
+      const binancePerpMap = {};
       symbols.forEach(s => {
+        if (isStockSymbol(s)) return;
+        const sUp = s.toUpperCase();
+        const isPerp = sUp.startsWith('BINANCE:') && sUp.endsWith('.P');
         let clean = s.startsWith('BINANCE:') ? s.split(':')[1] : s;
         clean = clean.replace(/\.P$/i, '').toUpperCase();
-        if (s.startsWith('BINANCE:') || clean.endsWith('USDT') || clean.endsWith('USDC')) {
+        if (isPerp) {
+          binancePerpMap[clean] = s;
+        } else if (sUp.startsWith('BINANCE:') || clean.endsWith('USDT') || clean.endsWith('USDC')) {
           binanceMap[clean] = s;
         }
       });
+
+      const pBinancePerp = (async () => {
+        const perpEntries = Object.entries(binancePerpMap);
+        if (perpEntries.length === 0) return;
+        await Promise.all(perpEntries.map(async ([pair, sym]) => {
+          try {
+            const res = await axios.get('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=' + encodeURIComponent(pair), { timeout: 3500 });
+            const item = res.data;
+            if (item && item.lastPrice) {
+              prices[sym] = {
+                close: parseFloat(item.lastPrice),
+                change: parseFloat(item.priceChangePercent),
+                change_abs: parseFloat(item.priceChange),
+                volume: parseFloat(item.quoteVolume),
+              };
+            }
+          } catch (e) {}
+        }));
+      })();
 
       const pBinance = (async () => {
         const pairs = Object.keys(binanceMap);
@@ -11836,21 +12062,24 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       });
 
-      // 5. Stock Symbols (Yahoo Finance for NASDAQ:SPCX, etc.)
-      const stockSymbols = symbols.filter(s => s.startsWith('NASDAQ:') || s.startsWith('NYSE:') || s.startsWith('AMEX:'));
-      const stockPromises = stockSymbols.map(async (s) => {
-        const ticker = s.split(':')[1];
+      // 5. Stock Symbols (Stock Exchange Provider: NASDAQ, NYSE, AMEX, ARCA, global exchanges)
+      const stockSymbols = symbols.filter(s => isStockSymbol(s));
+      const pStocks = (async () => {
+        if (stockSymbols.length === 0) return;
         try {
-          const res = await axios.get('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3000 });
-          const meta = res.data?.chart?.result?.[0]?.meta;
-          if (meta && meta.regularMarketPrice) {
-            const close = meta.regularMarketPrice;
-            const prevClose = meta.chartPreviousClose || close;
-            const chg = prevClose > 0 ? ((close - prevClose) / prevClose) * 100 : 0;
-            prices[s] = { close, change: chg, change_abs: close - prevClose, volume: meta.regularMarketVolume || 0 };
+          const stockQuotes = await stockProvider.getBatchQuotes(stockSymbols);
+          for (const [sym, q] of Object.entries(stockQuotes)) {
+            if (q && typeof q.close === 'number') {
+              prices[sym] = {
+                close: q.close,
+                change: q.change || 0,
+                change_abs: q.change_abs || 0,
+                volume: q.volume || 0,
+              };
+            }
           }
         } catch (e) {}
-      });
+      })();
 
       // 6. Dedicated accurate handler for Lighter (LITLUSD) via Bybit/Binance
       const pLitl = (async () => {
@@ -12067,10 +12296,10 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       })();
 
-      await Promise.all([pBinance, ...bybitPromises, ...okxPromises, ...stockPromises, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA, pOil, pBrent]);
+      await Promise.all([pBinance, pBinancePerp, ...bybitPromises, ...okxPromises, pStocks, ...dexPromises, pLitl, pMon, pHype, pSP500, pGold, pNVDA, pOil, pBrent]);
 
       // 11. Generic fallback for any remaining unresolved symbols (DexScreener search)
-      const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD') && !s.includes('OIL'));
+      const missingSymbols = symbols.filter(s => (!prices[s] || typeof prices[s].close !== 'number') && !isStockSymbol(s) && !s.includes('NVDA') && !s.includes('SPX') && !s.includes('SP500') && !s.includes('GOLD') && !s.includes('OIL'));
       if (missingSymbols.length > 0) {
         await Promise.all(missingSymbols.map(async (s) => {
           let tokenName = s.split(':')[1] || s;
@@ -12119,9 +12348,12 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/stream') {
     let symbol = parsedUrl.query.symbol || 'BINANCE:BTCUSDT';
     const timeframe = parsedUrl.query.timeframe || '1';
-    if (symbol.toUpperCase() === 'BTSE:OILUSD' || symbol.toUpperCase() === 'OILUSD') {
+    const symUp = symbol.toUpperCase();
+    if (symUp === 'ANT' || symUp === 'ANTHROPIC' || symUp === 'NASDAQ:ANT') {
+      symbol = 'NASDAQ:ANT';
+    } else if (symUp === 'BTSE:OILUSD' || symUp === 'OILUSD') {
       symbol = 'BTSE:OILUSD.P';
-    } else if (symbol.toUpperCase().includes('BRENT')) {
+    } else if (symUp.includes('BRENT')) {
       symbol = 'HIP3XYZ:BRENTOILUSDC.P';
     }
     res.writeHead(200, {
@@ -12132,6 +12364,7 @@ const server = http.createServer(async (req, res) => {
     });
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
+    chart.onError(() => {});
     chart.setMarket(symbol, { timeframe });
     chart.onUpdate(() => {
       if (!chart.periods || chart.periods.length === 0) return;
@@ -12820,6 +13053,47 @@ const server = http.createServer(async (req, res) => {
       const acc = await hyperliquidInstance.getAccountState(address);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(acc));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  if (pathname === '/api/stock/ticker') {
+    const symbol = parsedUrl.query.symbol || 'NASDAQ:ANT';
+    try {
+      const q = await stockProvider.getQuote(symbol);
+      if (!q) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Stock quote not found for ' + symbol }));
+      }
+      const vol = q.volume || 0;
+      const volStr = vol >= 1e9 ? (vol / 1e9).toFixed(2) + 'B'
+        : vol >= 1e6 ? (vol / 1e6).toFixed(2) + 'M'
+        : vol >= 1e3 ? (vol / 1e3).toFixed(1) + 'K'
+        : String(vol);
+      const lastFmt = formatTokenPriceServer(q.close);
+      const chgNum = q.change || 0;
+      const ticker = {
+        symbol: q.symbol,
+        exchange: q.exchange,
+        exchangeName: q.exchangeName,
+        description: q.description,
+        last: lastFmt,
+        rawLast: q.close,
+        index: '$' + lastFmt,
+        change: (chgNum >= 0 ? '+' : '') + chgNum.toFixed(2) + '%',
+        rawChange: chgNum,
+        volume: volStr,
+        openInterest: '--',
+        funding: '--',
+        rawFunding: 0,
+        marketcap: '--',
+        fdv: '--',
+        provider: q.provider,
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(ticker));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));

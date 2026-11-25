@@ -1,6 +1,7 @@
 const axios = require('axios');
 const TradingView = require('../../main');
 const rustBridge = require('../rustBridge');
+const { stockProvider, isStockSymbol } = require('./stockProvider');
 
 /**
  * Technical Indicator Calculation Engine
@@ -161,14 +162,27 @@ function calcIchimoku(candles, conversionPeriod = 9, basePeriod = 26, spanBPerio
 }
 
 async function fetchCandles(symbol, timeframe = '60', limit = 150) {
-  // 1. Fast CEX REST Kline loader for Binance pairs
-  if (symbol.startsWith('BINANCE:') || (symbol.endsWith('USDT') && !symbol.includes('BYBIT:'))) {
+  // 0. Stock Exchange Provider (NASDAQ, NYSE, AMEX, etc.)
+  if (isStockSymbol(symbol)) {
     try {
+      const stockData = await stockProvider.getBars(symbol, timeframe, limit);
+      if (stockData && Array.isArray(stockData.candles) && stockData.candles.length > 0) {
+        return stockData.candles;
+      }
+    } catch (e) {}
+  }
+
+  // 1. Fast CEX REST Kline loader for Binance pairs (Spot or Futures .P)
+  if (!isStockSymbol(symbol) && (symbol.startsWith('BINANCE:') || (symbol.endsWith('USDT') && !symbol.includes('BYBIT:')))) {
+    try {
+      const isPerp = symbol.toUpperCase().endsWith('.P');
       let pair = symbol.split(':')[1] || symbol;
       pair = pair.replace(/\.P$/i, '').toUpperCase();
       const intervalMap = { '1': '1m', '5': '5m', '15': '15m', '60': '1h', '240': '4h', 'D': '1d', '1D': '1d' };
       const interval = intervalMap[timeframe] || '1h';
-      const url = `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+      const url = isPerp
+        ? `https://fapi.binance.com/fapi/v1/klines?symbol=${pair}&interval=${interval}&limit=${limit}`
+        : `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
       const res = await axios.get(url, { timeout: 3500 });
       if (Array.isArray(res.data) && res.data.length > 0) {
         return res.data.map(k => ({
@@ -223,7 +237,7 @@ async function fetchCandles(symbol, timeframe = '60', limit = 150) {
       reject(new Error(err.join(' ')));
     });
     chart.onUpdate(() => {
-      if (chart.periods && chart.periods.length >= Math.min(30, limit)) {
+      if (chart.periods && chart.periods.length > 0) {
         clearTimeout(timer);
         const candles = chart.periods.slice().reverse().map(p => ({
           time: p.time,

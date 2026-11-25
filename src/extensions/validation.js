@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { compute26IndicatorsFromCandles, SCANNER_COLUMNS } = require('./taEngine26');
+const { stockProvider, isStockSymbol } = require('./stockProvider');
 
 /**
  * Validation Bot: 26-Indicator Consensus Layer
@@ -205,11 +206,25 @@ function parseIndicatorRow(row, ticker) {
  * Fetch candles via public exchange APIs directly as resilient fallback
  */
 async function fetchCandlesFallback(symbol) {
-  // Binance Vision API
-  if (symbol.startsWith('BINANCE:')) {
-    const pair = symbol.split(':')[1];
+  // Stock Exchange Provider (NASDAQ, NYSE, AMEX, etc.)
+  if (isStockSymbol(symbol)) {
     try {
-      const res = await axios.get(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1h&limit=250`, { timeout: 3500 });
+      const stockData = await stockProvider.getBars(symbol, '60', 250);
+      if (stockData && Array.isArray(stockData.candles) && stockData.candles.length > 0) {
+        return stockData.candles;
+      }
+    } catch (e) {}
+  }
+
+  // Binance Vision Spot or Futures (.P) API
+  if (symbol.startsWith('BINANCE:')) {
+    const isPerp = symbol.toUpperCase().endsWith('.P');
+    const pair = (symbol.split(':')[1] || symbol).replace(/\.P$/i, '').toUpperCase();
+    const url = isPerp
+      ? `https://fapi.binance.com/fapi/v1/klines?symbol=${pair}&interval=1h&limit=250`
+      : `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1h&limit=250`;
+    try {
+      const res = await axios.get(url, { timeout: 3500 });
       if (Array.isArray(res.data) && res.data.length > 0) {
         return res.data.map(k => ({
           time: Math.round(k[0] / 1000),
