@@ -567,31 +567,47 @@ class PaperTradingEngine {
       }).catch(() => {});
     } catch (e) {}
 
-    if (frac >= 0.99) {
-      this.mirrorToVariationalTestnet('CLOSE', { symbol: pos.symbol }).catch(() => {});
-    }
+    this.mirrorToVariationalTestnet('CLOSE', { symbol: pos.symbol, fraction: frac }).catch(() => {});
   }
 
-  async mirrorToVariationalTestnet(action, { symbol, side, takeProfit, stopLoss } = {}) {
+  async mirrorToVariationalTestnet(action, { symbol, side, takeProfit, stopLoss, fraction = 1.0 } = {}) {
     try {
       const target = variationalConnector.getMirrorTargetUserId();
       if (!target) return;
       if (action === 'OPEN') {
-        const res = await variationalConnector.placeOrder(target.userId, {
+        const baseOrder = {
           symbol,
           side: side === 'LONG' ? 'buy' : 'sell',
           type: 'market',
           notionalUsd: target.mirrorNotionalUsd || 100,
           max_slippage: target.maxSlippage || '0.005',
-          takeProfitPrice: takeProfit,
-          stopLossPrice: stopLoss,
-        });
+        };
+        let res;
+        try {
+          res = await variationalConnector.placeOrder(target.userId, {
+            ...baseOrder,
+            takeProfitPrice: takeProfit,
+            stopLossPrice: stopLoss,
+          });
+        } catch (openErr) {
+          if (
+            openErr?.errorCode === 'invalid_trigger_price' ||
+            openErr?.errorCode === 'invalid_price_increment' ||
+            openErr?.errorCode === 'validation_failed'
+          ) {
+            this.log(`[Variational Testnet Mirror] Retrying ${symbol} market order without attached TP/SL (${openErr.errorCode}).`);
+            res = await variationalConnector.placeOrder(target.userId, baseOrder);
+          } else {
+            throw openErr;
+          }
+        }
         const ord = res?.order || {};
         this.log(`[Variational Testnet Mirror] OPENED ${ord.side || side} ${ord.size || ''} ${ord.symbol || symbol} (status: ${ord.status || 'queued'}, id: ${ord.order_id || '--'})`);
       } else if (action === 'CLOSE') {
-        const res = await variationalConnector.closePosition(target.userId, symbol, target.maxSlippage || '0.005');
+        const res = await variationalConnector.closePosition(target.userId, symbol, target.maxSlippage || '0.005', fraction);
         const ord = res?.order || {};
-        this.log(`[Variational Testnet Mirror] CLOSED ${ord.symbol || symbol} (status: ${ord.status || 'queued'}, id: ${ord.order_id || '--'})`);
+        const tag = fraction < 0.99 ? `${Math.round(fraction * 100)}% PARTIAL ` : '';
+        this.log(`[Variational Testnet Mirror] CLOSED ${tag}${ord.symbol || symbol} (status: ${ord.status || 'queued'}, id: ${ord.order_id || '--'})`);
       }
     } catch (err) {
       this.log(`[Variational Testnet Mirror] Skipped ${action} ${symbol}: ${err.message}`);

@@ -554,7 +554,7 @@ const htmlContent = `<!DOCTYPE html>
     th { text-align: left; padding: 8px; background: var(--bg-tertiary); color: var(--text-secondary); }
     td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-    /* Active Paper Positions Table - Fixed Layout & Zero-Jitter */
+    /* Active Positions Table - Fixed Layout & Zero-Jitter */
     #table-paper-positions {
       width: 100%;
       table-layout: fixed;
@@ -589,17 +589,21 @@ const htmlContent = `<!DOCTYPE html>
       vertical-align: middle;
       box-sizing: border-box;
     }
-    #table-paper-positions .pos-col-symbol   { width: 14.5%; min-width: 135px; }
+    #table-paper-positions .pos-col-symbol   { width: 17%; min-width: 168px; }
     #table-paper-positions .pos-col-side     { width: 6.5%; min-width: 55px; text-align: center; }
     #table-paper-positions .pos-col-lev      { width: 5.5%; min-width: 48px; text-align: center; }
-    #table-paper-positions .pos-col-entry    { width: 8.5%; min-width: 78px; }
-    #table-paper-positions .pos-col-mark     { width: 10%; min-width: 92px; }
-    #table-paper-positions .pos-col-tp       { width: 8.5%; min-width: 78px; }
-    #table-paper-positions .pos-col-sl       { width: 8.5%; min-width: 78px; }
+    #table-paper-positions .pos-col-entry    { width: 8%; min-width: 72px; }
+    #table-paper-positions .pos-col-mark     { width: 9.5%; min-width: 88px; }
+    #table-paper-positions .pos-col-tp       { width: 8%; min-width: 72px; }
+    #table-paper-positions .pos-col-sl       { width: 8%; min-width: 72px; }
     #table-paper-positions .pos-col-margin   { width: 8.5%; min-width: 75px; }
     #table-paper-positions .pos-col-notional { width: 8.5%; min-width: 75px; }
-    #table-paper-positions .pos-col-pnl      { width: 14%; min-width: 155px; }
+    #table-paper-positions .pos-col-pnl      { width: 13.5%; min-width: 145px; }
     #table-paper-positions .pos-col-action   { width: 7%; min-width: 72px; text-align: center; }
+
+    .pos-src-badge { display: inline-block; margin-left: 5px; padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: 0.3px; vertical-align: middle; }
+    .pos-src-paper { background: rgba(148, 163, 184, 0.16); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); }
+    .pos-src-vario { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
 
     .action-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     .action-buy { background: rgba(38, 166, 154, 0.2); color: var(--accent-green); }
@@ -2936,11 +2940,15 @@ const htmlContent = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Active Paper Positions Table -->
+          <!-- Active Positions Table (Paper + Live Variational Testnet) -->
           <div class="sh-table-card">
-            <div class="sh-table-card-head">
-              <span class="sh-table-card-title">Active Paper Positions</span>
-              <span class="sh-badge sh-badge-outline">Max 2 Concurrent · Up to 3x Leverage</span>
+            <div class="sh-table-card-head" style="gap: 8px; flex-wrap: wrap;">
+              <span class="sh-table-card-title">Active Positions</span>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span class="sh-badge sh-badge-outline" id="active-pos-summary-badge">Paper: 0 · Vario: 0</span>
+                <span class="sh-badge sh-badge-outline" id="vario-mirror-status-badge" style="cursor: pointer;" title="Bấm để cấu hình Auto-Mirror tín hiệu chiến lược lên Variational Testnet">○ Mirror Vario: OFF</span>
+                <span class="sh-badge sh-badge-outline">Max 2 Concurrent · Up to 3x Leverage</span>
+              </div>
             </div>
             <div class="sh-table-scroll">
               <table class="sh-table" id="table-paper-positions">
@@ -10678,11 +10686,19 @@ const htmlContent = `<!DOCTYPE html>
 
 
     // --- Paper Trader Client Logic ---
-    async function refreshPaperStatus() {
+    let cachedVarioPositionsMeta = { connected: false, environment: 'testnet', autoMirrorEnabled: false, mirrorNotionalUsd: 100, positions: [], error: null };
+
+    async function refreshPaperStatus(forceVario = false) {
       try {
-        const res = await fetch('/api/paper/status');
+        const pv = document.getElementById('view-paper');
+        const showVario = Boolean(forceVario) || (pv && getComputedStyle(pv).display !== 'none');
+        const statusUrl = '/api/paper/status' + (showVario ? '?includeVario=1' + (forceVario ? '&forceVario=1' : '') : '');
+        const res = await fetch(statusUrl);
         const data = await res.json();
         cachedPaperStatus = data;
+        if (data.vario) {
+          cachedVarioPositionsMeta = data.vario;
+        }
 
         document.getElementById('paper-equity').textContent = '$' + data.equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('paper-cash').textContent = '$' + data.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -10776,18 +10792,42 @@ const htmlContent = `<!DOCTYPE html>
           statusEl.className = 'sh-badge sh-badge-outline';
         }
 
-        // Open positions table
+        // Unified Active Positions table (Paper + Live Variational Testnet)
+        const paperList = Array.isArray(data.openPositions) ? data.openPositions : [];
+        const varioMeta = data.vario || cachedVarioPositionsMeta || {};
+        const varioList = Array.isArray(varioMeta.positions) ? varioMeta.positions : [];
+
+        const summaryBadge = document.getElementById('active-pos-summary-badge');
+        if (summaryBadge) {
+          const envTag = varioMeta.environment === 'prod' ? 'Vario' : 'Vario Testnet';
+          summaryBadge.textContent = 'Paper: ' + paperList.length + ' · ' + envTag + ': ' + varioList.length;
+        }
+        const mirrorBadge = document.getElementById('vario-mirror-status-badge');
+        if (mirrorBadge) {
+          if (varioMeta.autoMirrorEnabled) {
+            mirrorBadge.textContent = '● Mirror Vario: ON ($' + (varioMeta.mirrorNotionalUsd || 100) + ')';
+            mirrorBadge.className = 'sh-badge sh-badge-emerald';
+          } else if (varioMeta.connected) {
+            mirrorBadge.textContent = '○ Mirror Vario: OFF (Testnet Ready)';
+            mirrorBadge.className = 'sh-badge sh-badge-outline';
+          } else {
+            mirrorBadge.textContent = '○ Mirror Vario: OFF';
+            mirrorBadge.className = 'sh-badge sh-badge-outline';
+          }
+        }
+
         const posBody = document.querySelector('#table-paper-positions tbody');
-        if (!data.openPositions || data.openPositions.length === 0) {
-          posBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">No open positions. Monitoring market for next high-confluence entry...</td></tr>';
+        if (paperList.length === 0 && varioList.length === 0) {
+          const errLine = varioMeta.error ? '<div style="margin-top:4px;font-size:10.5px;color:#fbbf24;">Variational Sync: ' + String(varioMeta.error).replace(/</g, '&lt;') + '</div>' : '';
+          posBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 16px;">No open positions. Monitoring market for next high-confluence entry...' + errLine + '</td></tr>';
         } else {
-          posBody.innerHTML = data.openPositions.map(p => {
+          const paperRowsHtml = paperList.map(p => {
             const coin = extractCoinName(p.symbol);
             const upnl = p.unrealizedPnl || 0;
             const upnlPct = p.unrealizedPnlPercent !== undefined ? p.unrealizedPnlPercent : (p.margin ? ((upnl / p.margin) * 100).toFixed(2) : '0.00');
             return \`
             <tr id="pos-row-\${p.id}" data-pos-id="\${p.id}" data-coin="\${coin}" data-side="\${p.side}" data-entry="\${p.entryPrice}" data-size="\${p.size}" data-margin="\${p.margin || p.notional}">
-              <td class="pos-col-symbol"><strong>\${p.symbol}</strong></td>
+              <td class="pos-col-symbol"><strong>\${p.symbol}</strong><span class="pos-src-badge pos-src-paper">PAPER</span></td>
               <td class="pos-col-side" style="text-align: center;"><span class="action-badge \${p.side === 'LONG' ? 'action-buy' : 'action-sell'}">\${p.side}</span></td>
               <td class="pos-col-lev" style="text-align: center;"><span class="action-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 800;">\${p.leverage || 1}x</span></td>
               <td class="pos-col-entry">$\${fmtP(p.entryPrice)}</td>
@@ -10807,6 +10847,32 @@ const htmlContent = `<!DOCTYPE html>
             </tr>
           \`;
           }).join('');
+
+          const varioRowsHtml = varioList.map(function(p) {
+            const symSafe = String(p.symbol || '').replace(/[^A-Za-z0-9_-]/g, '');
+            const upnl = Number(p.unrealizedPnl || 0);
+            const upnlPct = Number(p.unrealizedPnlPercent || 0);
+            const sideBadge = p.side === 'LONG' ? 'action-buy' : 'action-sell';
+            const pnlClass = upnl >= 0 ? 'val-green' : 'val-red';
+            const tpText = p.takeProfit ? '$' + fmtP(p.takeProfit) : '--';
+            const slText = p.stopLoss ? '$' + fmtP(p.stopLoss) : '--';
+            const envTag = p.environment === 'prod' ? 'VARIO' : 'VARIO TN';
+            return '<tr style="background: rgba(16, 185, 129, 0.03);">' +
+              '<td class="pos-col-symbol"><strong>' + symSafe + '</strong><span class="pos-src-badge pos-src-vario">' + envTag + '</span></td>' +
+              '<td class="pos-col-side" style="text-align: center;"><span class="action-badge ' + sideBadge + '">' + p.side + '</span></td>' +
+              '<td class="pos-col-lev" style="text-align: center;"><span class="action-badge" style="background: rgba(16, 185, 129, 0.16); color: #34d399; font-weight: 800;">' + (p.leverage || 1) + 'x</span></td>' +
+              '<td class="pos-col-entry">$' + fmtP(p.entryPrice) + '</td>' +
+              '<td class="pos-col-mark"><span style="font-weight: 700; color: #fff;">$' + fmtP(p.currentPrice || p.entryPrice) + '</span></td>' +
+              '<td class="pos-col-tp val-green">' + tpText + '</td>' +
+              '<td class="pos-col-sl val-red">' + slText + '</td>' +
+              '<td class="pos-col-margin" style="color: #e4e7eb;">$' + fmtP(p.margin || p.notional) + '</td>' +
+              '<td class="pos-col-notional" style="color: var(--text-secondary);">$' + fmtP(p.notional) + '</td>' +
+              '<td class="pos-col-pnl"><span class="' + pnlClass + '" style="font-weight: 700;">' + (upnl >= 0 ? '+$' : '-$') + Math.abs(upnl).toFixed(2) + ' (' + (upnlPct >= 0 ? '+' : '') + upnlPct + '% ROE)</span></td>' +
+              '<td class="pos-col-action" style="text-align: center;"><button type="button" class="btn" data-vario-close-sym="' + symSafe + '" style="padding: 2px 8px; font-size: 11px; background: rgba(239, 83, 80, 0.2); color: #ef5350;">Close</button></td>' +
+              '</tr>';
+          }).join('');
+
+          posBody.innerHTML = paperRowsHtml + varioRowsHtml;
         }
 
         // Recent trades table
@@ -10846,6 +10912,9 @@ const htmlContent = `<!DOCTYPE html>
             } else if (l.includes('Trailing Stop locked')) {
               rowColor = '#fbbf24';
               bg = 'rgba(251, 191, 36, 0.06)';
+            } else if (l.includes('[Variational Testnet Mirror]')) {
+              rowColor = l.includes('Skipped') ? '#fbbf24' : '#34d399';
+              bg = l.includes('Skipped') ? 'rgba(251, 191, 36, 0.08)' : 'rgba(16, 185, 129, 0.08)';
             }
             return '<div style="padding: 5px 8px; margin-bottom: 3px; border-radius: 4px; background: ' + bg + '; color: ' + rowColor + '; border-left: 2px solid ' + (rowColor === '#cbd5e1' ? 'transparent' : rowColor) + '; word-break: break-word;">' + l + '</div>';
           }).join('');
@@ -10902,7 +10971,38 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    document.getElementById('btn-paper-refresh').addEventListener('click', refreshPaperStatus);
+    window.closeVarioPositionFromPaper = async function(symbol) {
+      if (!symbol) return;
+      if (!confirm('Đóng vị thế Variational ' + symbol + ' theo giá Market?')) return;
+      try {
+        const res = await fetch('/api/vario/positions/close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert('❌ Không thể đóng vị thế ' + symbol + ': ' + (data.error || 'Error'));
+        }
+        refreshPaperStatus(true);
+        if (typeof loadVarioDashboard === 'function') loadVarioDashboard();
+      } catch (err) {
+        alert('Lỗi đóng vị thế Variational: ' + err.message);
+      }
+    };
+
+    document.getElementById('table-paper-positions')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-vario-close-sym]');
+      if (!btn) return;
+      const sym = btn.getAttribute('data-vario-close-sym');
+      if (sym) window.closeVarioPositionFromPaper(sym);
+    });
+
+    document.getElementById('vario-mirror-status-badge')?.addEventListener('click', () => {
+      if (typeof openStrategyModal === 'function') openStrategyModal('vario');
+    });
+
+    document.getElementById('btn-paper-refresh').addEventListener('click', () => refreshPaperStatus(true));
 
     document.getElementById('btn-paper-close-all').addEventListener('click', async () => {
       if (!currentAuthUser) {
@@ -10929,8 +11029,8 @@ const htmlContent = `<!DOCTYPE html>
     });
 
     // Auto-poll paper trader status every 1.5 seconds (in addition to real-time WebSocket ticks)
-    setInterval(refreshPaperStatus, 1500);
-    refreshPaperStatus();
+    setInterval(() => refreshPaperStatus(false), 1500);
+    refreshPaperStatus(true);
 
     // ========================================================
     // QUANT STRATEGY STUDIO & CUSTOM CODE CLIENT CONTROLLER
@@ -13760,10 +13860,20 @@ const server = http.createServer(async (req, res) => {
     }));
   }
 
+  function resolveVarioRouteUser(req, parsedUrl, fallbackBodyUserId = null) {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const rawUserId = session ? session.userId : (parsedUrl.query.userId || fallbackBodyUserId || 'guest');
+    const allowFallback = !session || session.role === 'ADMIN';
+    return {
+      session,
+      rawUserId,
+      userId: variationalConnector.resolveEffectiveUserId(rawUserId, allowFallback),
+    };
+  }
+
   // --- User Variational Protocol (Omni Testnet API v1) Endpoints ---
   if (pathname === '/api/user/vario-agent') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     if (req.method === 'GET') {
       const cfg = variationalConnector.getUserConfig(userId);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -13787,8 +13897,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/user/vario-agent/verify') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     try {
       const v = await variationalConnector.verifyConnection(userId);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -13800,8 +13909,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/dashboard') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     try {
       const data = await variationalConnector.getDashboardData(userId);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -13812,8 +13920,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/instruments') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     try {
       const instruments = await variationalConnector.getInstruments(userId, parsedUrl.query.refresh === '1');
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -13824,8 +13931,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/ticker') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     const symbol = parsedUrl.query.symbol || 'BTC-PERP';
     try {
       const ticker = await variationalConnector.getTicker(userId, symbol);
@@ -13837,8 +13943,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/orders') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     if (req.method === 'GET') {
       try {
         const orders = await variationalConnector.getOrders(userId, parsedUrl.query || {});
@@ -13876,11 +13981,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/positions/close' && req.method === 'POST') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
     const body = await parseBody(req);
+    const { userId } = resolveVarioRouteUser(req, parsedUrl, body?.userId);
     try {
-      const result = await variationalConnector.closePosition(userId, body.symbol, body.max_slippage);
+      const result = await variationalConnector.closePosition(userId, body.symbol, body.max_slippage, body.fraction || 1.0);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));
     } catch (err) {
@@ -13889,8 +13993,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/vario/fills') {
-    const session = authSecurityInstance.authenticateRequest(req);
-    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const { userId } = resolveVarioRouteUser(req, parsedUrl);
     try {
       const fills = await variationalConnector.getFills(userId, parsedUrl.query || {});
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -14003,21 +14106,49 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/paper/status') {
     const session = authSecurityInstance.authenticateRequest(req);
+    const includeVario = parsedUrl.query.includeVario === '1';
+    const forceVario = parsedUrl.query.forceVario === '1';
+    let payload;
     if (session && session.role === 'ADMIN') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(paperTraderInstance.getStatus()));
+      payload = paperTraderInstance.getStatus();
     } else if (session) {
-      const userStatus = userProfileManager.getUserPaperStatus(session.userId, paperTraderInstance.latestPrices);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(userStatus));
+      payload = userProfileManager.getUserPaperStatus(session.userId, paperTraderInstance.latestPrices);
     } else {
-      const botStatus = paperTraderInstance.getStatus();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({
-        ...botStatus,
+      payload = {
+        ...paperTraderInstance.getStatus(),
         guest: true,
-      }));
+      };
     }
+
+    if (includeVario) {
+      try {
+        const rawVarioId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+        const allowFallback = !session || session.role === 'ADMIN';
+        payload = {
+          ...payload,
+          vario: await variationalConnector.getLivePositionsSnapshot(rawVarioId, {
+            forceRefresh: forceVario,
+            ttlMs: 10000,
+            allowGuestFallback: allowFallback,
+          }),
+        };
+      } catch (e) {
+        payload = {
+          ...payload,
+          vario: {
+            connected: false,
+            environment: 'testnet',
+            autoMirrorEnabled: false,
+            mirrorNotionalUsd: 100,
+            positions: [],
+            error: e.message,
+          },
+        };
+      }
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(payload));
   }
 
   if (pathname === '/api/paper/toggle') {

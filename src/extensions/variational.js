@@ -296,6 +296,35 @@ class VariationalConnector {
       testnet: 0,
       prod: 0,
     };
+    this.livePositionsCache = {};
+    this.livePositionsInFlight = {};
+  }
+
+  resolveEffectiveUserId(userId, allowGuestFallback = false) {
+    if (this.getUserConfig(userId).hasApiKey) return userId;
+    if (allowGuestFallback) {
+      if (this.getUserConfig('guest').hasApiKey) return 'guest';
+      if (fs.existsSync(VARIO_AGENTS_DIR)) {
+        try {
+          const files = fs.readdirSync(VARIO_AGENTS_DIR).filter((f) => f.endsWith('.json'));
+          for (const file of files) {
+            try {
+              const data = JSON.parse(fs.readFileSync(path.join(VARIO_AGENTS_DIR, file), 'utf8'));
+              if (data.encryptedSeed) return data.userId || file.replace(/\.json$/, '');
+            } catch {}
+          }
+        } catch {}
+      }
+    }
+    return userId;
+  }
+
+  invalidateLivePositionsCache(userId) {
+    if (!userId) {
+      this.livePositionsCache = {};
+      return;
+    }
+    delete this.livePositionsCache[sanitizeUserId(userId)];
   }
 
   async getExchangeStats() {
@@ -504,6 +533,7 @@ class VariationalConnector {
     };
 
     this.writeRawRecord(userId, record);
+    this.invalidateLivePositionsCache(userId);
 
     const cfg = this.getUserConfig(userId);
     return {
@@ -521,6 +551,7 @@ class VariationalConnector {
         fs.unlinkSync(filePath);
       } catch {}
     }
+    this.invalidateLivePositionsCache(userId);
     return { success: true, message: 'Đã xóa cấu hình Variational Omni' };
   }
 
@@ -963,6 +994,7 @@ class VariationalConnector {
       },
       orderNotional
     );
+    this.invalidateLivePositionsCache(userId);
 
     return {
       success: true,
@@ -981,6 +1013,7 @@ class VariationalConnector {
       throw new Error('Cần cung cấp order_id hoặc client_order_id để hủy lệnh');
     }
     const res = await this.signedRequest(userId, 'DELETE', `/v1/orders?${params.join('&')}`);
+    this.invalidateLivePositionsCache(userId);
     return { success: true, canceled: res?.canceled || [] };
   }
 
@@ -992,10 +1025,11 @@ class VariationalConnector {
       params.push(`all=${all === false ? 'false' : 'true'}`);
     }
     const res = await this.signedRequest(userId, 'DELETE', `/v1/orders/batch?${params.join('&')}`);
+    this.invalidateLivePositionsCache(userId);
     return { success: true, canceled: res?.canceled || [] };
   }
 
-  async closePosition(userId, symbol, maxSlippage) {
+  async closePosition(userId, symbol, maxSlippage, fraction = 1.0) {
     const sym = this.normalizeTicker(symbol);
     const pos = await this.getPosition(userId, sym);
     const rawSize = parseFloat(pos?.size || '0');
@@ -1004,9 +1038,19 @@ class VariationalConnector {
     }
 
     const closeSide = rawSize > 0 ? 'sell' : 'buy';
-    const closeSize = formatDecimalString(Math.abs(rawSize), 12);
+    const frac = Number(fraction);
+    let closeSize;
+    if (Number.isFinite(frac) && frac > 0 && frac < 0.99) {
+      let instrument = null;
+      try {
+        instrument = await this.getInstrument(userId, sym);
+      } catch {}
+      closeSize = roundToSizeStep(Math.abs(rawSize) * frac, instrument?.size_step || null);
+    } else {
+      closeSize = formatDecimalString(Math.abs(rawSize), 12);
+    }
 
-    return this.placeOrder(userId, {
+    const res = await this.placeOrder(userId, {
       symbol: sym,
       side: closeSide,
       type: 'market',
@@ -1014,6 +1058,8 @@ class VariationalConnector {
       reduce_only: true,
       max_slippage: maxSlippage || '0.01',
     });
+    this.invalidateLivePositionsCache(userId);
+    return res;
   }
 
   async verifyConnection(userId) {
@@ -1114,6 +1160,158 @@ class VariationalConnector {
       fills: fillsRes.status === 'fulfilled' && Array.isArray(fillsRes.value?.results) ? fillsRes.value.results : [],
       instruments: instrumentsRes.status === 'fulfilled' && Array.isArray(instrumentsRes.value) ? instrumentsRes.value : [],
     };
+  }
+
+  async getLivePositionsSnapshot(userId, { forceRefresh = false, ttlMs = 10000, allowGuestFallback = false } = {}) {
+    const effectiveId = this.resolveEffectiveUserId(userId, allowGuestFallback);
+    const cfg = this.getUserConfig(effectiveId);
+    if (!cfg.hasApiKey) {
+      return {
+        connected: false,
+        environment: cfg.environment,
+        autoMirrorEnabled: false,
+        mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+        positions: [],
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    }
+
+    const cacheKey = sanitizeUserId(effectiveId);
+    const now = Date.now();
+    const existing = this.livePositionsCache[cacheKey];
+
+    if (!forceRefresh && existing) {
+      if (existing.backoffUntil && now < existing.backoffUntil) {
+        return {
+          ...existing.data,
+          autoMirrorEnabled: cfg.autoMirrorEnabled,
+          mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+        };
+      }
+      if (now - existing.fetchedAt < ttlMs) {
+        return {
+          ...existing.data,
+          autoMirrorEnabled: cfg.autoMirrorEnabled,
+          mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+        };
+      }
+    }
+
+    if (this.livePositionsInFlight[cacheKey]) {
+      return this.livePositionsInFlight[cacheKey];
+    }
+
+    const task = (async () => {
+      try {
+        const [posRes, ordRes] = await Promise.allSettled([
+          this.getPositions(effectiveId),
+          this.getOrders(effectiveId),
+        ]);
+
+        const posErr = posRes.status === 'rejected' ? posRes.reason : null;
+        const ordErr = ordRes.status === 'rejected' ? ordRes.reason : null;
+        const rateErr = [posErr, ordErr].find((e) => e && (e.status === 429 || e.status === 418));
+
+        if (rateErr) {
+          const backoffMs = Math.max(30000, Number(rateErr.retryAfterMs) || 30000);
+          const stalePositions = existing?.data?.positions || [];
+          const snap = {
+            connected: true,
+            environment: cfg.environment,
+            autoMirrorEnabled: cfg.autoMirrorEnabled,
+            mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+            positions: stalePositions,
+            fetchedAt: Date.now(),
+            error: rateErr.message,
+          };
+          this.livePositionsCache[cacheKey] = {
+            data: snap,
+            fetchedAt: existing?.fetchedAt || Date.now(),
+            backoffUntil: Date.now() + backoffMs,
+          };
+          return snap;
+        }
+
+        if (posErr) {
+          const stalePositions = existing?.data?.positions || [];
+          const snap = {
+            connected: false,
+            environment: cfg.environment,
+            autoMirrorEnabled: cfg.autoMirrorEnabled,
+            mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+            positions: stalePositions,
+            fetchedAt: Date.now(),
+            error: posErr.message,
+          };
+          this.livePositionsCache[cacheKey] = { data: snap, fetchedAt: Date.now(), backoffUntil: 0 };
+          return snap;
+        }
+
+        const tpMap = {};
+        const slMap = {};
+        const openOrders = ordRes.status === 'fulfilled' && Array.isArray(ordRes.value?.results) ? ordRes.value.results : [];
+        for (const o of openOrders) {
+          if (!o || !o.symbol) continue;
+          const trig = parseFloat(o.trigger_price || '0');
+          if (!Number.isFinite(trig) || trig <= 0) continue;
+          if (o.type === 'take_profit' && !tpMap[o.symbol]) tpMap[o.symbol] = trig;
+          if (o.type === 'stop_loss' && !slMap[o.symbol]) slMap[o.symbol] = trig;
+        }
+
+        const rawList = Array.isArray(posRes.value?.results) ? posRes.value.results : [];
+        const positions = [];
+        for (const p of rawList) {
+          const rawSize = parseFloat(p?.size || '0');
+          if (!Number.isFinite(rawSize) || Math.abs(rawSize) <= 0) continue;
+          const entryPrice = parseFloat(p.entry_price || '0') || 0;
+          const markPrice = parseFloat(p.mark_price || p.entry_price || '0') || 0;
+          const lev = parseFloat(p.leverage || '1') || 1;
+          const margin = parseFloat(p.isolated_margin || p.initial_margin || '0') || 0;
+          const upnl = parseFloat(p.unrealized_pnl || '0') || 0;
+          const notional = Math.abs(rawSize) * (markPrice || entryPrice);
+          const effectiveMargin = margin > 0 ? margin : (lev > 0 ? notional / lev : notional);
+
+          positions.push({
+            id: 'vario_' + p.symbol,
+            source: 'VARIATIONAL',
+            environment: cfg.environment,
+            symbol: p.symbol,
+            side: rawSize > 0 ? 'LONG' : 'SHORT',
+            size: Math.abs(rawSize),
+            rawSize,
+            leverage: lev,
+            marginMode: p.margin_mode || 'cross',
+            entryPrice,
+            currentPrice: markPrice,
+            takeProfit: tpMap[p.symbol] || null,
+            stopLoss: slMap[p.symbol] || null,
+            margin: effectiveMargin,
+            notional,
+            liquidationPrice: parseFloat(p.liquidation_price || '0') || null,
+            unrealizedPnl: upnl,
+            unrealizedPnlPercent: effectiveMargin > 0 ? Number(((upnl / effectiveMargin) * 100).toFixed(2)) : 0,
+          });
+        }
+
+        const snap = {
+          connected: true,
+          environment: cfg.environment,
+          autoMirrorEnabled: cfg.autoMirrorEnabled,
+          mirrorNotionalUsd: cfg.mirrorNotionalUsd,
+          positions,
+          fetchedAt: Date.now(),
+          error: null,
+        };
+        this.livePositionsCache[cacheKey] = { data: snap, fetchedAt: Date.now(), backoffUntil: 0 };
+        return snap;
+      } finally {
+        delete this.livePositionsInFlight[cacheKey];
+      }
+    })();
+
+    this.livePositionsInFlight[cacheKey] = task;
+    return task;
   }
 
   getMirrorTargetUserId() {
