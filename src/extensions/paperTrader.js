@@ -1178,7 +1178,7 @@ class PaperTradingEngine {
     if (this.isRunning) return;
     this.isRunning = true;
     this.isCheckingExits = true; // Lock exits during startup simulation to prevent race conditions
-    this.log(`Engine started. Initial Fund: $${this.portfolio.initialBalance.toFixed(2)}, Target: $50-$100/day.`);
+    this.log(`Engine started. Initial Fund: $${this.portfolio.initialBalance.toFixed(2)}, Target: $100-$300/day (1%-3%).`);
 
     // 1. Run offline catch-up simulation FIRST to process planned SL/TP during machine shutdown
     try {

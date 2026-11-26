@@ -53,7 +53,19 @@ class HyperliquidConnector {
 
       const data = res.data;
       if (!data || !data.levels || !Array.isArray(data.levels) || data.levels.length < 2) {
-        throw new Error('Invalid orderbook format returned');
+        return {
+          coin: coinName,
+          bestBid: 0,
+          bestAsk: 0,
+          spread: '--',
+          spreadBP: '0',
+          imbalance: { bidPercent: 50, askPercent: 50 },
+          maxDepthTotal: 0,
+          bids: [],
+          asks: [],
+          empty: true,
+          timestamp: Date.now(),
+        };
       }
 
       const rawBids = data.levels[0] || [];
@@ -121,6 +133,21 @@ class HyperliquidConnector {
     } catch (err) {
       // Fallback cache if available
       if (this.bookCache[coinName]) return this.bookCache[coinName];
+      if (err.response && err.response.status >= 400 && err.response.status <= 500) {
+        return {
+          coin: coinName,
+          bestBid: 0,
+          bestAsk: 0,
+          spread: '--',
+          spreadBP: '0',
+          imbalance: { bidPercent: 50, askPercent: 50 },
+          maxDepthTotal: 0,
+          bids: [],
+          asks: [],
+          empty: true,
+          timestamp: Date.now(),
+        };
+      }
       throw err;
     }
   }
@@ -256,13 +283,20 @@ class HyperliquidConnector {
       const mcap = sup.circ * markPx;
       const fdv = sup.total * markPx;
 
+      const fmtTickerPx = (px) => {
+        if (!px || isNaN(px)) return '--';
+        if (px >= 1000) return '$' + px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (px >= 1) return '$' + px.toFixed(2);
+        return '$' + px.toFixed(4);
+      };
+
       return {
         coin: coinName,
         symbol: `${coinName}-USDC`,
         exchange: 'HYPERLIQUID',
-        last: markPx >= 1 ? '$' + Math.round(markPx).toLocaleString('en-US') : '$' + markPx.toFixed(4),
+        last: fmtTickerPx(markPx),
         rawLast: markPx,
-        index: oraclePx >= 1 ? '$' + Math.round(oraclePx).toLocaleString('en-US') : '$' + oraclePx.toFixed(4),
+        index: fmtTickerPx(oraclePx),
         change: (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%',
         rawChange: chgPct,
         volume: fmtUsd(vlmUsd),

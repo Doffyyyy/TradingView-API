@@ -91,9 +91,11 @@ async function syncDailySimulation() {
     const curYear = today.getFullYear() >= 2026 ? today.getFullYear() : 2026;
     const curMonth = today.getFullYear() >= 2026 ? Math.max(10, today.getMonth()) : 10;
     const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0, 23, 59, 59));
+    const todayEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59));
+    const endCap = endOfMonth.getTime() < todayEnd.getTime() ? endOfMonth : todayEnd;
     const curD = new Date(startDate);
 
-    while (curD <= endOfMonth) {
+    while (curD <= endCap) {
       const dStr = curD.toISOString().slice(0, 10);
       daysMap[dStr] = { pnl: 0, trades: [] };
       curD.setUTCDate(curD.getUTCDate() + 1);

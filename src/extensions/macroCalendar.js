@@ -626,7 +626,7 @@ class MacroCalendarEngine {
     const nowTs = now.getTime();
     const curYear = now.getFullYear();
     const curMonth = now.getMonth();
-    const cutoff = nowTs - FIFTEEN_MIN_MS;
+    const cutoff = hidePast ? nowTs : (nowTs - FIFTEEN_MIN_MS);
 
     // 1. Time scope filter
     if (timeScope === 'UPCOMING_30D') {

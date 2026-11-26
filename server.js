@@ -127,6 +127,75 @@ function fetchFromTradingViewWS(querySymbol, timeframe, range, cacheKey, resolve
   });
 }
 
+const solanaDexPoolCache = new Map([
+  ['KLED', '4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP'],
+  ['METEORA:KLEDSOL_4SBYWY.USD', '4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP'],
+  ['ORCA:ANSEMSOL_CNTPTP.USD', 'CNTPTpytHK9txrsPCvaEnc3PoN9ZVWDDcSnFSZZonMue'],
+]);
+
+function extractSolanaPoolPrefix(sym) {
+  let clean = String(sym || '').toUpperCase().trim();
+  if (clean.includes(':')) clean = clean.split(':')[1];
+  clean = clean.replace(/\.(USD|USDT|USDC|P)$/i, '');
+  const idx = clean.lastIndexOf('_');
+  if (idx >= 0 && idx < clean.length - 1) {
+    return clean.slice(idx + 1).trim();
+  }
+  return '';
+}
+
+function mapTfToGeckoParams(normTf) {
+  const s = String(normTf || '60').trim().toUpperCase();
+  if (s === '1') return { unit: 'minute', aggregate: 1 };
+  if (s === '3' || s === '5') return { unit: 'minute', aggregate: 5 };
+  if (s === '15' || s === '30') return { unit: 'minute', aggregate: 15 };
+  if (s === '60') return { unit: 'hour', aggregate: 1 };
+  if (s === '120' || s === '240') return { unit: 'hour', aggregate: 4 };
+  return { unit: 'day', aggregate: 1 };
+}
+
+function extractSolanaSearchToken(sym) {
+  let clean = String(sym || '').toUpperCase().trim();
+  if (clean.includes(':')) clean = clean.split(':')[1];
+  clean = clean.replace(/\.(USD|USDT|USDC|P)$/i, '');
+  if (clean.includes('_')) clean = clean.split('_')[0];
+  if (clean.length > 4 && clean.endsWith('SOL')) clean = clean.slice(0, -3);
+  return clean.trim();
+}
+
+async function fetchGeckoSolanaBars(poolAddr, normTf, meta = {}) {
+  const axios = require('axios');
+  const { unit, aggregate } = mapTfToGeckoParams(normTf);
+  const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/${poolAddr}/ohlcv/${unit}?aggregate=${aggregate}&limit=1000`;
+  const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 5000 });
+  const list = res.data?.data?.attributes?.ohlcv_list || [];
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  const byTime = new Map();
+  for (const item of list) {
+    const t = Math.floor(Number(item[0]));
+    const open = Number(item[1]);
+    const high = Number(item[2]);
+    const low = Number(item[3]);
+    const close = Number(item[4]);
+    const vol = Number(item[5]) || 0;
+    if (Number.isFinite(t) && t > 0 && open > 0 && close > 0 && high > 0 && low > 0) {
+      byTime.set(t, { time: t, open, high: Math.max(high, open, close), low: Math.min(low, open, close), close, volume: vol });
+    }
+  }
+  const candles = Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+  if (candles.length === 0) return null;
+  return {
+    candles,
+    infos: {
+      name: meta.name || 'Solana DEX Pool',
+      description: meta.description || 'Solana DEX Pool',
+      exchange: meta.exchange || 'SOLANA',
+      provider: 'GeckoTerminal (Solana)',
+    },
+  };
+}
+
 function getHistory(symbol, timeframe, range = 1000) {
   const normTf = String(timeframe || 'D').trim();
   const cacheKey = symbol + ":" + normTf;
@@ -236,30 +305,55 @@ function getHistory(symbol, timeframe, range = 1000) {
     }
   }
 
-  // If Meteora KLEDSOL or on-chain pair that TV doesn't have history for, fallback to GeckoTerminal
-  if (symbol.includes('KLED') || symbol.includes('4SBYWY')) {
+  // Solana DEX pools (ORCA, METEORA, RAYDIUM, PUMPSWAP) via GeckoTerminal + DexScreener pool resolver
+  const symUpper = querySymbol.toUpperCase();
+  const isSolanaDex = symUpper.startsWith('ORCA:') || symUpper.startsWith('METEORA:') ||
+    symUpper.startsWith('RAYDIUM:') || symUpper.startsWith('PUMPSWAP:') ||
+    symUpper.includes('KLED') || symUpper.includes('4SBYWY') || symUpper.includes('ANSEM');
+  if (isSolanaDex) {
     return new Promise(async (resolve) => {
       try {
         const axios = require('axios');
-        const tfParam = (normTf === 'D' || normTf === 'W' || normTf === 'M') ? 'day' : 'hour';
-        const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP/ohlcv/${tfParam}?limit=1000`;
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000 });
-        const list = res.data?.data?.attributes?.ohlcv_list || [];
-        if (list.length > 0) {
-          const candles = list.slice().reverse().map(item => ({
-            time: item[0],
-            open: item[1],
-            high: item[2],
-            low: item[3],
-            close: item[4],
-            volume: item[5] || 0,
-          }));
-          const resData = { candles, infos: { name: 'KLEDAI / Wrapped SOL', description: 'Meteora Dynamic Pool' } };
-          serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
-          return resolve(resData);
+        const exName = querySymbol.includes(':') ? querySymbol.split(':')[0].toUpperCase() : 'SOLANA';
+        const tokenBase = extractSolanaSearchToken(querySymbol);
+        const poolPrefix = extractSolanaPoolPrefix(querySymbol);
+        const symCacheKey = symUpper;
+        let poolAddr = solanaDexPoolCache.get(symCacheKey) || solanaDexPoolCache.get(tokenBase) || null;
+        let desc = `${tokenBase} / Solana Pool`;
+
+        if (!poolAddr && symUpper.includes('4SBYWY')) {
+          poolAddr = '4SBYWY5UuxybWuj8FwHdFXUN6mbtACrqbJwiZ9mXworP';
+          desc = 'KLEDAI / Wrapped SOL';
+        }
+        if (!poolAddr && tokenBase) {
+          const searchRes = await axios.get('https://api.dexscreener.com/latest/dex/search?q=' + encodeURIComponent(tokenBase), { timeout: 4000 });
+          const solPairs = (searchRes.data?.pairs || [])
+            .filter(p => p.chainId === 'solana' && p.pairAddress);
+          const prefixMatch = poolPrefix
+            ? solPairs.find(p => p.pairAddress.toUpperCase().startsWith(poolPrefix))
+            : null;
+          const dexMatches = solPairs
+            .filter(p => String(p.dexId || '').toUpperCase() === exName)
+            .sort((a, b) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0));
+          const sortedAll = solPairs
+            .slice()
+            .sort((a, b) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0));
+          const chosen = prefixMatch || dexMatches[0] || sortedAll[0] || null;
+          if (chosen) {
+            poolAddr = chosen.pairAddress;
+            desc = `${chosen.baseToken?.symbol || tokenBase} / ${chosen.quoteToken?.symbol || 'SOL'} (${chosen.dexId})`;
+            solanaDexPoolCache.set(symCacheKey, poolAddr);
+          }
+        }
+        if (poolAddr) {
+          const resData = await fetchGeckoSolanaBars(poolAddr, normTf, { name: tokenBase || querySymbol, description: desc, exchange: exName });
+          if (resData && resData.candles && resData.candles.length > 0) {
+            serverHistoryCache.set(cacheKey, { timestamp: Date.now(), data: resData });
+            return resolve(resData);
+          }
         }
       } catch (err) {}
-      resolve({ candles: [], infos: {} });
+      return fetchFromTradingViewWS(querySymbol, normTf, range, cacheKey, resolve);
     });
   }
 
@@ -1679,6 +1773,13 @@ const htmlContent = `<!DOCTYPE html>
       background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 12px;
       display: flex; flex-direction: column; gap: 8px;
     }
+    #table-hub-feeds th,
+    #table-hub-feeds td {
+      padding: 7px 6px; font-size: 11.5px; white-space: nowrap;
+    }
+    #table-hub-feeds .action-badge {
+      padding: 2px 5px; font-size: 9.5px;
+    }
 
     /* ========================================================
        REPLAY ENGINE (SHADCN ZINC DARK)
@@ -1936,7 +2037,7 @@ const htmlContent = `<!DOCTYPE html>
           <!-- TIER 2: TradingView Chart Toolbar -->
           <div class="hl-chart-toolbar">
             <div class="hl-tb-left">
-              <div class="tf-group" id="timeframes" style="display: flex; gap: 2px;">
+              <div class="tf-group" id="timeframes" style="display: flex; gap: 2px; position: relative; align-items: center;">
                 <button class="hl-tf-btn" data-tf="1">1m</button>
                 <button class="hl-tf-btn" data-tf="5">5m</button>
                 <button class="hl-tf-btn" data-tf="15">15m</button>
@@ -1945,15 +2046,32 @@ const htmlContent = `<!DOCTYPE html>
                 <button class="hl-tf-btn active" data-tf="D">D</button>
                 <button class="hl-tf-btn" data-tf="W">W</button>
                 <button class="hl-tf-btn" data-tf="M">M</button>
-                <button class="hl-tf-btn" style="color: #687080;" title="More timeframes">⌄</button>
+                <div style="position: relative; display: inline-block;">
+                  <button class="hl-tf-btn" id="btn-more-tf" type="button" style="color: #94a3b8;" title="More timeframes">⌄</button>
+                  <div id="more-tf-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 30px; left: 0; z-index: 1000; min-width: 96px; padding: 6px; background: rgba(13, 17, 28, 0.96) !important; backdrop-filter: blur(24px) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 8px !important; box-shadow: 0 12px 32px rgba(0,0,0,0.75) !important; flex-direction: column; gap: 4px;">
+                    <button class="hl-tf-btn more-tf-opt" type="button" data-tf="3" style="width: 100%; text-align: left; justify-content: flex-start;">3m</button>
+                    <button class="hl-tf-btn more-tf-opt" type="button" data-tf="30" style="width: 100%; text-align: left; justify-content: flex-start;">30m</button>
+                    <button class="hl-tf-btn more-tf-opt" type="button" data-tf="120" style="width: 100%; text-align: left; justify-content: flex-start;">2h</button>
+                  </div>
+                </div>
               </div>
 
               <div class="hl-vdiv"></div>
 
-              <!-- Chart style (Candlesticks) -->
-              <button class="hl-tool-btn" title="Candlesticks style">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v16M9 8h4v8H9zM17 2v20M17 5h4v6h-4z"/></svg>
-              </button>
+              <!-- Chart style (Candlesticks / Hollow / Heikin Ashi / Line) -->
+              <div style="position: relative; display: inline-block;">
+                <button class="hl-tool-btn" id="btn-chart-style" type="button" title="Chart style">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v16M9 8h4v8H9zM17 2v20M17 5h4v6h-4z"/></svg>
+                  <span id="chart-style-label" style="font-size: 10.5px;">Candles</span>
+                  <span style="font-size: 8px; color: #8c93a3;">⌄</span>
+                </button>
+                <div id="chart-style-dropdown" class="ios-glass-panel" style="display: none; position: absolute; top: 32px; left: 0; z-index: 1000; min-width: 150px; padding: 6px; background: rgba(13, 17, 28, 0.96) !important; backdrop-filter: blur(24px) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 8px !important; box-shadow: 0 12px 32px rgba(0,0,0,0.75) !important; flex-direction: column; gap: 3px;">
+                  <button class="btn chart-style-opt active" type="button" data-style="candles" style="width: 100%; text-align: left; padding: 5px 8px; font-size: 11px;">Candlesticks</button>
+                  <button class="btn chart-style-opt" type="button" data-style="hollow" style="width: 100%; text-align: left; padding: 5px 8px; font-size: 11px;">Hollow Candles</button>
+                  <button class="btn chart-style-opt" type="button" data-style="heikin" style="width: 100%; text-align: left; padding: 5px 8px; font-size: 11px;">Heikin Ashi</button>
+                  <button class="btn chart-style-opt" type="button" data-style="line" style="width: 100%; text-align: left; padding: 5px 8px; font-size: 11px;">Line</button>
+                </div>
+              </div>
 
               <div class="hl-vdiv"></div>
 
@@ -3538,7 +3656,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
                 <div class="sh-table-scroll" style="flex: 1; max-height: 650px;">
                   <table class="sh-table" id="table-hub-feeds">
-                    <thead><tr><th>Symbol</th><th>Price</th><th>24h %</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
+                    <thead><tr><th>Symbol</th><th>Price</th><th>24h</th><th>RSI</th><th>MACD</th><th>Verdict</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -4386,7 +4504,7 @@ const htmlContent = `<!DOCTYPE html>
 
     // --- Proliquid Trading & Execution Dock Variables ---
     let currentDockCoin = 'BTC';
-    let currentDockPrice = 80000;
+    let currentDockPrice = null;
     let currentDockOrderType = 'MARKET';
     let currentDockMode = 'PAPER';
     let isReduceOnly = false;
@@ -4427,11 +4545,9 @@ const htmlContent = `<!DOCTYPE html>
       c = c.replace(/^_|_$/g, '').trim() || 'BTC';
       currentDockCoin = c;
 
-      // Immediately reset currentDockPrice to the active token price
+      // Immediately reset currentDockPrice to the active token price (never leak previous token price)
       const activeClose = (typeof pricesCache !== 'undefined' && pricesCache[sym] && pricesCache[sym].close) || (lastLoadedCandle && lastLoadedCandle.close) || 0;
-      if (activeClose > 0) {
-        currentDockPrice = activeClose;
-      }
+      currentDockPrice = activeClose > 0 ? activeClose : null;
       const coinBadge = document.getElementById('ob-coin-badge');
       const scrBadge = document.getElementById('scr-coin-badge');
       const denomBadge = document.getElementById('exec-coin-denom');
@@ -4439,8 +4555,8 @@ const htmlContent = `<!DOCTYPE html>
       if (scrBadge) scrBadge.textContent = c;
       if (denomBadge) denomBadge.textContent = c;
       const mktPriceEl = document.getElementById('dock-market-price');
-      if (mktPriceEl && currentDockPrice > 0) {
-        mktPriceEl.textContent = '$' + formatTokenPrice(currentDockPrice);
+      if (mktPriceEl) {
+        mktPriceEl.textContent = (currentDockPrice && currentDockPrice > 0) ? ('$' + formatTokenPrice(currentDockPrice)) : '--';
       }
       updateExecutionLabels();
       updateProviewTitle(c, currentDockPrice > 0 ? currentDockPrice : null, pricesCache[sym]?.change);
@@ -5919,6 +6035,74 @@ const htmlContent = `<!DOCTYPE html>
       },
     });
     const candleSeries = chart.addCandlestickSeries({ upColor: '#26a69a', downColor: '#ef5350' });
+    let currentChartStyle = 'candles';
+    let chartLineStyleSeries = null;
+
+    function computeHeikinAshi(candles) {
+      if (!Array.isArray(candles) || candles.length === 0) return [];
+      const ha = [];
+      let prevOpen = (candles[0].open + candles[0].close) / 2;
+      let prevClose = (candles[0].open + candles[0].high + candles[0].low + candles[0].close) / 4;
+      for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+        const haClose = (c.open + c.high + c.low + c.close) / 4;
+        const haOpen = i === 0 ? ((c.open + c.close) / 2) : ((prevOpen + prevClose) / 2);
+        const haHigh = Math.max(c.high, haOpen, haClose);
+        const haLow = Math.min(c.low, haOpen, haClose);
+        ha.push({ time: c.time, open: haOpen, high: haHigh, low: haLow, close: haClose, volume: c.volume || 0 });
+        prevOpen = haOpen;
+        prevClose = haClose;
+      }
+      return ha;
+    }
+
+    function applyChartStyle(candlesList) {
+      const list = Array.isArray(candlesList) ? candlesList : (currentCandlesCache || []);
+      try {
+        if (currentChartStyle === 'line') {
+          candleSeries.applyOptions({ visible: false });
+          if (!chartLineStyleSeries) {
+            chartLineStyleSeries = chart.addLineSeries({ color: '#38bdf8', lineWidth: 2, priceLineVisible: true });
+          }
+          chartLineStyleSeries.applyOptions({ visible: true });
+          chartLineStyleSeries.setData(list.map(c => ({ time: c.time, value: c.close })));
+        } else {
+          if (chartLineStyleSeries) {
+            chartLineStyleSeries.applyOptions({ visible: false });
+          }
+          const isHollow = currentChartStyle === 'hollow';
+          candleSeries.applyOptions({
+            visible: true,
+            upColor: isHollow ? 'transparent' : '#26a69a',
+            downColor: '#ef5350',
+            borderUpColor: '#26a69a',
+            borderDownColor: '#ef5350',
+            wickUpColor: '#26a69a',
+            wickDownColor: '#ef5350',
+          });
+          candleSeries.setData(currentChartStyle === 'heikin' ? computeHeikinAshi(list) : list);
+        }
+      } catch (e) {}
+    }
+
+    function showChartLoadError(msg) {
+      if (!chartContainer) return;
+      let banner = document.getElementById('chart-error-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'chart-error-banner';
+        banner.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(15,17,23,0.86);backdrop-filter:blur(4px);z-index:15;pointer-events:none;padding:20px;text-align:center;';
+        chartContainer.appendChild(banner);
+      }
+      banner.innerHTML = '<div style="font-size:13px;font-weight:700;color:#f87171;">⚠️ Không thể tải dữ liệu biểu đồ</div>' +
+        '<div style="font-size:11.5px;color:#94a3b8;max-width:460px;">' + String(msg || 'Lỗi kết nối nguồn dữ liệu').replace(/[<>&]/g, '') + '</div>';
+      banner.style.display = 'flex';
+    }
+
+    function hideChartLoadError() {
+      const banner = document.getElementById('chart-error-banner');
+      if (banner) banner.style.display = 'none';
+    }
     const volumeSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
       priceScaleId: '',
@@ -6391,10 +6575,11 @@ const htmlContent = `<!DOCTYPE html>
 
       // Helper to render candles & indicators synchronously (Zero Latency)
       function applyCandlesAndIndicators(candlesList) {
+        hideChartLoadError();
         currentCandlesCache = candlesList;
         autoAdjustChartPrecision(candlesList);
         try { chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) {}
-        candleSeries.setData(candlesList);
+        applyChartStyle(candlesList);
         volumeSeries.setData(candlesList.map(c => ({
           time: c.time,
           value: c.volume || 0,
@@ -6411,22 +6596,46 @@ const htmlContent = `<!DOCTYPE html>
           });
         } catch (e) {}
         lastLoadedCandle = candlesList[len - 1];
+        if (lastLoadedCandle && lastLoadedCandle.close > 0) {
+          currentDockPrice = lastLoadedCandle.close;
+          const mktEl = document.getElementById('dock-market-price');
+          if (mktEl) mktEl.textContent = '$' + formatTokenPrice(currentDockPrice);
+          if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
+        }
         setLegendOHLC(lastLoadedCandle);
         updateActiveIndicators(candlesList);
         updateProviewTitle(sym, lastLoadedCandle.close);
+      }
+
+      function clearChartOnError(reasonMsg) {
+        currentCandlesCache = [];
+        lastLoadedCandle = null;
+        try {
+          candleSeries.setData([]);
+          if (chartLineStyleSeries) chartLineStyleSeries.setData([]);
+          volumeSeries.setData([]);
+          if (typeof clearAllIndicatorLines === 'function') clearAllIndicatorLines();
+        } catch (e) {}
+        ['leg-open', 'leg-high', 'leg-low', 'leg-close', 'leg-chg', 'leg-vol'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = '--';
+        });
+        showChartLoadError(reasonMsg);
       }
 
       // 2. ZERO-DELAY RENDER: If cached in memory, display IMMEDIATELY in 0ms!
       const cached = clientChartCache[activeKey];
       if (cached && cached.candles && cached.candles.length > 0) {
         applyCandlesAndIndicators(cached.candles);
+      } else {
+        hideChartLoadError();
       }
 
       // 3. Fast Background fetch for latest candle stream & full history
       try {
         const res = await fetch('/api/history?symbol=' + encodeURIComponent(sym) + '&timeframe=' + encodeURIComponent(tf) + '&range=1000');
         const data = await res.json();
-        if (data.candles && data.candles.length > 0) {
+        if (res.ok && data && Array.isArray(data.candles) && data.candles.length > 0) {
           clientChartCache[activeKey] = { candles: data.candles, time: Date.now() };
 
           // Only apply if user is still on this exact symbol and timeframe
@@ -6436,8 +6645,14 @@ const htmlContent = `<!DOCTYPE html>
               refreshEdgeStats(sym);
             }
           }
+        } else if (currentSymbol === targetSym && currentTimeframe === targetTf && !cached) {
+          clearChartOnError('Không có dữ liệu nến cho ' + sym + (data && data.error ? ' (' + data.error + ')' : ' (HTTP ' + res.status + ')'));
         }
-      } catch (e) {}
+      } catch (e) {
+        if (currentSymbol === targetSym && currentTimeframe === targetTf && !cached) {
+          clearChartOnError('Lỗi tải biểu đồ ' + sym + ': ' + (e && e.message ? e.message : 'Network error'));
+        }
+      }
 
       // 4. Real-time candle updates
       if (currentSymbol === targetSym && currentTimeframe === targetTf) {
@@ -7168,6 +7383,8 @@ const htmlContent = `<!DOCTYPE html>
               }
               const dockMktEl = document.getElementById('dock-market-price');
               if (dockMktEl) dockMktEl.textContent = '$' + (livePrice >= 1 ? livePrice.toLocaleString('en-US') : formatTokenPrice(livePrice));
+              currentDockPrice = livePrice;
+              if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
             }
           }
         } catch (e) {}
@@ -7751,6 +7968,7 @@ const htmlContent = `<!DOCTYPE html>
                     if (mktPriceEl) mktPriceEl.textContent = '$' + (px >= 1 ? px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : px.toFixed(4));
                     const lastEl = document.getElementById('hl-stat-last');
                     if (lastEl) lastEl.textContent = '$' + (px >= 1 ? px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatTokenPrice(px));
+                    if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
                   }
                 }
               }
@@ -7769,6 +7987,7 @@ const htmlContent = `<!DOCTYPE html>
                   if (mktPriceEl) mktPriceEl.textContent = '$' + (markPx >= 1 ? markPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : markPx.toFixed(4));
                   const lastEl = document.getElementById('hl-stat-last');
                   if (lastEl) lastEl.textContent = '$' + (markPx >= 1 ? markPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatTokenPrice(markPx));
+                  if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
                   const idxEl = document.getElementById('hl-stat-index');
                   if (idxEl && ctx.oraclePx) {
                     const orc = parseFloat(ctx.oraclePx);
@@ -7948,8 +8167,17 @@ const htmlContent = `<!DOCTYPE html>
         try {
           const res = await fetch('/api/hyperliquid/book?coin=' + encodeURIComponent(c));
           const b = await res.json();
-          if (b && b.bids && b.asks) {
+          if (b && !b.empty && Array.isArray(b.bids) && (b.bids.length > 0 || b.asks.length > 0)) {
             renderOrderbookData(b.bids, b.asks, b.bestAsk, b.bestBid);
+          } else {
+            const asksEl = document.getElementById('ob-asks-list');
+            if (asksEl) asksEl.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-secondary);font-size:11px;">No Hyperliquid L2 liquidity for ' + c + '</div>';
+            const bidsEl = document.getElementById('ob-bids-list');
+            if (bidsEl) bidsEl.innerHTML = '';
+            const spValEl = document.getElementById('ob-spread-val');
+            if (spValEl) spValEl.textContent = '--';
+            const spBpEl = document.getElementById('ob-spread-bp');
+            if (spBpEl) spBpEl.textContent = '';
           }
         } catch (e) {}
 
@@ -8046,13 +8274,25 @@ const htmlContent = `<!DOCTYPE html>
     function updateExecutionLabels() {
       const qtyInput = document.getElementById('input-exec-qty');
       const qty = parseFloat(qtyInput?.value) || 0;
-      const price = currentDockPrice || 0;
-      const priceFmt = formatTokenPrice(price);
+      const hasPrice = typeof currentDockPrice === 'number' && !isNaN(currentDockPrice) && currentDockPrice > 0;
+      const priceStr = hasPrice ? ('$' + formatTokenPrice(currentDockPrice)) : '--';
 
       const buySub = document.getElementById('exec-buy-sub');
       const sellSub = document.getElementById('exec-sell-sub');
-      if (buySub) buySub.textContent = qty + ' ' + currentDockCoin + ' @ $' + priceFmt;
-      if (sellSub) sellSub.textContent = qty + ' ' + currentDockCoin + ' @ $' + priceFmt;
+      if (buySub) buySub.textContent = qty + ' ' + currentDockCoin + ' @ ' + priceStr;
+      if (sellSub) sellSub.textContent = qty + ' ' + currentDockCoin + ' @ ' + priceStr;
+
+      const needsLiveMarketPrice = currentDockOrderType === 'MARKET' && !hasPrice;
+      const btnBuy = document.getElementById('btn-exec-buy');
+      const btnSell = document.getElementById('btn-exec-sell');
+      if (btnBuy) {
+        btnBuy.disabled = needsLiveMarketPrice;
+        btnBuy.style.opacity = needsLiveMarketPrice ? '0.55' : '1';
+      }
+      if (btnSell) {
+        btnSell.disabled = needsLiveMarketPrice;
+        btnSell.style.opacity = needsLiveMarketPrice ? '0.55' : '1';
+      }
     }
 
     // Execution Inputs Bindings
@@ -8114,13 +8354,17 @@ const htmlContent = `<!DOCTYPE html>
       btnOrdMarket.classList.add('active');
       btnOrdLimit.classList.remove('active');
       limitGroup.style.display = 'none';
+      updateExecutionLabels();
     });
     btnOrdLimit?.addEventListener('click', () => {
       currentDockOrderType = 'LIMIT';
       btnOrdLimit.classList.add('active');
       btnOrdMarket.classList.remove('active');
       limitGroup.style.display = 'flex';
-      document.getElementById('input-exec-price').value = currentDockPrice;
+      if (currentDockPrice && currentDockPrice > 0) {
+        document.getElementById('input-exec-price').value = currentDockPrice;
+      }
+      updateExecutionLabels();
     });
 
     // Options toggles
@@ -8374,6 +8618,10 @@ const htmlContent = `<!DOCTYPE html>
       const tp = isTpSlActive ? parseFloat(document.getElementById('input-exec-tp')?.value) : null;
       const sl = isTpSlActive ? parseFloat(document.getElementById('input-exec-sl')?.value) : null;
       const price = currentDockOrderType === 'LIMIT' ? parseFloat(document.getElementById('input-exec-price')?.value) : currentDockPrice;
+      if (!price || isNaN(price) || price <= 0) {
+        alert('Waiting for live market price before placing order.');
+        return;
+      }
 
       try {
         const res = await fetch('/api/trade/execute', {
@@ -8422,8 +8670,56 @@ const htmlContent = `<!DOCTYPE html>
       document.querySelectorAll('#timeframes button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentTimeframe = btn.dataset.tf;
+      const moreBtn = document.getElementById('btn-more-tf');
+      const moreMenu = document.getElementById('more-tf-dropdown');
+      if (btn.classList.contains('more-tf-opt') && moreBtn) {
+        moreBtn.textContent = btn.textContent + ' ⌄';
+        moreBtn.classList.add('active');
+      } else if (moreBtn) {
+        moreBtn.textContent = '⌄';
+      }
+      if (moreMenu) moreMenu.style.display = 'none';
       if (typeof triggerAutoSave === 'function') triggerAutoSave();
       loadChart(currentSymbol, currentTimeframe);
+    });
+
+    const btnMoreTf = document.getElementById('btn-more-tf');
+    const moreTfDropdown = document.getElementById('more-tf-dropdown');
+    btnMoreTf?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!moreTfDropdown) return;
+      const open = moreTfDropdown.style.display === 'flex';
+      moreTfDropdown.style.display = open ? 'none' : 'flex';
+    });
+
+    const btnChartStyle = document.getElementById('btn-chart-style');
+    const chartStyleDropdown = document.getElementById('chart-style-dropdown');
+    btnChartStyle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!chartStyleDropdown) return;
+      const open = chartStyleDropdown.style.display === 'flex';
+      chartStyleDropdown.style.display = open ? 'none' : 'flex';
+    });
+    chartStyleDropdown?.addEventListener('click', (e) => {
+      const opt = e.target.closest('.chart-style-opt');
+      if (!opt || !opt.dataset.style) return;
+      currentChartStyle = opt.dataset.style;
+      document.querySelectorAll('.chart-style-opt').forEach(b => b.classList.toggle('active', b === opt));
+      const lbl = document.getElementById('chart-style-label');
+      if (lbl) {
+        const names = { candles: 'Candles', hollow: 'Hollow', heikin: 'Heikin Ashi', line: 'Line' };
+        lbl.textContent = names[currentChartStyle] || 'Candles';
+      }
+      if (chartStyleDropdown) chartStyleDropdown.style.display = 'none';
+      applyChartStyle(currentCandlesCache);
+    });
+    document.addEventListener('click', (e) => {
+      if (moreTfDropdown && !e.target.closest('#btn-more-tf') && !e.target.closest('#more-tf-dropdown')) {
+        moreTfDropdown.style.display = 'none';
+      }
+      if (chartStyleDropdown && !e.target.closest('#btn-chart-style') && !e.target.closest('#chart-style-dropdown')) {
+        chartStyleDropdown.style.display = 'none';
+      }
     });
 
     // Proactive Hover Prefetch: Pre-load candle history the moment mouse hovers on timeframe button
@@ -8499,12 +8795,18 @@ const htmlContent = `<!DOCTYPE html>
         const t = await res.json();
         if (coin !== currentDockCoin) return;
         if (t && t.last) {
+          const isHlNative = currentSymbol && currentSymbol.toUpperCase().startsWith('HYPERLIQUID:');
           let lastStr = t.last;
           let chgStr = t.change;
           let rawChg = t.rawChange;
           let rawL = t.rawLast;
 
-          if ((!rawL || rawL === 0) && typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol]?.close) {
+          if (!isHlNative && typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol]?.close) {
+            rawL = pricesCache[currentSymbol].close;
+            lastStr = formatTokenPrice(rawL);
+            rawChg = pricesCache[currentSymbol].change || 0;
+            chgStr = (rawChg >= 0 ? '+' : '') + rawChg.toFixed(2) + '%';
+          } else if ((!rawL || rawL === 0) && typeof pricesCache !== 'undefined' && currentSymbol && pricesCache[currentSymbol]?.close) {
             rawL = pricesCache[currentSymbol].close;
             lastStr = formatTokenPrice(rawL);
             rawChg = pricesCache[currentSymbol].change || 0;
@@ -8515,14 +8817,20 @@ const htmlContent = `<!DOCTYPE html>
           }
 
           const lastEl = document.getElementById('hl-stat-last');
-          if (lastEl) lastEl.textContent = '$' + lastStr.replace(/^\$/, '');
+          if (lastEl) lastEl.textContent = '$' + String(lastStr).replace(/^\$/, '');
+          if (rawL > 0) {
+            currentDockPrice = rawL;
+            const mktEl = document.getElementById('dock-market-price');
+            if (mktEl) mktEl.textContent = '$' + String(lastStr).replace(/^\$/, '');
+            if (typeof updateExecutionLabels === 'function') updateExecutionLabels();
+          }
 
           if (rawL && typeof syncLivePriceToWatchlist === 'function') {
-            syncLivePriceToWatchlist(coin, rawL, rawChg);
+            syncLivePriceToWatchlist(isHlNative ? coin : currentSymbol, rawL, rawChg);
           }
 
           const idxEl = document.getElementById('hl-stat-index');
-          if (idxEl) idxEl.textContent = t.index && t.index !== '--' ? t.index : '$' + lastStr.replace(/^\$/, '');
+          if (idxEl) idxEl.textContent = (isHlNative && t.index && t.index !== '--') ? t.index : '$' + String(lastStr).replace(/^\$/, '');
 
           const chgEl = document.getElementById('hl-stat-change');
           if (chgEl) {
@@ -8548,14 +8856,15 @@ const htmlContent = `<!DOCTYPE html>
           const fdvEl = document.getElementById('hl-stat-fdv');
           if (fdvEl && t.fdv && t.fdv !== '--') fdvEl.textContent = t.fdv;
 
-          const titleEl = document.getElementById('active-symbol-title');
-          if (titleEl) titleEl.textContent = t.symbol;
-
-          const exEl = document.getElementById('active-exchange-badge');
-          if (exEl) exEl.textContent = t.exchange;
+          if (isHlNative) {
+            const titleEl = document.getElementById('active-symbol-title');
+            if (titleEl) titleEl.textContent = t.symbol;
+            const exEl = document.getElementById('active-exchange-badge');
+            if (exEl) exEl.textContent = t.exchange;
+          }
 
           if (typeof updateProviewTitle === 'function') {
-            updateProviewTitle(t.symbol || coin, rawL > 0 ? rawL : null, rawChg);
+            updateProviewTitle(isHlNative ? (t.symbol || coin) : currentSymbol, rawL > 0 ? rawL : null, rawChg);
           }
         }
       } catch (e) {}
@@ -8762,7 +9071,21 @@ const htmlContent = `<!DOCTYPE html>
       try {
         const res = await fetch('/api/edge-stats?symbol=' + encodeURIComponent(sym));
         const data = await res.json();
-        if (data.error || !data.edges) return;
+        if (data.error || !data.edges) {
+          const evalRangeEl = document.getElementById('edge-eval-range');
+          if (evalRangeEl) evalRangeEl.textContent = data.error || 'Chưa đủ dữ liệu phiên (>= 15 phiên)';
+          const dRangeEl = document.getElementById('dock-edge-sample-range');
+          if (dRangeEl) dRangeEl.textContent = data.error || 'Chưa đủ dữ liệu (>= 15 phiên)';
+          ['edge-pdh-rate', 'edge-pdl-rate', 'edge-gap-rate', 'edge-orb-rate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = 'N/A';
+          });
+          ['edge-pdh-ci', 'edge-pdh-sub', 'edge-pdl-ci', 'edge-pdl-sub', 'edge-gap-ci', 'edge-gap-time', 'edge-orb-ci', 'edge-orb-false'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '--';
+          });
+          return;
+        }
 
         const { edges, liveSession, symbolMeta } = data;
 
@@ -9152,6 +9475,29 @@ const htmlContent = `<!DOCTYPE html>
     async function renderJournalDashboard() {
       const modeSelect = document.getElementById("ts-month-mode");
       if (modeSelect) currentJournalMode = modeSelect.value;
+
+      const prevBtn = document.getElementById("btn-ts-prev-month");
+      const nextBtn = document.getElementById("btn-ts-next-month");
+      if (prevBtn && nextBtn) {
+        if (currentJournalMode === "sim6m") {
+          const atStart = simActiveMonthIndex <= 0;
+          const atEnd = simActiveMonthIndex >= simMonthList.length - 1;
+          prevBtn.disabled = atStart;
+          nextBtn.disabled = atEnd;
+          prevBtn.style.opacity = atStart ? "0.35" : "1";
+          nextBtn.style.opacity = atEnd ? "0.35" : "1";
+          prevBtn.title = "Previous month";
+          nextBtn.title = "Next month";
+        } else {
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          prevBtn.style.opacity = "0.35";
+          nextBtn.style.opacity = "0.35";
+          const tip = "Chuyển sang chế độ Backtest 2026 để duyệt các tháng";
+          prevBtn.title = tip;
+          nextBtn.title = tip;
+        }
+      }
 
       const calTitle = document.getElementById("ts-cal-title");
       const gridBody = document.getElementById("ts-cal-grid-body");
@@ -9616,28 +9962,16 @@ const htmlContent = `<!DOCTYPE html>
 
     // Month Navigation
     document.getElementById("btn-ts-prev-month")?.addEventListener("click", () => {
-      if (currentJournalMode === "sim6m") {
-        if (simActiveMonthIndex > 0) {
-          simActiveMonthIndex--;
-          renderJournalDashboard();
-        }
-      } else {
-        currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
-        const sel = document.getElementById("ts-month-mode");
-        if (sel) sel.value = currentJournalMode;
+      if (currentJournalMode !== "sim6m") return;
+      if (simActiveMonthIndex > 0) {
+        simActiveMonthIndex--;
         renderJournalDashboard();
       }
     });
     document.getElementById("btn-ts-next-month")?.addEventListener("click", () => {
-      if (currentJournalMode === "sim6m") {
-        if (simActiveMonthIndex < simMonthList.length - 1) {
-          simActiveMonthIndex++;
-          renderJournalDashboard();
-        }
-      } else {
-        currentJournalMode = currentJournalMode === "march2026" ? "current" : "march2026";
-        const sel = document.getElementById("ts-month-mode");
-        if (sel) sel.value = currentJournalMode;
+      if (currentJournalMode !== "sim6m") return;
+      if (simActiveMonthIndex < simMonthList.length - 1) {
+        simActiveMonthIndex++;
         renderJournalDashboard();
       }
     });
@@ -11296,7 +11630,10 @@ const htmlContent = `<!DOCTYPE html>
       bindAuthModalEvents();
     }
 
+    let authModalBindingsDone = false;
+
     function openAuthModal(tab = 'tab-google') {
+      initAuthModalBindings();
       const overlay = document.getElementById('auth-modal-overlay');
       if (!overlay) return;
       overlay.style.display = 'flex';
@@ -11322,135 +11659,149 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById('btn-header-login')?.addEventListener('click', () => openAuthModal('tab-google'));
     }
 
-    // Modal Close button
-    document.getElementById('btn-auth-close')?.addEventListener('click', closeAuthModal);
-    document.getElementById('auth-modal-overlay')?.addEventListener('click', (e) => {
-      if (e.target.id === 'auth-modal-overlay') closeAuthModal();
-    });
+    function initAuthModalBindings() {
+      if (authModalBindingsDone) return;
+      const overlayEl = document.getElementById('auth-modal-overlay');
+      if (!overlayEl) return;
+      authModalBindingsDone = true;
 
-    // Tab buttons
-    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        switchAuthTab(btn.getAttribute('data-auth-tab'));
+      document.getElementById('btn-auth-close')?.addEventListener('click', closeAuthModal);
+      overlayEl.addEventListener('click', (e) => {
+        if (e.target.id === 'auth-modal-overlay') closeAuthModal();
       });
-    });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlayEl.style.display === 'flex') closeAuthModal();
+      });
 
-    // Web3 Wallet Connect & Sign-In Handler (EIP-4361 SIWE)
-    document.getElementById('btn-modal-connect-wallet')?.addEventListener('click', async () => {
-      const statusBox = document.getElementById('wallet-auth-status');
-      const btnText = document.getElementById('btn-wallet-text');
-
-      if (!window.ethereum) {
-        alert('Không tìm thấy tiện ích ví Web3 (MetaMask, Rabby hoặc Coinbase Wallet). Vui lòng cài đặt tiện ích trên trình duyệt!');
-        return;
-      }
-
-      try {
-        btnText.textContent = 'Đang kết nối ví...';
-        statusBox.textContent = '1. Đang yêu cầu cấp quyền địa chỉ từ ví...';
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (!accounts || accounts.length === 0) throw new Error('Không có địa chỉ ví nào được chọn');
-        const userAddress = accounts[0];
-
-        statusBox.textContent = '2. Đang tạo thử thách Nonce bảo mật cho ' + userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
-        const nonceRes = await fetch('/api/auth/wallet/nonce', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: userAddress })
+      document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchAuthTab(btn.getAttribute('data-auth-tab'));
         });
-        const nonceData = await nonceRes.json();
-        if (!nonceData.success) throw new Error(nonceData.error || 'Lỗi tạo Nonce');
+      });
 
-        statusBox.textContent = '3. Vui lòng ký thông điệp bảo mật EIP-4361 trên cửa sổ ví (0 Gas Fee)...';
-        btnText.textContent = 'Chờ bạn ký xác thực...';
+      // Web3 Wallet Connect & Sign-In Handler (EIP-4361 SIWE)
+      document.getElementById('btn-modal-connect-wallet')?.addEventListener('click', async () => {
+        const statusBox = document.getElementById('wallet-auth-status');
+        const btnText = document.getElementById('btn-wallet-text');
 
-        const signature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [nonceData.message, userAddress]
-        });
-
-        statusBox.textContent = '4. Đang giải mã chữ ký mật mã secp256k1 trên server...';
-        btnText.textContent = 'Đang xác thực...';
-
-        const verifyRes = await fetch('/api/auth/wallet/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            address: userAddress,
-            signature,
-            message: nonceData.message
-          })
-        });
-
-        const verifyData = await verifyRes.json();
-        if (verifyData.success) {
-          showAuthToast('✅ Ví ' + verifyData.user.shortAddress + ' đã xác thực thành công (' + verifyData.user.role + ')!');
-          closeAuthModal();
-          checkAuthStatus();
-        } else {
-          throw new Error(verifyData.error || 'Xác thực chữ ký thất bại');
+        if (!window.ethereum) {
+          alert('Không tìm thấy tiện ích ví Web3 (MetaMask, Rabby hoặc Coinbase Wallet). Vui lòng cài đặt tiện ích trên trình duyệt!');
+          return;
         }
-      } catch (err) {
-        showAuthToast('❌ ' + err.message, true);
-        statusBox.textContent = 'Lỗi: ' + err.message;
-      } finally {
-        btnText.textContent = 'Ký Xác Thực & Kết Nối Ví';
-      }
-    });
 
-    // Email / Gmail Direct Sign-In Handler
-    document.getElementById('btn-auth-email-submit')?.addEventListener('click', async () => {
-      const email = (document.getElementById('auth-email-input')?.value || '').trim();
-      if (!email || !email.includes('@')) {
-        alert('Vui lòng nhập địa chỉ Email Gmail hợp lệ');
-        return;
-      }
+        try {
+          btnText.textContent = 'Đang kết nối ví...';
+          statusBox.textContent = '1. Đang yêu cầu cấp quyền địa chỉ từ ví...';
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (!accounts || accounts.length === 0) throw new Error('Không có địa chỉ ví nào được chọn');
+          const userAddress = accounts[0];
 
-      try {
-        const res = await fetch('/api/auth/direct-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: email, role: 'USER' })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showAuthToast('✅ Đã đăng nhập: ' + data.user.displayId + ' (' + data.user.role + ')');
-          closeAuthModal();
-          checkAuthStatus();
-        } else {
-          alert(data.error || 'Lỗi đăng nhập');
+          statusBox.textContent = '2. Đang tạo thử thách Nonce bảo mật cho ' + userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+          const nonceRes = await fetch('/api/auth/wallet/nonce', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address: userAddress })
+          });
+          const nonceData = await nonceRes.json();
+          if (!nonceData.success) throw new Error(nonceData.error || 'Lỗi tạo Nonce');
+
+          statusBox.textContent = '3. Vui lòng ký thông điệp bảo mật EIP-4361 trên cửa sổ ví (0 Gas Fee)...';
+          btnText.textContent = 'Chờ bạn ký xác thực...';
+
+          const signature = await window.ethereum.request({
+            method: 'personal_sign',
+            params: [nonceData.message, userAddress]
+          });
+
+          statusBox.textContent = '4. Đang giải mã chữ ký mật mã secp256k1 trên server...';
+          btnText.textContent = 'Đang xác thực...';
+
+          const verifyRes = await fetch('/api/auth/wallet/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              address: userAddress,
+              signature,
+              message: nonceData.message
+            })
+          });
+
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            showAuthToast('✅ Ví ' + verifyData.user.shortAddress + ' đã xác thực thành công (' + verifyData.user.role + ')!');
+            closeAuthModal();
+            checkAuthStatus();
+          } else {
+            throw new Error(verifyData.error || 'Xác thực chữ ký thất bại');
+          }
+        } catch (err) {
+          showAuthToast('❌ ' + err.message, true);
+          statusBox.textContent = 'Lỗi: ' + err.message;
+        } finally {
+          btnText.textContent = 'Ký Xác Thực & Kết Nối Ví';
         }
-      } catch (e) {
-        alert(e.message);
-      }
-    });
+      });
 
-    // Master Key Admin Claim Handler
-    document.getElementById('btn-auth-admin-submit')?.addEventListener('click', async () => {
-      const key = (document.getElementById('auth-master-key')?.value || '').trim();
-      if (!key) {
-        alert('Vui lòng nhập Master Key');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/auth/claim-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ masterKey: key })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showAuthToast('👑 Đã xác thực quyền Admin toàn quyền thành công!');
-          closeAuthModal();
-          checkAuthStatus();
-        } else {
-          alert('❌ ' + (data.error || 'Master Key không chính xác'));
+      // Email / Gmail Direct Sign-In Handler
+      document.getElementById('btn-auth-email-submit')?.addEventListener('click', async () => {
+        const email = (document.getElementById('auth-email-input')?.value || '').trim();
+        if (!email || !email.includes('@')) {
+          alert('Vui lòng nhập địa chỉ Email Gmail hợp lệ');
+          return;
         }
-      } catch (e) {
-        alert(e.message);
-      }
-    });
+
+        try {
+          const res = await fetch('/api/auth/direct-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: email, role: 'USER' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showAuthToast('✅ Đã đăng nhập: ' + data.user.displayId + ' (' + data.user.role + ')');
+            closeAuthModal();
+            checkAuthStatus();
+          } else {
+            alert(data.error || 'Lỗi đăng nhập');
+          }
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+
+      // Master Key Admin Claim Handler
+      document.getElementById('btn-auth-admin-submit')?.addEventListener('click', async () => {
+        const key = (document.getElementById('auth-master-key')?.value || '').trim();
+        if (!key) {
+          alert('Vui lòng nhập Master Key');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/auth/claim-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ masterKey: key })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showAuthToast('👑 Đã xác thực quyền Admin toàn quyền thành công!');
+            closeAuthModal();
+            checkAuthStatus();
+          } else {
+            alert('❌ ' + (data.error || 'Master Key không chính xác'));
+          }
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAuthModalBindings);
+    } else {
+      initAuthModalBindings();
+    }
 
     // Initialize Auth state on page load
     checkAuthStatus();
@@ -11523,7 +11874,7 @@ const htmlContent = `<!DOCTYPE html>
           🛡️ <strong>Bộ Bảo Mật Ví Web3 4 Tầng:</strong><br>
           • <strong>EIP-4361 SIWE:</strong> Thử thách chữ ký mật mã secp256k1.<br>
           • <strong>Single-use Nonce:</strong> Chống 100% tấn công phát lại (Anti-Replay Attack).<br>
-          • <strong>Zero Gas Fee:</strong> Chữ ký &lt;code&gt;personal_sign&lt;/code&gt; hoàn toàn miễn phí, không tạo giao dịch trên blockchain.<br>
+          • <strong>Zero Gas Fee:</strong> Chữ ký <code style="background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; font-family: ui-monospace, monospace;">personal_sign</code> hoàn toàn miễn phí, không tạo giao dịch trên blockchain.<br>
           • <strong>Non-Custodial:</strong> Tuyệt đối không yêu cầu quyền rút tiền hay chuyển token.
         </div>
       </div>
@@ -11853,7 +12204,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const qUp = q.toUpperCase();
-      const preferred = ['NASDAQ', 'NYSE', 'AMEX', 'ARCA', 'BATS', 'BINANCE', 'BYBIT', 'OKX', 'COINBASE', 'HYPERLIQUID'];
+      const preferred = ['NASDAQ', 'NYSE', 'BINANCE', 'BYBIT', 'OKX', 'COINBASE', 'HYPERLIQUID', 'ARCA', 'AMEX', 'BATS'];
       list.sort((a, b) => {
         const aExact = a.name.toUpperCase() === qUp ? 0 : 1;
         const bExact = b.name.toUpperCase() === qUp ? 0 : 1;
@@ -11866,26 +12217,20 @@ const server = http.createServer(async (req, res) => {
         return 0;
       });
 
-      if (qUp === 'NVDA' || qUp === 'NASDAQ:NVDA') {
-        list = list.filter(item => item.symbol !== 'NASDAQ:NVDA');
-        list.unshift({
-          symbol: 'NASDAQ:NVDA',
-          name: 'NVDA',
-          exchange: 'NASDAQ',
-          description: 'NVIDIA Corporation',
-          logoId: 'nvidia',
-        });
-      }
-
-      if (qUp === 'ANT' || qUp === 'NASDAQ:ANT' || qUp === 'ANTHROPIC') {
-        list = list.filter(item => item.symbol !== 'NASDAQ:ANT');
-        list.unshift({
-          symbol: 'NASDAQ:ANT',
-          name: 'ANT',
-          exchange: 'NASDAQ',
-          description: 'Anthropic, PBC Class A',
-          logoId: 'anthropic',
-        });
+      const canonicalBoosts = [
+        { match: (s) => s === 'BTC' || s === 'BTCUSDT', entry: { symbol: 'BINANCE:BTCUSDT', name: 'BTCUSDT', exchange: 'BINANCE', description: 'Bitcoin / TetherUS', logoId: 'crypto/XTVCBTC' } },
+        { match: (s) => s === 'ETH' || s === 'ETHUSDT', entry: { symbol: 'BINANCE:ETHUSDT', name: 'ETHUSDT', exchange: 'BINANCE', description: 'Ethereum / TetherUS', logoId: 'crypto/XTVCETH' } },
+        { match: (s) => s === 'SOL' || s === 'SOLUSDT', entry: { symbol: 'BINANCE:SOLUSDT', name: 'SOLUSDT', exchange: 'BINANCE', description: 'Solana / TetherUS', logoId: 'crypto/XTVCSOL' } },
+        { match: (s) => s === 'GOLD' || s === 'XAU' || s === 'XAUUSD', entry: { symbol: 'TVC:GOLD', name: 'GOLD', exchange: 'TVC', description: 'Gold Spot / US Dollar', logoId: 'metal/gold' } },
+        { match: (s) => s === 'SP500' || s === 'SPX' || s === 'S&P500', entry: { symbol: 'INDEX:SPX', name: 'SP500', exchange: 'INDEX', description: 'S&P 500 Index', logoId: 'indices/s-and-p-500' } },
+        { match: (s) => s === 'NVDA' || s === 'NASDAQ:NVDA', entry: { symbol: 'NASDAQ:NVDA', name: 'NVDA', exchange: 'NASDAQ', description: 'NVIDIA Corporation', logoId: 'nvidia' } },
+        { match: (s) => s === 'ANT' || s === 'NASDAQ:ANT' || s === 'ANTHROPIC', entry: { symbol: 'NASDAQ:ANT', name: 'ANT', exchange: 'NASDAQ', description: 'Anthropic, PBC Class A', logoId: 'anthropic' } },
+      ];
+      for (const boost of canonicalBoosts) {
+        if (boost.match(qUp)) {
+          list = list.filter(item => item.symbol !== boost.entry.symbol);
+          list.unshift(boost.entry);
+        }
       }
 
       if ((q.toUpperCase().includes('OILUSD') || q.toUpperCase() === 'OIL') && !q.toUpperCase().includes('BRENT')) {

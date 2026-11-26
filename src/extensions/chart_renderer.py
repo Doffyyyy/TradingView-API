@@ -3,6 +3,18 @@ import json
 import math
 from PIL import Image, ImageDraw, ImageFont
 
+def fmt_price(p):
+    abs_p = abs(p)
+    if abs_p >= 1000:
+        return f"{p:,.2f}"
+    if abs_p >= 1:
+        return f"{p:.2f}"
+    if abs_p >= 0.1:
+        return f"{p:.4f}"
+    if abs_p >= 0.001:
+        return f"{p:.6f}"
+    return f"{p:.8f}"
+
 def render_chart(candles, meta, output_path):
     width, height = 900, 520
     img = Image.new('RGB', (width, height), color='#0f1117')
@@ -12,7 +24,7 @@ def render_chart(candles, meta, output_path):
     top_margin = 85
     bottom_margin = 60
     left_margin = 20
-    right_margin = 85
+    right_margin = 96
 
     chart_w = width - left_margin - right_margin
     chart_h = height - top_margin - bottom_margin
@@ -30,7 +42,7 @@ def render_chart(candles, meta, output_path):
         y = top_margin + int(chart_h * (i / num_grid))
         draw.line([(left_margin, y), (width - right_margin, y)], fill='#1a1e2a', width=1)
         grid_price = max_price - (price_range * (i / num_grid))
-        draw.text((width - right_margin + 8, y - 6), f"{grid_price:.2f}", fill='#6b7280')
+        draw.text((width - right_margin + 8, y - 6), fmt_price(grid_price), fill='#6b7280')
 
     # Draw Candlesticks
     n = len(candles)
@@ -72,15 +84,16 @@ def render_chart(candles, meta, output_path):
 
     # Title & Price
     draw.text((20, 15), f"{sym}", fill='#ffffff')
-    draw.text((20, 38), f"LAST: {last_price:.2f}", fill='#26a69a')
+    draw.text((20, 38), f"LAST: {fmt_price(last_price)}", fill='#26a69a')
 
     # Badges on top right
-    bx = 320
-    draw.rectangle([(bx, 15), (bx + 160, 48)], fill='#181b24', outline='#2b3040')
+    strat_disp = (strat[:22] + '...') if len(strat) > 25 else strat
+    bx = 300
+    draw.rectangle([(bx, 15), (bx + 185, 48)], fill='#181b24', outline='#2b3040')
     draw.text((bx + 10, 18), "STRATEGY", fill='#8c93a3')
-    draw.text((bx + 10, 32), f"{strat}", fill='#38bdf8')
+    draw.text((bx + 10, 32), f"{strat_disp}", fill='#38bdf8')
 
-    bx += 175
+    bx += 195
     draw.rectangle([(bx, 15), (bx + 110, 48)], fill='#181b24', outline='#2b3040')
     draw.text((bx + 10, 18), "SHARPE", fill='#8c93a3')
     draw.text((bx + 10, 32), f"{sharpe}", fill='#4ade80')
