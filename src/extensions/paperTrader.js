@@ -3,6 +3,7 @@ const path = require('path');
 const { computeAllIndicators, getMultiTimeframeAnalysis, getBtcMarketRegime, fetchCandles } = require('./indicators');
 const { validateSymbol } = require('./validation');
 const { sendTelegramAlert } = require('./alert');
+const { variationalConnector } = require('./variational');
 const axios = require('axios');
 const WebSocket = require('ws');
 
@@ -565,6 +566,36 @@ class PaperTradingEngine {
         notes: `Trade exited. ${reason}. Daily Realized PnL: $${this.portfolio.dailyRealizedPnl.toFixed(2)}`,
       }).catch(() => {});
     } catch (e) {}
+
+    if (frac >= 0.99) {
+      this.mirrorToVariationalTestnet('CLOSE', { symbol: pos.symbol }).catch(() => {});
+    }
+  }
+
+  async mirrorToVariationalTestnet(action, { symbol, side, takeProfit, stopLoss } = {}) {
+    try {
+      const target = variationalConnector.getMirrorTargetUserId();
+      if (!target) return;
+      if (action === 'OPEN') {
+        const res = await variationalConnector.placeOrder(target.userId, {
+          symbol,
+          side: side === 'LONG' ? 'buy' : 'sell',
+          type: 'market',
+          notionalUsd: target.mirrorNotionalUsd || 100,
+          max_slippage: target.maxSlippage || '0.005',
+          takeProfitPrice: takeProfit,
+          stopLossPrice: stopLoss,
+        });
+        const ord = res?.order || {};
+        this.log(`[Variational Testnet Mirror] OPENED ${ord.side || side} ${ord.size || ''} ${ord.symbol || symbol} (status: ${ord.status || 'queued'}, id: ${ord.order_id || '--'})`);
+      } else if (action === 'CLOSE') {
+        const res = await variationalConnector.closePosition(target.userId, symbol, target.maxSlippage || '0.005');
+        const ord = res?.order || {};
+        this.log(`[Variational Testnet Mirror] CLOSED ${ord.symbol || symbol} (status: ${ord.status || 'queued'}, id: ${ord.order_id || '--'})`);
+      }
+    } catch (err) {
+      this.log(`[Variational Testnet Mirror] Skipped ${action} ${symbol}: ${err.message}`);
+    }
   }
 
   async openPosition(symbol, side, strategy, reason, leverage = 1, orderFlow = null, rlmData = null, customSl = null) {
@@ -747,6 +778,8 @@ class PaperTradingEngine {
         notes: `New trade dispatched. Margin: $${margin} (${lev}x Lev). TP: $${formatTokenPrice(takeProfit)}, SL: $${formatTokenPrice(stopLoss)}. ${reason}`,
       }).catch(() => {});
     } catch (e) {}
+
+    this.mirrorToVariationalTestnet('OPEN', { symbol, side, takeProfit, stopLoss }).catch(() => {});
 
     return position;
   }

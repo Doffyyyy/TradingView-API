@@ -2866,9 +2866,9 @@ const htmlContent = `<!DOCTYPE html>
                 <span>Hyperliquid API</span>
                 <span class="sh-badge sh-badge-destructive" id="hl-agent-status-badge" style="height: 18px; font-size: 10px;">Chưa cài</span>
               </button>
-              <button class="sh-btn-outline" id="btn-open-vario-modal" type="button" title="Cấu hình kết nối Variational (Omni DEX)">
+              <button class="sh-btn-outline" id="btn-open-vario-modal" type="button" title="Cấu hình &amp; Đặt lệnh Variational Omni (Testnet API v1)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                <span>Variational Omni</span>
+                <span>Variational Omni (Testnet)</span>
                 <span class="sh-badge sh-badge-destructive" id="vario-agent-status-badge" style="height: 18px; font-size: 10px;">Chưa cài</span>
               </button>
             </div>
@@ -3826,7 +3826,7 @@ const htmlContent = `<!DOCTYPE html>
 
 <!-- Quant Strategy Studio & Custom Code Modal -->
         <div id="strategy-studio-modal" class="web3-modal-overlay" style="display: none; z-index: 10050;">
-          <div class="web3-modal-card" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; background: #0b0f19; border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.15); border-radius: 14px;">
+          <div class="web3-modal-card" style="max-width: 980px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; background: #0b0f19; border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.15); border-radius: 14px;">
             <!-- Modal Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); flex-shrink: 0;">
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -3851,7 +3851,7 @@ const htmlContent = `<!DOCTYPE html>
                 🔑 Cấu Hình API Bot (Hyperliquid Agent)
               </button>
               <button class="strat-tab-btn" id="tab-strat-vario" style="padding: 8px 16px; font-size: 11.5px; font-weight: 700; color: #8c93a3; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer;">
-                🌐 Sàn Variational (Omni RFQ Airdrop)
+                🌐 Variational Omni (Testnet API v1)
               </button>
             </div>
 
@@ -4016,127 +4016,239 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
               </div>
 
-              <!-- VIEW 4: Variational Protocol (Omni RFQ Airdrop) Configuration -->
+              <!-- VIEW 4: Variational Protocol (Omni Testnet API v1 & Order Console) -->
               <div id="strat-view-vario" style="display: none;">
                 <!-- Header Banner -->
-                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                  <div>
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 280px;">
                     <strong style="color: #34d399; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                      <span>🌐 Cấu Hình Variational Protocol (Omni DEX - Arbitrum Airdrop)</span>
+                      <span>🌐 Variational Omni DEX — Testnet API v1 (Ed25519 Signed RFQ)</span>
                     </strong>
-                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 3px; line-height: 1.5;">
-                      Sàn phái sinh RFQ <strong>Zero-Fee (0% phí giao dịch)</strong> trên Arbitrum. <strong>32% tổng cung token $VAR</strong> (Genesis) sẽ được airdrop 100% không khóa tại TGE Q4/2026 chia theo Points. Bot tự động thực thi tín hiệu từ chiến lược đang chọn để cày Volume & Points an toàn.
+                    <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px; line-height: 1.45;">
+                      Chuẩn ký <code>variational-omni-api/v1</code> qua <code>api.omni.testnet.variational.io</code>. Tạo Ed25519 API Key (scope <strong>read + trade</strong>) &amp; nhận Testnet USDC Faucet tại web app Testnet, sau đó dán Private Key (seed 32-byte) để kiểm tra tài khoản và gửi lệnh trực tiếp.
                     </div>
                   </div>
-                  <a href="https://omni.variational.io" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
-                    ↗ Mở Omni App (Arbitrum)
+                  <a id="vario-open-app-link" href="https://omni.testnet.variational.io" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 10.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700; text-decoration: none; border-radius: 6px; white-space: nowrap;">
+                    ↗ Mở Omni Testnet (Faucet &amp; API Keys)
                   </a>
                 </div>
 
-                <!-- Live Airdrop Stats Grid -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
-                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
-                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">TRẠNG THÁI KẾT NỐI</div>
-                    <div id="vario-state-pill" style="margin-top: 4px; font-size: 11px; font-weight: 800; color: #f87171;">● CHƯA CẤU HÌNH</div>
+                <!-- 4 Live Account KPI Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                    <div style="font-size: 9px; color: #8c93a3; font-weight: 700;">TRẠNG THÁI API v1</div>
+                    <div id="vario-state-pill" style="margin-top: 3px; font-size: 11px; font-weight: 800; color: #f87171;">● CHƯA CẤU HÌNH</div>
                   </div>
-                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
-                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">VOLUME ĐÃ CÀY</div>
-                    <div id="vario-stat-volume" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #38bdf8;">$0.00</div>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                    <div style="font-size: 9px; color: #8c93a3; font-weight: 700;">ACCOUNT EQUITY (USDC)</div>
+                    <div id="vario-stat-equity" style="margin-top: 3px; font-size: 13px; font-weight: 800; color: #38bdf8; font-family: monospace;">$0.00</div>
                   </div>
-                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
-                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">ĐIỂM POINTS ƯỚC TÍNH</div>
-                    <div id="vario-stat-points" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #fbbf24;">0.0 pts</div>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                    <div style="font-size: 9px; color: #8c93a3; font-weight: 700;">CROSS AVAILABLE (USDC)</div>
+                    <div id="vario-stat-available" style="margin-top: 3px; font-size: 13px; font-weight: 800; color: #34d399; font-family: monospace;">$0.00</div>
                   </div>
-                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px 12px;">
-                    <div style="font-size: 9.5px; color: #8c93a3; font-weight: 700;">SỐ LỆNH ĐÃ THỰC THI</div>
-                    <div id="vario-stat-trades" style="margin-top: 4px; font-size: 13px; font-weight: 800; color: #fff;">0 lệnh</div>
-                  </div>
-                </div>
-
-                <!-- Input Fields Grid -->
-                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
-                  <!-- Main User Address -->
-                  <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ ARBITRUM (EVM WALLET ADDRESS) *</label>
-                      <button type="button" class="btn" id="btn-vario-use-current-wallet" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví Đang Kết Nối</button>
-                    </div>
-                    <input type="text" id="vario-input-wallet-addr" placeholder="0x... Địa chỉ ví Arbitrum bạn dùng trên Variational Omni" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; font-family: monospace; border-radius: 6px; outline: none;">
-                  </div>
-
-                  <!-- Agent Key -->
-                  <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <label style="font-size: 10px; color: #94a3b8; font-weight: 700;">PRIVATE KEY / KHÓA BÍ MẬT GIAO DỊCH (TÙY CHỌN TỰ ĐỘNG KÝ)</label>
-                      <button type="button" class="btn" id="btn-toggle-vario-key-vis" style="padding: 2px 8px; font-size: 9.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">👁️ Hiện Khóa</button>
-                    </div>
-                    <input type="password" id="vario-input-key" placeholder="0x... (Tùy chọn: Nhập nếu muốn bot tự động ký RFQ trade gasless trên Arbitrum)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #34d399; padding: 8px 10px; font-size: 11.5px; font-family: monospace; border-radius: 6px; outline: none;">
-                    <span style="display: block; font-size: 9.5px; color: #64748b; margin-top: 3px;">Khóa được lưu cục bộ an toàn trên máy bạn. Nếu để trống, bạn vẫn có thể theo dõi thống kê và cày theo chiến lược.</span>
-                  </div>
-
-                  <!-- Leverage & Slippage -->
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                      <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">ĐÒN BẨY MẶC ĐỊNH (LEVERAGE)</label>
-                      <select id="vario-select-leverage" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                        <option value="1">1x (Spot Margin - An toàn tuyệt đối)</option>
-                        <option value="2" selected>2x (Chuẩn quản trị rủi ro HyperView)</option>
-                        <option value="3">3x (Tối ưu volume & kiểm soát margin)</option>
-                        <option value="5">5x (Aggressive Farmer)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style="display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 700;">SLIPPAGE TỐI ĐA (MAX SLIPPAGE)</label>
-                      <select id="vario-select-slippage" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 8px 10px; font-size: 11.5px; border-radius: 6px; outline: none;">
-                        <option value="0.001">0.1% (Tight - Bảo toàn vốn tối đa)</option>
-                        <option value="0.005" selected>0.5% (Tiêu chuẩn khuyến nghị OLP)</option>
-                        <option value="0.01">1.0% (Fast Fill)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <!-- Auto-Farm Checkbox -->
-                  <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="vario-toggle-autofarm" style="width: 16px; height: 16px; accent-color: #10b981; cursor: pointer;">
-                    <label for="vario-toggle-autofarm" style="font-size: 11px; color: #e2e8f0; font-weight: 600; cursor: pointer;">
-                      Kích hoạt Bot tự động cày Volume & Points theo chiến lược đang chọn (Strategy Auto-Routing)
-                    </label>
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                    <div style="font-size: 9px; color: #8c93a3; font-weight: 700;">UNREALIZED PNL (USDC)</div>
+                    <div id="vario-stat-upnl" style="margin-top: 3px; font-size: 13px; font-weight: 800; color: #e2e8f0; font-family: monospace;">$0.00</div>
                   </div>
                 </div>
 
-                <!-- Market Spread Discipline & Real-time Stats -->
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 10.5px; line-height: 1.6;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <strong style="color: #cbd5e1;">📊 Bảng Báo Giá Thanh Khoản & Độ Lệch Spread (OLP L1):</strong>
-                    <span id="vario-markets-count-badge" style="font-size: 9.5px; color: #38bdf8;">Đang kết nối API v2...</span>
-                  </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div style="background: #080c14; padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);">
-                      <div style="color: #f59e0b; font-weight: 800;">BTC-PERP (Cặp khuyên dùng cày volume)</div>
-                      <div style="display: flex; justify-content: space-between; margin-top: 3px;">
-                        <span>Mark Price: <strong id="vario-live-btc-price" style="color: #fff;">--</strong></span>
-                        <span>Spread: <strong id="vario-live-btc-spread" style="color: #4ade80;">~1.0 bps (0.01%)</strong></span>
+                <!-- 2-Column Workspace: Left = Ed25519 Config, Right = Direct Testnet Order Ticket -->
+                <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 12px; margin-bottom: 12px;">
+                  <!-- Left Panel: API Key & Settings -->
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 9px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 11px; font-weight: 800; color: #e2e8f0;">🔐 CẤU HÌNH ED25519 API KEY</span>
+                      <span id="vario-public-key-display" style="font-size: 9.5px; font-family: monospace; color: #64748b;">Public Key: chưa có</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">MÔI TRƯỜNG (ENV)</label>
+                        <select id="vario-select-env" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #34d399; padding: 6px 8px; font-size: 11px; font-weight: 700; border-radius: 6px; outline: none;">
+                          <option value="testnet" selected>Testnet (api.omni.testnet)</option>
+                          <option value="prod">Mainnet (api.omni)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">MAX SLIPPAGE MẶC ĐỊNH</label>
+                        <select id="vario-select-slippage" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; border-radius: 6px; outline: none;">
+                          <option value="0.001">0.1% (0.001)</option>
+                          <option value="0.005" selected>0.5% (0.005)</option>
+                          <option value="0.01">1.0% (0.010)</option>
+                          <option value="0.02">2.0% (0.020)</option>
+                        </select>
                       </div>
                     </div>
-                    <div style="background: #080c14; padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04);">
-                      <div style="color: #60a5fa; font-weight: 800;">ETH-PERP</div>
-                      <div style="display: flex; justify-content: space-between; margin-top: 3px;">
-                        <span>Mark Price: <strong id="vario-live-eth-price" style="color: #fff;">--</strong></span>
-                        <span>Spread: <strong id="vario-live-eth-spread" style="color: #4ade80;">~1.2 bps (0.012%)</strong></span>
+
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <label style="font-size: 9.5px; color: #94a3b8; font-weight: 700;">ED25519 PRIVATE KEY (API SECRET) *</label>
+                        <button type="button" class="btn" id="btn-toggle-vario-key-vis" style="padding: 1px 7px; font-size: 9px; background: rgba(255,255,255,0.06); color: #cbd5e1;">👁️ Hiện Khóa</button>
+                      </div>
+                      <input type="password" id="vario-input-api-key" placeholder="32-byte hex seed (64 ký tự), Base64 hoặc PEM PKCS#8" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #34d399; padding: 7px 9px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                      <span id="vario-masked-key-hint" style="display: block; font-size: 9px; color: #64748b; margin-top: 2px;">Mã hóa AES-256-GCM cục bộ. Không nhập EVM Private Key của ví chính vào đây.</span>
+                    </div>
+
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <label style="font-size: 9.5px; color: #94a3b8; font-weight: 700;">ĐỊA CHỈ VÍ ARBITRUM (TÙY CHỌN)</label>
+                        <button type="button" class="btn" id="btn-vario-use-current-wallet" style="padding: 1px 7px; font-size: 9px; background: rgba(255,255,255,0.06); color: #cbd5e1;">📋 Lấy Từ Ví</button>
+                      </div>
+                      <input type="text" id="vario-input-wallet-addr" placeholder="0x... (tùy chọn kiểm tra ETH gas Sepolia/Arbitrum)" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 9px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                    </div>
+
+                    <!-- Optional Opt-in PaperTrader Testnet Mirror -->
+                    <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 7px 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                      <label for="vario-toggle-automirror" style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #cbd5e1; font-weight: 600; cursor: pointer;">
+                        <input type="checkbox" id="vario-toggle-automirror" style="width: 14px; height: 14px; accent-color: #38bdf8; cursor: pointer;">
+                        <span>Auto-Mirror tín hiệu PaperTrader → Testnet</span>
+                      </label>
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <input type="number" id="vario-input-mirror-notional" value="100" min="10" step="10" style="width: 64px; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 3px 6px; font-size: 10.5px; font-family: monospace; border-radius: 4px; text-align: right;">
+                        <span style="font-size: 9.5px; color: #94a3b8;">USDC</span>
                       </div>
                     </div>
+
+                    <div id="vario-config-feedback" style="display: none; font-size: 10px; padding: 6px 8px; border-radius: 5px; line-height: 1.4;"></div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px;">
+                      <button type="button" class="btn active" id="btn-save-vario-agent" style="flex: 1; padding: 6px 10px; font-size: 10.5px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình</button>
+                      <button type="button" class="btn" id="btn-verify-vario-agent" style="padding: 6px 10px; font-size: 10.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700;">⚡ Verify Testnet</button>
+                      <button type="button" class="btn" id="btn-sync-vario-dashboard" style="padding: 6px 9px; font-size: 10.5px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 700;">🔄 Sync</button>
+                      <button type="button" class="btn" id="btn-del-vario-agent" style="padding: 6px 9px; font-size: 10.5px; color: #ef4444; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️</button>
+                    </div>
                   </div>
-                  <div style="margin-top: 6px; font-size: 9.5px; color: #94a3b8;">
-                    💡 <em>Nguyên tắc kỷ luật cày volume:</em> Sàn Variational không thu phí giao dịch (Zero Fee) nhưng thu phí qua Spread. Luôn tập trung cày volume trên BTC & ETH để tối thiểu hóa chi phí spread.
+
+                  <!-- Right Panel: Direct Testnet Order Ticket -->
+                  <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 9px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                      <span style="font-size: 11px; font-weight: 800; color: #e2e8f0;">🚀 GỬI LỆNH TRỰC TIẾP LÊN VARIATIONAL</span>
+                      <span id="vario-order-market-hint" style="font-size: 9.5px; font-family: monospace; color: #38bdf8;">Mark: --</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">THỊ TRƯỜNG (SYMBOL)</label>
+                        <div style="display: flex; gap: 4px;">
+                          <input type="text" id="vario-order-symbol" value="BTC-PERP" list="vario-instruments-list" style="flex: 1; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; font-family: monospace; font-weight: 700; border-radius: 6px; outline: none;">
+                          <button type="button" id="btn-vario-refresh-ticker" class="btn" title="Lấy giá Mark &amp; step mới nhất" style="padding: 5px 8px; font-size: 10.5px; background: rgba(255,255,255,0.06); color: #cbd5e1;">↻</button>
+                        </div>
+                        <datalist id="vario-instruments-list">
+                          <option value="BTC-PERP"></option>
+                          <option value="ETH-PERP"></option>
+                          <option value="SOL-PERP"></option>
+                          <option value="ARB-PERP"></option>
+                        </datalist>
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">CHIỀU LỆNH (SIDE)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                          <button type="button" id="btn-vario-side-buy" style="padding: 6px 8px; font-size: 10.5px; font-weight: 800; border-radius: 6px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.22); color: #34d399; cursor: pointer;">BUY / LONG</button>
+                          <button type="button" id="btn-vario-side-sell" style="padding: 6px 8px; font-size: 10.5px; font-weight: 800; border-radius: 6px; border: 1px solid #23293a; background: #07090e; color: #94a3b8; cursor: pointer;">SELL / SHORT</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">LOẠI LỆNH</label>
+                        <select id="vario-order-type" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; border-radius: 6px; outline: none;">
+                          <option value="market" selected>Market (RFQ)</option>
+                          <option value="limit">Limit</option>
+                          <option value="take_profit">Take Profit</option>
+                          <option value="stop_loss">Stop Loss</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">ĐƠN VỊ NHẬP</label>
+                        <select id="vario-order-size-mode" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; border-radius: 6px; outline: none;">
+                          <option value="notional" selected>Notional (USDC)</option>
+                          <option value="size">Base Size</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style="display: flex; justify-content: space-between;">
+                          <label style="font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">KHỐI LƯỢNG</label>
+                          <span id="vario-order-size-est" style="font-size: 9px; color: #64748b; font-family: monospace;">--</span>
+                        </div>
+                        <input type="number" id="vario-order-amount" value="100" min="0" step="any" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                      </div>
+                    </div>
+
+                    <!-- Dynamic Price / Trigger Row -->
+                    <div id="vario-order-price-row" style="display: none; grid-template-columns: 1.3fr 1fr; gap: 8px;">
+                      <div>
+                        <label id="vario-order-price-label" style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">LIMIT PRICE (USDC)</label>
+                        <input type="number" id="vario-order-price" placeholder="Ví dụ: 60500" step="any" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">TRIGGER BY</label>
+                        <select id="vario-order-trigger-by" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 6px 8px; font-size: 11px; border-radius: 6px; outline: none;">
+                          <option value="mark" selected>Mark Price</option>
+                          <option value="quote">Quote Price</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Attached TP / SL (Market & Limit only) -->
+                    <div id="vario-order-tpsl-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">TAKE PROFIT (TÙY CHỌN)</label>
+                        <input type="number" id="vario-order-tp" placeholder="Giá TP" step="any" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #4ade80; padding: 6px 8px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 9.5px; color: #94a3b8; margin-bottom: 3px; font-weight: 700;">STOP LOSS (TÙY CHỌN)</label>
+                        <input type="number" id="vario-order-sl" placeholder="Giá SL" step="any" style="width: 100%; background: #07090e; border: 1px solid #23293a; color: #f87171; padding: 6px 8px; font-size: 11px; font-family: monospace; border-radius: 6px; outline: none;">
+                      </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <span style="font-size: 9.5px; color: #94a3b8; font-weight: 700;">Slippage:</span>
+                          <input type="number" id="vario-order-slippage" value="0.005" step="0.001" min="0.0001" max="1" style="width: 62px; background: #07090e; border: 1px solid #23293a; color: #fff; padding: 4px 6px; font-size: 10.5px; font-family: monospace; border-radius: 4px;">
+                        </div>
+                        <label id="vario-reduce-only-wrap" style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #cbd5e1; cursor: pointer;">
+                          <input type="checkbox" id="vario-order-reduce-only" style="accent-color: #f59e0b; cursor: pointer;">
+                          <span>Reduce Only</span>
+                        </label>
+                      </div>
+                      <button type="button" id="btn-vario-submit-order" style="padding: 7px 14px; font-size: 11px; font-weight: 800; background: #10b981; color: #04130d; border: none; border-radius: 6px; cursor: pointer;">🚀 Gửi Lệnh Testnet</button>
+                    </div>
+
+                    <div id="vario-order-result" style="display: none; font-size: 10px; font-family: monospace; padding: 7px 9px; border-radius: 6px; line-height: 1.45; word-break: break-word;"></div>
                   </div>
                 </div>
 
-                <!-- Action Controls -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
-                  <button class="btn" id="btn-del-vario-agent" style="padding: 7px 14px; font-size: 11px; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">🗑️ Xóa Cấu Hình</button>
-                  <div style="display: flex; gap: 8px;">
-                    <button class="btn" id="btn-verify-vario-agent" style="padding: 7px 14px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-weight: 700;">⚡ Kiểm Tra Kết Nối (Verify Network)</button>
-                    <button class="btn active" id="btn-save-vario-agent" style="padding: 7px 18px; font-size: 11px; background: #059669; color: #fff; font-weight: 700;">💾 Lưu Cấu Hình Variational</button>
+                <!-- Live Testnet Positions / Orders / Fills Tabs -->
+                <div style="background: #0a0f18; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 6px;">
+                      <button type="button" id="btn-vario-subtab-positions" class="btn active" style="padding: 4px 10px; font-size: 10.5px; font-weight: 700; background: rgba(16, 185, 129, 0.16); border: 1px solid #10b981; color: #34d399;">Positions (<span id="vario-cnt-positions">0</span>)</button>
+                      <button type="button" id="btn-vario-subtab-orders" class="btn" style="padding: 4px 10px; font-size: 10.5px; font-weight: 700; background: transparent; border: 1px solid #23293a; color: #94a3b8;">Open Orders (<span id="vario-cnt-orders">0</span>)</button>
+                      <button type="button" id="btn-vario-subtab-fills" class="btn" style="padding: 4px 10px; font-size: 10.5px; font-weight: 700; background: transparent; border: 1px solid #23293a; color: #94a3b8;">Recent Fills (<span id="vario-cnt-fills">0</span>)</button>
+                    </div>
+                    <button type="button" id="btn-vario-cancel-all" class="btn" style="display: none; padding: 3px 9px; font-size: 10px; color: #f87171; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700;">✕ Hủy Tất Cả Lệnh</button>
+                  </div>
+
+                  <div id="vario-panel-positions" style="max-height: 155px; overflow-y: auto; font-size: 10.5px;">
+                    <div style="color: #64748b; padding: 12px; text-align: center;">Nhập Ed25519 API Key Testnet và bấm Sync để xem vị thế thực tế.</div>
+                  </div>
+                  <div id="vario-panel-orders" style="display: none; max-height: 155px; overflow-y: auto; font-size: 10.5px;">
+                    <div style="color: #64748b; padding: 12px; text-align: center;">Không có lệnh đang chờ.</div>
+                  </div>
+                  <div id="vario-panel-fills" style="display: none; max-height: 155px; overflow-y: auto; font-size: 10.5px;">
+                    <div style="color: #64748b; padding: 12px; text-align: center;">Chưa có lịch sử khớp lệnh.</div>
+                  </div>
+                </div>
+
+                <!-- Compact Live OLP Reference Mini-Bar -->
+                <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 8px 12px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <span style="color: #94a3b8;">📊 <strong style="color: #cbd5e1;">OLP Feed:</strong> <span id="vario-markets-count-badge" style="color: #38bdf8;">Đang tải stats v2...</span></span>
+                  <div style="display: flex; gap: 14px; font-family: monospace;">
+                    <span>BTC-PERP: <strong id="vario-live-btc-price" style="color: #fff;">--</strong> (<span id="vario-live-btc-spread" style="color: #4ade80;">--</span>)</span>
+                    <span>ETH-PERP: <strong id="vario-live-eth-price" style="color: #fff;">--</strong> (<span id="vario-live-eth-spread" style="color: #4ade80;">--</span>)</span>
                   </div>
                 </div>
               </div>
@@ -11372,8 +11484,322 @@ const htmlContent = `<!DOCTYPE html>
     });
 
     // ========================================================
-    // VARIATIONAL PROTOCOL (OMNI ARBITRUM) CLIENT CONTROLLER
+    // VARIATIONAL PROTOCOL (OMNI TESTNET API v1 — ED25519)
     // ========================================================
+    let varioOrderSide = "buy";
+    let varioActiveSubtab = "positions";
+    let varioInstrumentsMap = {};
+    let varioCurrentTickerPrice = null;
+
+    function escapeVarioHtml(str) {
+      return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function fmtVarioUsd(val, decimals) {
+      const n = parseFloat(val);
+      if (!Number.isFinite(n)) return "$0.00";
+      const d = typeof decimals === "number" ? decimals : (Math.abs(n) >= 100 ? 2 : Math.abs(n) >= 1 ? 3 : 5);
+      const sign = n < 0 ? "-" : "";
+      return sign + "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+
+    function setVarioFeedback(type, msg) {
+      const el = document.getElementById("vario-config-feedback");
+      if (!el) return;
+      if (!msg) {
+        el.style.display = "none";
+        el.textContent = "";
+        return;
+      }
+      el.style.display = "block";
+      el.textContent = msg;
+      if (type === "ok") {
+        el.style.background = "rgba(16, 185, 129, 0.14)";
+        el.style.border = "1px solid rgba(16, 185, 129, 0.35)";
+        el.style.color = "#34d399";
+      } else if (type === "info") {
+        el.style.background = "rgba(56, 189, 248, 0.12)";
+        el.style.border = "1px solid rgba(56, 189, 248, 0.35)";
+        el.style.color = "#38bdf8";
+      } else {
+        el.style.background = "rgba(239, 68, 68, 0.14)";
+        el.style.border = "1px solid rgba(239, 68, 68, 0.35)";
+        el.style.color = "#f87171";
+      }
+    }
+
+    function setVarioOrderResult(isOk, htmlOrText) {
+      const el = document.getElementById("vario-order-result");
+      if (!el) return;
+      if (!htmlOrText) {
+        el.style.display = "none";
+        el.innerHTML = "";
+        return;
+      }
+      el.style.display = "block";
+      el.style.background = isOk ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.14)";
+      el.style.border = isOk ? "1px solid rgba(16, 185, 129, 0.35)" : "1px solid rgba(239, 68, 68, 0.35)";
+      el.style.color = isOk ? "#34d399" : "#f87171";
+      el.innerHTML = htmlOrText;
+    }
+
+    function updateVarioOrderTypeUI() {
+      const typeSel = document.getElementById("vario-order-type");
+      const priceRow = document.getElementById("vario-order-price-row");
+      const priceLbl = document.getElementById("vario-order-price-label");
+      const priceInput = document.getElementById("vario-order-price");
+      const tpslRow = document.getElementById("vario-order-tpsl-row");
+      const reduceWrap = document.getElementById("vario-reduce-only-wrap");
+      const t = typeSel ? typeSel.value : "market";
+
+      if (t === "market") {
+        if (priceRow) priceRow.style.display = "none";
+        if (tpslRow) tpslRow.style.display = "grid";
+        if (reduceWrap) reduceWrap.style.display = "flex";
+      } else if (t === "limit") {
+        if (priceRow) priceRow.style.display = "grid";
+        if (priceLbl) priceLbl.textContent = "LIMIT PRICE (USDC)";
+        if (priceInput) priceInput.placeholder = "Ví dụ: 60500";
+        if (tpslRow) tpslRow.style.display = "grid";
+        if (reduceWrap) reduceWrap.style.display = "flex";
+      } else {
+        if (priceRow) priceRow.style.display = "grid";
+        if (priceLbl) priceLbl.textContent = "TRIGGER PRICE (USDC)";
+        if (priceInput) priceInput.placeholder = "Giá kích hoạt TP / SL";
+        if (tpslRow) tpslRow.style.display = "none";
+        if (reduceWrap) reduceWrap.style.display = "none";
+      }
+      updateVarioSizeEstimate();
+    }
+
+    function updateVarioSizeEstimate() {
+      const estEl = document.getElementById("vario-order-size-est");
+      if (!estEl) return;
+      const mode = document.getElementById("vario-order-size-mode")?.value || "notional";
+      const amt = parseFloat(document.getElementById("vario-order-amount")?.value || "0");
+      const px = parseFloat(document.getElementById("vario-order-price")?.value || "0") || varioCurrentTickerPrice || 0;
+      if (!Number.isFinite(amt) || amt <= 0 || px <= 0) {
+        estEl.textContent = "--";
+        return;
+      }
+      if (mode === "notional") {
+        estEl.textContent = "≈ " + (amt / px).toFixed(5) + " base";
+      } else {
+        estEl.textContent = "≈ $" + (amt * px).toFixed(2);
+      }
+    }
+
+    function switchVarioSubtab(tabName) {
+      varioActiveSubtab = tabName;
+      const map = {
+        positions: { btn: "btn-vario-subtab-positions", panel: "vario-panel-positions" },
+        orders: { btn: "btn-vario-subtab-orders", panel: "vario-panel-orders" },
+        fills: { btn: "btn-vario-subtab-fills", panel: "vario-panel-fills" },
+      };
+      Object.keys(map).forEach(function(k) {
+        const b = document.getElementById(map[k].btn);
+        const p = document.getElementById(map[k].panel);
+        const isActive = k === tabName;
+        if (b) {
+          b.style.background = isActive ? "rgba(16, 185, 129, 0.16)" : "transparent";
+          b.style.borderColor = isActive ? "#10b981" : "#23293a";
+          b.style.color = isActive ? "#34d399" : "#94a3b8";
+        }
+        if (p) p.style.display = isActive ? "block" : "none";
+      });
+      const cancelAllBtn = document.getElementById("btn-vario-cancel-all");
+      if (cancelAllBtn) {
+        cancelAllBtn.style.display = tabName === "orders" ? "inline-block" : "none";
+      }
+    }
+
+    function renderVarioPositions(list) {
+      const box = document.getElementById("vario-panel-positions");
+      const cnt = document.getElementById("vario-cnt-positions");
+      if (cnt) cnt.textContent = String(list.length);
+      if (!box) return;
+      if (list.length === 0) {
+        box.innerHTML = '<div style="color: #64748b; padding: 12px; text-align: center;">Không có vị thế đang mở trên Variational.</div>';
+        return;
+      }
+      let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-family:monospace;">' +
+        '<thead><tr style="color:#64748b; border-bottom:1px solid rgba(255,255,255,0.08);">' +
+        '<th style="padding:4px 6px;">Symbol</th><th>Size</th><th>Entry</th><th>Mark</th><th>Lev</th><th>Liq</th><th>uPnL</th><th style="text-align:right;">Action</th>' +
+        '</tr></thead><tbody>';
+      list.forEach(function(p) {
+        const sz = parseFloat(p.size || "0");
+        const sideColor = sz >= 0 ? "#34d399" : "#f87171";
+        const upnl = parseFloat(p.unrealized_pnl || "0");
+        const upnlColor = upnl >= 0 ? "#4ade80" : "#f87171";
+        const symEsc = escapeVarioHtml(p.symbol || "");
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+          '<td style="padding:5px 6px; font-weight:700; color:#fff;">' + symEsc + '</td>' +
+          '<td style="color:' + sideColor + '; font-weight:700;">' + (sz >= 0 ? "+" : "") + escapeVarioHtml(p.size) + '</td>' +
+          '<td style="color:#cbd5e1;">$' + escapeVarioHtml(p.entry_price || "--") + '</td>' +
+          '<td style="color:#cbd5e1;">$' + escapeVarioHtml(p.mark_price || "--") + '</td>' +
+          '<td style="color:#94a3b8;">' + escapeVarioHtml(p.leverage || "--") + 'x (' + escapeVarioHtml(p.margin_mode || "cross") + ')</td>' +
+          '<td style="color:#f59e0b;">$' + escapeVarioHtml(p.liquidation_price || "--") + '</td>' +
+          '<td style="color:' + upnlColor + '; font-weight:700;">' + fmtVarioUsd(upnl, 2) + '</td>' +
+          '<td style="text-align:right;"><button type="button" data-action="close-pos" data-symbol="' + symEsc + '" style="padding:2px 8px; font-size:9.5px; background:rgba(239,68,68,0.16); border:1px solid rgba(239,68,68,0.4); color:#f87171; border-radius:4px; cursor:pointer; font-weight:700;">Close Market</button></td>' +
+          '</tr>';
+      });
+      html += "</tbody></table>";
+      box.innerHTML = html;
+    }
+
+    function renderVarioOrders(list) {
+      const box = document.getElementById("vario-panel-orders");
+      const cnt = document.getElementById("vario-cnt-orders");
+      if (cnt) cnt.textContent = String(list.length);
+      if (!box) return;
+      if (list.length === 0) {
+        box.innerHTML = '<div style="color: #64748b; padding: 12px; text-align: center;">Không có lệnh đang chờ khớp.</div>';
+        return;
+      }
+      let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-family:monospace;">' +
+        '<thead><tr style="color:#64748b; border-bottom:1px solid rgba(255,255,255,0.08);">' +
+        '<th style="padding:4px 6px;">Symbol</th><th>Type</th><th>Side</th><th>Size</th><th>Price/Trigger</th><th>Status</th><th style="text-align:right;">Action</th>' +
+        '</tr></thead><tbody>';
+      list.forEach(function(o) {
+        const sideColor = o.side === "buy" ? "#34d399" : "#f87171";
+        const px = o.price || o.trigger_price || "--";
+        const oid = escapeVarioHtml(o.order_id || "");
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+          '<td style="padding:5px 6px; font-weight:700; color:#fff;">' + escapeVarioHtml(o.symbol || "") + '</td>' +
+          '<td style="color:#cbd5e1;">' + escapeVarioHtml(o.type || "") + (o.reduce_only ? ' <span style="color:#f59e0b;">(RO)</span>' : "") + '</td>' +
+          '<td style="color:' + sideColor + '; font-weight:700;">' + escapeVarioHtml((o.side || "").toUpperCase()) + '</td>' +
+          '<td style="color:#e2e8f0;">' + escapeVarioHtml(o.size || "--") + '</td>' +
+          '<td style="color:#38bdf8;">' + escapeVarioHtml(px) + '</td>' +
+          '<td style="color:#fbbf24;">' + escapeVarioHtml(o.status || "") + '</td>' +
+          '<td style="text-align:right;"><button type="button" data-action="cancel-order" data-order-id="' + oid + '" style="padding:2px 8px; font-size:9.5px; background:rgba(239,68,68,0.16); border:1px solid rgba(239,68,68,0.4); color:#f87171; border-radius:4px; cursor:pointer; font-weight:700;">Cancel</button></td>' +
+          '</tr>';
+      });
+      html += "</tbody></table>";
+      box.innerHTML = html;
+    }
+
+    function renderVarioFills(list) {
+      const box = document.getElementById("vario-panel-fills");
+      const cnt = document.getElementById("vario-cnt-fills");
+      if (cnt) cnt.textContent = String(list.length);
+      if (!box) return;
+      if (list.length === 0) {
+        box.innerHTML = '<div style="color: #64748b; padding: 12px; text-align: center;">Chưa có lịch sử khớp lệnh.</div>';
+        return;
+      }
+      let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-family:monospace;">' +
+        '<thead><tr style="color:#64748b; border-bottom:1px solid rgba(255,255,255,0.08);">' +
+        '<th style="padding:4px 6px;">Time</th><th>Symbol</th><th>Side</th><th>Size</th><th>Fill Price</th><th>Notional</th><th>Type</th>' +
+        '</tr></thead><tbody>';
+      list.forEach(function(f) {
+        const sideColor = f.side === "buy" ? "#34d399" : "#f87171";
+        const ts = f.created_at ? new Date(f.created_at).toLocaleTimeString("vi-VN") : "--";
+        const notl = (parseFloat(f.size || "0") * parseFloat(f.price || "0"));
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+          '<td style="padding:5px 6px; color:#94a3b8;">' + escapeVarioHtml(ts) + '</td>' +
+          '<td style="font-weight:700; color:#fff;">' + escapeVarioHtml(f.symbol || "") + '</td>' +
+          '<td style="color:' + sideColor + '; font-weight:700;">' + escapeVarioHtml((f.side || "").toUpperCase()) + '</td>' +
+          '<td style="color:#e2e8f0;">' + escapeVarioHtml(f.size || "--") + '</td>' +
+          '<td style="color:#38bdf8;">$' + escapeVarioHtml(f.price || "--") + '</td>' +
+          '<td style="color:#cbd5e1;">' + fmtVarioUsd(notl, 2) + '</td>' +
+          '<td style="color:#94a3b8;">' + escapeVarioHtml(f.type || "trade") + '</td>' +
+          '</tr>';
+      });
+      html += "</tbody></table>";
+      box.innerHTML = html;
+    }
+
+    async function refreshVarioTickerHint() {
+      const symInput = document.getElementById("vario-order-symbol");
+      const hintEl = document.getElementById("vario-order-market-hint");
+      const sym = (symInput?.value || "BTC-PERP").trim().toUpperCase();
+      if (!sym) return;
+      try {
+        const res = await fetch("/api/vario/ticker?symbol=" + encodeURIComponent(sym));
+        const d = await res.json();
+        const tk = d.ticker || d;
+        const inst = varioInstrumentsMap[sym];
+        const mp = tk?.mark_price ? parseFloat(tk.mark_price) : null;
+        if (mp && Number.isFinite(mp)) {
+          varioCurrentTickerPrice = mp;
+        }
+        const parts = [];
+        if (mp) parts.push("Mark: $" + mp.toLocaleString("en-US", { maximumFractionDigits: 4 }));
+        if (inst?.size_step) parts.push("step: " + inst.size_step);
+        if (inst?.min_notional) parts.push("min: $" + inst.min_notional);
+        if (hintEl) hintEl.textContent = parts.length > 0 ? parts.join(" | ") : "Mark: --";
+        updateVarioSizeEstimate();
+      } catch {}
+    }
+
+    async function loadVarioDashboard() {
+      try {
+        const res = await fetch("/api/vario/dashboard");
+        const d = await res.json();
+        if (!res.ok || !d.success) {
+          if (d.error) setVarioFeedback("err", "Lỗi đồng bộ Variational: " + d.error);
+          return;
+        }
+        if (!d.hasApiKey) return;
+
+        const pill = document.getElementById("vario-state-pill");
+        const badgeOnBar = document.getElementById("vario-agent-status-badge");
+        const statusStr = String(d.status || "ok").toUpperCase();
+        const envLabel = d.environment === "testnet" ? "TESTNET" : "MAINNET";
+
+        if (pill) {
+          pill.textContent = "● " + envLabel + " API (" + statusStr + ")";
+          pill.style.color = d.status === "ok" ? "#34d399" : "#fbbf24";
+        }
+        if (badgeOnBar) {
+          badgeOnBar.textContent = envLabel + " API";
+          badgeOnBar.style.background = "rgba(16, 185, 129, 0.2)";
+          badgeOnBar.style.borderColor = "rgba(16, 185, 129, 0.4)";
+          badgeOnBar.style.color = "#34d399";
+        }
+
+        if (d.account) {
+          const eq = document.getElementById("vario-stat-equity");
+          const av = document.getElementById("vario-stat-available");
+          const up = document.getElementById("vario-stat-upnl");
+          if (eq) eq.textContent = fmtVarioUsd(d.account.equity, 2);
+          if (av) av.textContent = fmtVarioUsd(d.account.cross?.available || 0, 2);
+          const uVal = parseFloat(d.account.unrealized_pnl || "0");
+          if (up) {
+            up.textContent = fmtVarioUsd(uVal, 2);
+            up.style.color = uVal >= 0 ? "#4ade80" : "#f87171";
+          }
+        }
+
+        if (Array.isArray(d.instruments) && d.instruments.length > 0) {
+          varioInstrumentsMap = {};
+          const dl = document.getElementById("vario-instruments-list");
+          if (dl) dl.innerHTML = "";
+          d.instruments.forEach(function(inst) {
+            if (!inst.symbol) return;
+            varioInstrumentsMap[inst.symbol.toUpperCase()] = inst;
+            if (dl) {
+              const opt = document.createElement("option");
+              opt.value = inst.symbol;
+              dl.appendChild(opt);
+            }
+          });
+        }
+
+        renderVarioPositions(Array.isArray(d.positions) ? d.positions : []);
+        renderVarioOrders(Array.isArray(d.orders) ? d.orders : []);
+        renderVarioFills(Array.isArray(d.fills) ? d.fills : []);
+        refreshVarioTickerHint();
+      } catch (e) {
+        console.warn("Error loading Vario dashboard:", e);
+      }
+    }
+
     async function loadUserVarioAgentData() {
       try {
         const res = await fetch("/api/user/vario-agent");
@@ -11382,40 +11808,54 @@ const htmlContent = `<!DOCTYPE html>
           const ag = d.agent || {};
           const pill = document.getElementById("vario-state-pill");
           const badgeOnBar = document.getElementById("vario-agent-status-badge");
-          const inWalletAddr = document.getElementById("vario-input-wallet-addr");
-          const selLev = document.getElementById("vario-select-leverage");
+          const selEnv = document.getElementById("vario-select-env");
           const selSlip = document.getElementById("vario-select-slippage");
-          const toggleFarm = document.getElementById("vario-toggle-autofarm");
-          const statVol = document.getElementById("vario-stat-volume");
-          const statPts = document.getElementById("vario-stat-points");
-          const statTrades = document.getElementById("vario-stat-trades");
+          const inWalletAddr = document.getElementById("vario-input-wallet-addr");
+          const pubDisp = document.getElementById("vario-public-key-display");
+          const keyHint = document.getElementById("vario-masked-key-hint");
+          const toggleMirror = document.getElementById("vario-toggle-automirror");
+          const inMirrorNotional = document.getElementById("vario-input-mirror-notional");
+          const ordSlip = document.getElementById("vario-order-slippage");
+          const appLink = document.getElementById("vario-open-app-link");
 
-          if (statVol) statVol.textContent = "$" + (ag.totalFarmedVolume || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-          if (statPts) statPts.textContent = (ag.estimatedPoints || 0).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " pts";
-          if (statTrades) statTrades.textContent = (ag.farmedTradesCount || 0) + " lệnh";
+          if (selEnv && ag.environment) selEnv.value = ag.environment;
+          if (appLink && ag.appUrl) appLink.href = ag.appUrl;
+          if (selSlip && ag.maxSlippage) selSlip.value = String(ag.maxSlippage);
+          if (ordSlip && ag.maxSlippage) ordSlip.value = String(ag.maxSlippage);
+          if (inWalletAddr && ag.walletAddress) inWalletAddr.value = ag.walletAddress;
+          if (toggleMirror) toggleMirror.checked = Boolean(ag.autoMirrorEnabled);
+          if (inMirrorNotional && ag.mirrorNotionalUsd) inMirrorNotional.value = String(ag.mirrorNotionalUsd);
 
-          if (ag.configured) {
+          if (pubDisp) {
+            pubDisp.textContent = ag.publicKey
+              ? "Key: " + ag.publicKey.slice(0, 10) + "..." + ag.publicKey.slice(-6)
+              : "Public Key: chưa có";
+          }
+          if (keyHint) {
+            keyHint.textContent = ag.hasApiKey
+              ? "Đã lưu Ed25519 key (" + ag.maskedApiSecret + "). Để trống ô trên nếu giữ nguyên khóa."
+              : "Mã hóa AES-256-GCM cục bộ. Tạo Ed25519 API key tại Omni Settings rồi dán vào đây.";
+          }
+
+          if (ag.hasApiKey) {
             if (pill) {
-              pill.textContent = "● ĐÃ KẾT NỐI VÍ";
+              pill.textContent = "● " + String(ag.environment || "testnet").toUpperCase() + " KEY READY";
               pill.style.color = "#34d399";
             }
             if (badgeOnBar) {
-              badgeOnBar.textContent = "Đã Kết Nối";
+              badgeOnBar.textContent = ag.environment === "prod" ? "Mainnet API" : "Testnet API";
               badgeOnBar.style.background = "rgba(16, 185, 129, 0.2)";
               badgeOnBar.style.borderColor = "rgba(16, 185, 129, 0.4)";
               badgeOnBar.style.color = "#34d399";
             }
-            if (inWalletAddr && ag.walletAddress) inWalletAddr.value = ag.walletAddress;
-            if (selLev && ag.defaultLeverage) selLev.value = String(ag.defaultLeverage);
-            if (selSlip && ag.maxSlippage) selSlip.value = String(ag.maxSlippage);
-            if (toggleFarm) toggleFarm.checked = Boolean(ag.autoFarmEnabled);
+            loadVarioDashboard();
           } else {
             if (pill) {
               pill.textContent = "● CHƯA CẤU HÌNH";
               pill.style.color = "#f87171";
             }
             if (badgeOnBar) {
-              badgeOnBar.textContent = "Chưa Cài";
+              badgeOnBar.textContent = "Chưa cài";
               badgeOnBar.style.background = "rgba(239, 68, 68, 0.2)";
               badgeOnBar.style.borderColor = "rgba(239, 68, 68, 0.4)";
               badgeOnBar.style.color = "#f87171";
@@ -11426,35 +11866,41 @@ const htmlContent = `<!DOCTYPE html>
         console.warn("Error loading Vario agent config:", e);
       }
 
-      // Fetch live market stats for BTC-PERP and ETH-PERP
+      // Fetch live public OLP stats for BTC-PERP and ETH-PERP
       try {
         const resStats = await fetch("/api/vario/stats");
         if (resStats.ok) {
           const stats = await resStats.json();
           const cntBadge = document.getElementById("vario-markets-count-badge");
-          if (cntBadge) cntBadge.textContent = "● " + (stats.num_markets || 580) + " Markets Live | 24h Vol: $" + Math.round(parseFloat(stats.total_volume_24h || 0) / 1e6) + "M";
+          if (cntBadge) cntBadge.textContent = (stats.num_markets || 0) + " Markets | 24h Vol: $" + Math.round(parseFloat(stats.total_volume_24h || 0) / 1e6) + "M";
 
           const btc = stats.listings ? stats.listings.find(function(l) { return l.ticker === "BTC-PERP"; }) : null;
           const eth = stats.listings ? stats.listings.find(function(l) { return l.ticker === "ETH-PERP"; }) : null;
 
           const elBtcPx = document.getElementById("vario-live-btc-price");
           const elBtcSp = document.getElementById("vario-live-btc-spread");
-          if (elBtcPx && btc) elBtcPx.textContent = "$" + parseFloat(btc.mark_price).toLocaleString("en-US", { minimumFractionDigits: 2 });
-          if (elBtcSp && btc) elBtcSp.textContent = parseFloat(btc.base_spread_bps).toFixed(2) + " bps (" + (parseFloat(btc.base_spread_bps)/100).toFixed(3) + "%)";
+          if (elBtcPx && btc) {
+            elBtcPx.textContent = "$" + parseFloat(btc.mark_price).toLocaleString("en-US", { minimumFractionDigits: 2 });
+            if (!varioCurrentTickerPrice && (document.getElementById("vario-order-symbol")?.value || "").toUpperCase() === "BTC-PERP") {
+              varioCurrentTickerPrice = parseFloat(btc.mark_price);
+              refreshVarioTickerHint();
+            }
+          }
+          if (elBtcSp && btc) elBtcSp.textContent = parseFloat(btc.base_spread_bps).toFixed(2) + " bps";
 
           const elEthPx = document.getElementById("vario-live-eth-price");
           const elEthSp = document.getElementById("vario-live-eth-spread");
           if (elEthPx && eth) elEthPx.textContent = "$" + parseFloat(eth.mark_price).toLocaleString("en-US", { minimumFractionDigits: 2 });
-          if (elEthSp && eth) elEthSp.textContent = parseFloat(eth.base_spread_bps).toFixed(2) + " bps (" + (parseFloat(eth.base_spread_bps)/100).toFixed(3) + "%)";
+          if (elEthSp && eth) elEthSp.textContent = parseFloat(eth.base_spread_bps).toFixed(2) + " bps";
         }
       } catch (e) {
         console.warn("Error loading Vario stats:", e);
       }
     }
 
-    // Toggle password visibility for Vario Key
+    // UI Bindings for Variational Testnet Console
     document.getElementById("btn-toggle-vario-key-vis")?.addEventListener("click", () => {
-      const inp = document.getElementById("vario-input-key");
+      const inp = document.getElementById("vario-input-api-key");
       const btn = document.getElementById("btn-toggle-vario-key-vis");
       if (!inp || !btn) return;
       if (inp.type === "password") {
@@ -11466,92 +11912,277 @@ const htmlContent = `<!DOCTYPE html>
       }
     });
 
-    // Fill current connected wallet into Vario address
     document.getElementById("btn-vario-use-current-wallet")?.addEventListener("click", () => {
       if (typeof connectedWalletAddress !== "undefined" && connectedWalletAddress) {
         document.getElementById("vario-input-wallet-addr").value = connectedWalletAddress;
       } else if (currentAuthUser && currentAuthUser.address) {
         document.getElementById("vario-input-wallet-addr").value = currentAuthUser.address;
       } else {
-        alert("Chưa kết nối ví Web3. Vui lòng kết nối ví ở góc phải hoặc dán địa chỉ ví Arbitrum vào ô.");
+        setVarioFeedback("info", "Chưa kết nối ví Web3. Bạn có thể bỏ trống hoặc dán địa chỉ 0x...");
       }
     });
 
-    // Save Vario Config
     document.getElementById("btn-save-vario-agent")?.addEventListener("click", async () => {
-      const walletAddress = document.getElementById("vario-input-wallet-addr").value.trim();
-      const privateKey = document.getElementById("vario-input-key").value.trim();
-      const defaultLeverage = document.getElementById("vario-select-leverage").value;
-      const maxSlippage = document.getElementById("vario-select-slippage").value;
-      const autoFarmEnabled = document.getElementById("vario-toggle-autofarm").checked;
+      const environment = document.getElementById("vario-select-env")?.value || "testnet";
+      const apiPrivateKey = document.getElementById("vario-input-api-key")?.value.trim() || "";
+      const walletAddress = document.getElementById("vario-input-wallet-addr")?.value.trim() || "";
+      const maxSlippage = document.getElementById("vario-select-slippage")?.value || "0.005";
+      const autoMirrorEnabled = Boolean(document.getElementById("vario-toggle-automirror")?.checked);
+      const mirrorNotionalUsd = parseFloat(document.getElementById("vario-input-mirror-notional")?.value || "100") || 100;
 
-      if (!walletAddress && !privateKey) {
-        alert("Vui lòng nhập ít nhất Địa chỉ ví Arbitrum bạn dùng trên Variational Omni");
-        return;
-      }
-
+      setVarioFeedback("info", "Đang mã hóa và lưu cấu hình Variational...");
       try {
         const res = await fetch("/api/user/vario-agent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ walletAddress, privateKey, defaultLeverage, maxSlippage, autoFarmEnabled })
+          body: JSON.stringify({ environment, apiPrivateKey, walletAddress, maxSlippage, autoMirrorEnabled, mirrorNotionalUsd }),
         });
         const data = await res.json();
         if (data.success) {
-          alert("🎉 " + data.message + (data.walletAddress ? " | Ví: " + data.walletAddress : ""));
-          document.getElementById("vario-input-key").value = "";
+          document.getElementById("vario-input-api-key").value = "";
+          setVarioFeedback("ok", data.message + (data.publicKey ? " | Public Key: " + data.publicKey : ""));
           loadUserVarioAgentData();
         } else {
-          alert("❌ Lỗi: " + (data.error || "Không thể lưu cấu hình"));
+          setVarioFeedback("err", data.error || "Không thể lưu cấu hình");
         }
       } catch (err) {
-        alert("Lỗi: " + err.message);
+        setVarioFeedback("err", "Lỗi lưu cấu hình: " + err.message);
       }
     });
 
-    // Verify Vario Connection
     document.getElementById("btn-verify-vario-agent")?.addEventListener("click", async () => {
       const btn = document.getElementById("btn-verify-vario-agent");
       if (!btn) return;
-      btn.textContent = "⏳ Đang kiểm tra Arbitrum & Omni...";
+      btn.textContent = "⏳ Đang xác thực...";
       btn.disabled = true;
+      setVarioFeedback("info", "Đang kiểm tra chữ ký Ed25519 trên Variational Omni API...");
 
       try {
         const res = await fetch("/api/user/vario-agent/verify", { method: "POST" });
         const data = await res.json();
         if (data.verified) {
-          alert("✅ " + data.message + "\\n\\n" +
-                "• Ví Arbitrum: " + data.address + "\\n" +
-                "• Số dư ETH gas: " + data.ethBalance + " ETH\\n" +
-                "• Thị trường hoạt động: " + data.marketsActive + " cặp\\n" +
-                "• BTC-PERP Mark: $" + data.btcMarkPrice + " (Spread: " + data.btcSpreadBps + " bps)\\n" +
-                "• Protocol Volume 24h: $" + Math.round(parseFloat(data.protocolVolume24h)/1e6) + "M");
+          setVarioFeedback(
+            "ok",
+            "✅ " + data.message + " | Status: " + data.apiStatus +
+            " | Equity: $" + parseFloat(data.equity || 0).toFixed(2) +
+            " | Available: $" + parseFloat(data.available || 0).toFixed(2) +
+            " | Positions: " + data.openPositionsCount + ", Open Orders: " + data.openOrdersCount
+          );
+          loadUserVarioAgentData();
         } else {
-          alert("⚠️ " + (data.error || "Không thể xác thực kết nối"));
+          setVarioFeedback("err", "❌ Xác thực thất bại: " + (data.error || "Kiểm tra lại API Key / scope read+trade"));
         }
-        loadUserVarioAgentData();
       } catch (err) {
-        alert("Lỗi kiểm tra: " + err.message);
+        setVarioFeedback("err", "Lỗi kết nối: " + err.message);
       } finally {
-        btn.textContent = "⚡ Kiểm Tra Kết Nối (Verify Network)";
+        btn.textContent = "⚡ Verify Testnet";
         btn.disabled = false;
       }
     });
 
-    // Delete Vario Config
+    document.getElementById("btn-sync-vario-dashboard")?.addEventListener("click", () => {
+      setVarioFeedback("info", "Đang đồng bộ Account, Positions, Orders & Fills...");
+      loadVarioDashboard().then(() => setVarioFeedback("ok", "Đã đồng bộ dữ liệu Variational mới nhất."));
+    });
+
     document.getElementById("btn-del-vario-agent")?.addEventListener("click", async () => {
       if (!confirm("Bạn có chắc muốn xóa cấu hình Variational Omni này khỏi hệ thống?")) return;
       try {
         const res = await fetch("/api/user/vario-agent", { method: "DELETE" });
         const data = await res.json();
-        alert(data.message || "Đã xóa cấu hình");
         document.getElementById("vario-input-wallet-addr").value = "";
-        document.getElementById("vario-input-key").value = "";
+        document.getElementById("vario-input-api-key").value = "";
+        setVarioFeedback("info", data.message || "Đã xóa cấu hình");
+        renderVarioPositions([]);
+        renderVarioOrders([]);
+        renderVarioFills([]);
         loadUserVarioAgentData();
       } catch (err) {
-        alert("Lỗi: " + err.message);
+        setVarioFeedback("err", "Lỗi xóa: " + err.message);
       }
     });
+
+    document.getElementById("btn-vario-side-buy")?.addEventListener("click", () => {
+      varioOrderSide = "buy";
+      const b = document.getElementById("btn-vario-side-buy");
+      const s = document.getElementById("btn-vario-side-sell");
+      if (b) { b.style.borderColor = "#10b981"; b.style.background = "rgba(16, 185, 129, 0.22)"; b.style.color = "#34d399"; }
+      if (s) { s.style.borderColor = "#23293a"; s.style.background = "#07090e"; s.style.color = "#94a3b8"; }
+    });
+
+    document.getElementById("btn-vario-side-sell")?.addEventListener("click", () => {
+      varioOrderSide = "sell";
+      const b = document.getElementById("btn-vario-side-buy");
+      const s = document.getElementById("btn-vario-side-sell");
+      if (s) { s.style.borderColor = "#ef4444"; s.style.background = "rgba(239, 68, 68, 0.22)"; s.style.color = "#f87171"; }
+      if (b) { b.style.borderColor = "#23293a"; b.style.background = "#07090e"; b.style.color = "#94a3b8"; }
+    });
+
+    document.getElementById("vario-order-type")?.addEventListener("change", updateVarioOrderTypeUI);
+    document.getElementById("vario-order-size-mode")?.addEventListener("change", updateVarioSizeEstimate);
+    document.getElementById("vario-order-amount")?.addEventListener("input", updateVarioSizeEstimate);
+    document.getElementById("vario-order-price")?.addEventListener("input", updateVarioSizeEstimate);
+    document.getElementById("vario-order-symbol")?.addEventListener("change", refreshVarioTickerHint);
+    document.getElementById("btn-vario-refresh-ticker")?.addEventListener("click", refreshVarioTickerHint);
+
+    document.getElementById("btn-vario-submit-order")?.addEventListener("click", async () => {
+      const btn = document.getElementById("btn-vario-submit-order");
+      const symbol = (document.getElementById("vario-order-symbol")?.value || "BTC-PERP").trim().toUpperCase();
+      const type = document.getElementById("vario-order-type")?.value || "market";
+      const sizeMode = document.getElementById("vario-order-size-mode")?.value || "notional";
+      const amount = parseFloat(document.getElementById("vario-order-amount")?.value || "0");
+      const priceVal = document.getElementById("vario-order-price")?.value.trim();
+      const triggerBy = document.getElementById("vario-order-trigger-by")?.value || "mark";
+      const tpVal = document.getElementById("vario-order-tp")?.value.trim();
+      const slVal = document.getElementById("vario-order-sl")?.value.trim();
+      const slippage = document.getElementById("vario-order-slippage")?.value.trim() || "0.005";
+      const reduceOnly = Boolean(document.getElementById("vario-order-reduce-only")?.checked);
+
+      if (!symbol || !Number.isFinite(amount) || amount <= 0) {
+        setVarioOrderResult(false, "Vui lòng nhập Symbol và Khối lượng hợp lệ (> 0).");
+        return;
+      }
+
+      const payload = {
+        symbol,
+        side: varioOrderSide,
+        type,
+        max_slippage: slippage,
+      };
+      if (sizeMode === "notional") payload.notionalUsd = amount;
+      else payload.size = String(amount);
+
+      if (type === "limit") {
+        if (!priceVal || Number(priceVal) <= 0) {
+          setVarioOrderResult(false, "Lệnh Limit cần nhập Limit Price > 0.");
+          return;
+        }
+        payload.price = priceVal;
+        payload.trigger_by = triggerBy;
+        payload.reduce_only = reduceOnly;
+      } else if (type === "market") {
+        payload.reduce_only = reduceOnly;
+      } else {
+        if (!priceVal || Number(priceVal) <= 0) {
+          setVarioOrderResult(false, "Lệnh TP/SL cần nhập Trigger Price > 0.");
+          return;
+        }
+        payload.trigger_price = priceVal;
+        payload.trigger_by = triggerBy;
+      }
+
+      if ((type === "market" || type === "limit") && tpVal && Number(tpVal) > 0) {
+        payload.takeProfitPrice = tpVal;
+      }
+      if ((type === "market" || type === "limit") && slVal && Number(slVal) > 0) {
+        payload.stopLossPrice = slVal;
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ Đang gửi..."; }
+      setVarioOrderResult(true, "Đang ký Ed25519 & gửi lệnh " + escapeVarioHtml(type.toUpperCase()) + " " + escapeVarioHtml(symbol) + "...");
+
+      try {
+        const res = await fetch("/api/vario/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const ord = data.order || {};
+          const fillInfo = ord.fill_price ? " | Fill: $" + escapeVarioHtml(ord.fill_price) : "";
+          setVarioOrderResult(
+            true,
+            "✅ LỆNH ĐÃ ĐẶT (" + escapeVarioHtml(String(data.environment || "testnet").toUpperCase()) + "): " +
+            "<strong>" + escapeVarioHtml((ord.side || varioOrderSide).toUpperCase()) + " " + escapeVarioHtml(ord.size || "") + " " + escapeVarioHtml(ord.symbol || symbol) + "</strong>" +
+            " | Status: <strong>" + escapeVarioHtml(ord.status || "queued") + "</strong>" + fillInfo +
+            "<br>order_id: " + escapeVarioHtml(ord.order_id || "--") + " | client_order_id: " + escapeVarioHtml(ord.client_order_id || "--")
+          );
+          loadVarioDashboard();
+        } else {
+          const errCode = data.errorCode ? " [" + escapeVarioHtml(data.errorCode) + "]" : "";
+          const reqId = data.requestId ? " (req: " + escapeVarioHtml(data.requestId) + ")" : "";
+          setVarioOrderResult(false, "❌ Lỗi đặt lệnh" + errCode + ": " + escapeVarioHtml(data.error || "Unknown error") + reqId);
+        }
+      } catch (err) {
+        setVarioOrderResult(false, "❌ Lỗi mạng: " + escapeVarioHtml(err.message));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "🚀 Gửi Lệnh Testnet"; }
+      }
+    });
+
+    document.getElementById("btn-vario-subtab-positions")?.addEventListener("click", () => switchVarioSubtab("positions"));
+    document.getElementById("btn-vario-subtab-orders")?.addEventListener("click", () => switchVarioSubtab("orders"));
+    document.getElementById("btn-vario-subtab-fills")?.addEventListener("click", () => switchVarioSubtab("fills"));
+
+    document.getElementById("btn-vario-cancel-all")?.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/vario/orders", { method: "DELETE" });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          setVarioOrderResult(true, "✅ Đã hủy " + ((d.canceled && d.canceled.length) || 0) + " lệnh đang chờ.");
+          loadVarioDashboard();
+        } else {
+          setVarioOrderResult(false, "❌ Hủy tất cả thất bại: " + escapeVarioHtml(d.error || "Error"));
+        }
+      } catch (err) {
+        setVarioOrderResult(false, "❌ Lỗi hủy lệnh: " + escapeVarioHtml(err.message));
+      }
+    });
+
+    document.getElementById("vario-panel-positions")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest('button[data-action="close-pos"]');
+      if (!btn) return;
+      const sym = btn.getAttribute("data-symbol");
+      if (!sym) return;
+      btn.disabled = true;
+      btn.textContent = "...";
+      try {
+        const res = await fetch("/api/vario/positions/close", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symbol: sym }),
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          setVarioOrderResult(true, "✅ Đã đóng vị thế Market " + escapeVarioHtml(sym) + " (status: " + escapeVarioHtml(d.order?.status || "queued") + ")");
+          loadVarioDashboard();
+        } else {
+          setVarioOrderResult(false, "❌ Lỗi đóng vị thế " + escapeVarioHtml(sym) + ": " + escapeVarioHtml(d.error || "Error"));
+        }
+      } catch (err) {
+        setVarioOrderResult(false, "❌ Lỗi đóng vị thế: " + escapeVarioHtml(err.message));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Close Market";
+      }
+    });
+
+    document.getElementById("vario-panel-orders")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest('button[data-action="cancel-order"]');
+      if (!btn) return;
+      const oid = btn.getAttribute("data-order-id");
+      if (!oid) return;
+      btn.disabled = true;
+      btn.textContent = "...";
+      try {
+        const res = await fetch("/api/vario/orders?order_id=" + encodeURIComponent(oid), { method: "DELETE" });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          setVarioOrderResult(true, "✅ Đã hủy lệnh " + escapeVarioHtml(oid));
+          loadVarioDashboard();
+        } else {
+          setVarioOrderResult(false, "❌ Lỗi hủy lệnh: " + escapeVarioHtml(d.error || "Error"));
+        }
+      } catch (err) {
+        setVarioOrderResult(false, "❌ Lỗi hủy lệnh: " + escapeVarioHtml(err.message));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Cancel";
+      }
+    });
+
+    updateVarioOrderTypeUI();
 
     // Initial load of strategies & agent data
     loadStrategiesData();
@@ -13117,7 +13748,19 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- User Variational Protocol (Omni RFQ Airdrop) Endpoints ---
+  function sendVarioError(res, err, fallbackStatus = 400) {
+    const code = Number(err?.status) >= 400 ? Number(err.status) : fallbackStatus;
+    res.writeHead(code, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      success: false,
+      error: err?.message || 'Variational API error',
+      errorCode: err?.errorCode || null,
+      errorFields: err?.errorFields || null,
+      requestId: err?.requestId || null,
+    }));
+  }
+
+  // --- User Variational Protocol (Omni Testnet API v1) Endpoints ---
   if (pathname === '/api/user/vario-agent') {
     const session = authSecurityInstance.authenticateRequest(req);
     const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
@@ -13133,8 +13776,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(saved));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: false, error: err.message }));
+        return sendVarioError(res, err, 400);
       }
     }
     if (req.method === 'DELETE') {
@@ -13152,8 +13794,109 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(v));
     } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ verified: false, error: err.message }));
+      res.writeHead(Number(err?.status) >= 400 ? Number(err.status) : 400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ verified: false, error: err.message, errorCode: err?.errorCode || null }));
+    }
+  }
+
+  if (pathname === '/api/vario/dashboard') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    try {
+      const data = await variationalConnector.getDashboardData(userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(data));
+    } catch (err) {
+      return sendVarioError(res, err, 400);
+    }
+  }
+
+  if (pathname === '/api/vario/instruments') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    try {
+      const instruments = await variationalConnector.getInstruments(userId, parsedUrl.query.refresh === '1');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, instruments }));
+    } catch (err) {
+      return sendVarioError(res, err, 400);
+    }
+  }
+
+  if (pathname === '/api/vario/ticker') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const symbol = parsedUrl.query.symbol || 'BTC-PERP';
+    try {
+      const ticker = await variationalConnector.getTicker(userId, symbol);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, ticker }));
+    } catch (err) {
+      return sendVarioError(res, err, 400);
+    }
+  }
+
+  if (pathname === '/api/vario/orders') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    if (req.method === 'GET') {
+      try {
+        const orders = await variationalConnector.getOrders(userId, parsedUrl.query || {});
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, ...orders }));
+      } catch (err) {
+        return sendVarioError(res, err, 400);
+      }
+    }
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      try {
+        const placed = await variationalConnector.placeOrder(userId, body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(placed));
+      } catch (err) {
+        return sendVarioError(res, err, 400);
+      }
+    }
+    if (req.method === 'DELETE') {
+      const body = await parseBody(req).catch(() => ({}));
+      const oid = parsedUrl.query.order_id || body?.order_id;
+      const cid = parsedUrl.query.client_order_id || body?.client_order_id;
+      const sym = parsedUrl.query.symbol || body?.symbol;
+      try {
+        const result = (oid || cid)
+          ? await variationalConnector.cancelOrder(userId, { order_id: oid, client_order_id: cid })
+          : await variationalConnector.cancelAllOrders(userId, { symbol: sym, all: true });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } catch (err) {
+        return sendVarioError(res, err, 400);
+      }
+    }
+  }
+
+  if (pathname === '/api/vario/positions/close' && req.method === 'POST') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    const body = await parseBody(req);
+    try {
+      const result = await variationalConnector.closePosition(userId, body.symbol, body.max_slippage);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    } catch (err) {
+      return sendVarioError(res, err, 400);
+    }
+  }
+
+  if (pathname === '/api/vario/fills') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    const userId = session ? session.userId : (parsedUrl.query.userId || 'guest');
+    try {
+      const fills = await variationalConnector.getFills(userId, parsedUrl.query || {});
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, ...fills }));
+    } catch (err) {
+      return sendVarioError(res, err, 400);
     }
   }
 
