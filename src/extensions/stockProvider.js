@@ -16,6 +16,19 @@ const NON_US_SUFFIX = {
   ASX: '.AX',
 };
 
+const BENCHMARK_YAHOO_MAP = {
+  'INDEX:SPX': { yahooTicker: '^GSPC', symbol: 'SP500', exchange: 'INDEX', description: 'S&P 500 Index' },
+  'SP:SPX': { yahooTicker: '^GSPC', symbol: 'SP500', exchange: 'INDEX', description: 'S&P 500 Index' },
+  'TVC:SPX': { yahooTicker: '^GSPC', symbol: 'SP500', exchange: 'INDEX', description: 'S&P 500 Index' },
+  'SP500': { yahooTicker: '^GSPC', symbol: 'SP500', exchange: 'INDEX', description: 'S&P 500 Index' },
+  'TVC:GOLD': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+  'OANDA:XAUUSD': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+  'FOREXCOM:XAUUSD': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+  'COMEX:GC1!': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+  'GOLD': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+  'XAUUSD': { yahooTicker: 'GC=F', symbol: 'GOLD', exchange: 'TVC', description: 'Gold Futures' },
+};
+
 const TF_NORMALIZE = {
   '1m': '1', '1': '1',
   '3m': '3', '3': '3',
@@ -60,7 +73,20 @@ function isStockSymbol(symbol) {
   return Boolean(ticker) && STOCK_EXCHANGES.has(exchange);
 }
 
+function isBenchmarkSymbol(symbol) {
+  if (!symbol || typeof symbol !== 'string') return false;
+  return Boolean(BENCHMARK_YAHOO_MAP[symbol.trim().toUpperCase()]);
+}
+
+function isYahooMarketSymbol(symbol) {
+  return isStockSymbol(symbol) || isBenchmarkSymbol(symbol);
+}
+
 function toYahooTicker(symbol) {
+  const key = String(symbol || '').trim().toUpperCase();
+  if (BENCHMARK_YAHOO_MAP[key]) {
+    return BENCHMARK_YAHOO_MAP[key].yahooTicker;
+  }
   const { exchange, ticker } = parseStockSymbol(symbol);
   if (!ticker) return '';
   if (!exchange || US_EXCHANGES.has(exchange)) {
@@ -173,6 +199,8 @@ class StockProvider {
   }
 
   async getBars(symbol, timeframe = 'D', limit = 1000) {
+    const key = String(symbol || '').trim().toUpperCase();
+    const benchmark = BENCHMARK_YAHOO_MAP[key] || null;
     const { exchange, ticker } = parseStockSymbol(symbol);
     const yahooTicker = toYahooTicker(symbol);
     if (!yahooTicker) return { candles: [], infos: {} };
@@ -210,13 +238,16 @@ class StockProvider {
 
     const meta = result?.meta || {};
     const resolvedExchangeName = meta.fullExchangeName || meta.exchangeName || exchange || 'STOCK';
+    const outName = benchmark ? benchmark.symbol : ticker;
+    const outExchange = benchmark ? benchmark.exchange : (exchange || resolvedExchangeName);
+    const outDescription = benchmark ? benchmark.description : (meta.longName || meta.shortName || ticker);
 
     return {
       candles,
       infos: {
-        name: ticker,
-        description: meta.longName || meta.shortName || ticker,
-        exchange: exchange || resolvedExchangeName,
+        name: outName,
+        description: outDescription,
+        exchange: outExchange,
         exchangeName: resolvedExchangeName,
         currency: meta.currency || 'USD',
         provider: `Yahoo Finance (${resolvedExchangeName})`,
@@ -233,6 +264,7 @@ class StockProvider {
       return cached.data;
     }
 
+    const benchmark = BENCHMARK_YAHOO_MAP[cacheKey] || null;
     const { exchange, ticker } = parseStockSymbol(symbol);
     const yahooTicker = toYahooTicker(symbol);
     if (!yahooTicker) return null;
@@ -263,12 +295,14 @@ class StockProvider {
       : (close - prevClose);
     const volume = meta.regularMarketVolume || 0;
     const exchangeName = meta.fullExchangeName || meta.exchangeName || exchange || 'STOCK';
-    const description = meta.longName || meta.shortName || ticker;
+    const outSymbol = benchmark ? benchmark.symbol : ticker;
+    const outExchange = benchmark ? benchmark.exchange : (exchange || exchangeName);
+    const description = benchmark ? benchmark.description : (meta.longName || meta.shortName || ticker);
     const currency = meta.currency || 'USD';
 
     const quote = {
-      symbol: ticker,
-      exchange: exchange || exchangeName,
+      symbol: outSymbol,
+      exchange: outExchange,
       exchangeName,
       description,
       currency,
@@ -311,7 +345,10 @@ module.exports = {
   stockProvider,
   StockProvider,
   isStockSymbol,
+  isBenchmarkSymbol,
+  isYahooMarketSymbol,
   parseStockSymbol,
   toYahooTicker,
   STOCK_EXCHANGES,
+  BENCHMARK_YAHOO_MAP,
 };

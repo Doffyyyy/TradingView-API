@@ -22,7 +22,7 @@ const { authSecurityInstance } = require('./src/extensions/authSecurity');
 const { userProfileManager } = require('./src/extensions/userProfileManager');
 const { variationalConnector } = require('./src/extensions/variational');
 const { getLoginPageHtml } = require('./src/views/loginPage');
-const { stockProvider, isStockSymbol } = require('./src/extensions/stockProvider');
+const { stockProvider, isStockSymbol, isYahooMarketSymbol } = require('./src/extensions/stockProvider');
 
 const PORT = process.env.PORT || 8095;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -170,8 +170,8 @@ function getHistory(symbol, timeframe, range = 1000) {
     querySymbol = 'HIP3XYZ:BRENTOILUSDC.P';
   }
 
-  // Dedicated Stock Exchange Provider (NASDAQ, NYSE, AMEX, ARCA, global exchanges)
-  if (isStockSymbol(querySymbol)) {
+  // Dedicated Stock & Benchmark Provider (NASDAQ, NYSE, AMEX, INDEX:SPX, TVC:GOLD, etc.)
+  if (isYahooMarketSymbol(querySymbol)) {
     return new Promise(async (resolve) => {
       try {
         const resData = await stockProvider.getBars(querySymbol, normTf, Math.min(range || 1000, 5000));
@@ -187,7 +187,7 @@ function getHistory(symbol, timeframe, range = 1000) {
   }
 
   // Fast CEX REST Kline loader for Binance pairs (Spot or Futures .P)
-  const isBinance = !isStockSymbol(querySymbol) && (
+  const isBinance = !isYahooMarketSymbol(querySymbol) && (
     querySymbol.startsWith('BINANCE:') ||
     ((querySymbol.endsWith('USDT') || querySymbol.endsWith('USDC') || querySymbol.endsWith('BTC')) && !querySymbol.includes('BYBIT:') && !querySymbol.includes('INDEX:') && !querySymbol.includes('TVC:'))
   );
@@ -4409,6 +4409,12 @@ const htmlContent = `<!DOCTYPE html>
       const u = String(sym).toUpperCase();
       return CLIENT_STOCK_EXCHANGES.some(p => u.startsWith(p));
     }
+    const CLIENT_BENCHMARK_PREFIXES = ['INDEX:', 'TVC:', 'SP:', 'OANDA:', 'FOREXCOM:', 'COMEX:'];
+    function isClientNonCryptoSymbol(sym) {
+      if (!sym) return false;
+      const u = String(sym).toUpperCase();
+      return isClientStockSymbol(u) || CLIENT_BENCHMARK_PREFIXES.some(p => u.startsWith(p));
+    }
 
     function syncDockCoin(sym) {
       let c = (sym || 'BTC').toUpperCase();
@@ -7030,20 +7036,34 @@ const htmlContent = `<!DOCTYPE html>
     // --- High-Speed Realtime Watchlist Sync (Zero-Latency Link with Chart, Header & Orderbook) ---
     function syncLivePriceToWatchlist(symbolOrCoin, price, changePct, changeAbs) {
       if (!symbolOrCoin || !price || isNaN(price) || price <= 0) return;
-      const coinUp = symbolOrCoin.toUpperCase().trim();
-      const cleanInput = cleanTokenBase(symbolOrCoin);
+      const rawStr = String(symbolOrCoin).trim();
+      const coinUp = rawStr.toUpperCase();
+      const hasExchangePrefix = rawStr.includes(':');
+      const cleanInput = cleanTokenBase(rawStr);
 
-      // Robust tiered token matching — NEVER use substring .includes() which causes cross-token pollution (e.g. KLEDSOL vs SOL)
-      let matched = customWatchlist.find(w => w.symbol === symbolOrCoin || w.symbol.toUpperCase() === coinUp);
-      if (!matched) matched = customWatchlist.find(w => w.name.toUpperCase() === coinUp);
-      if (!matched) matched = customWatchlist.find(w => cleanTokenBase(w.symbol) === cleanInput);
-      if (!matched && cleanInput.length >= 4) {
-        matched = customWatchlist.find(w => cleanTokenBase(w.symbol).startsWith(cleanInput) || w.name.toUpperCase().startsWith(cleanInput));
+      // Robust tiered token matching — never allow bare Hyperliquid coins (e.g. 'SPX', 'GOLD') to match non-crypto indices/stocks
+      let matched = customWatchlist.find(w => w.symbol === rawStr || w.symbol.toUpperCase() === coinUp);
+      if (!matched && !hasExchangePrefix) {
+        matched = customWatchlist.find(w => !isClientNonCryptoSymbol(w.symbol) && w.name.toUpperCase() === coinUp);
+        if (!matched) matched = customWatchlist.find(w => !isClientNonCryptoSymbol(w.symbol) && cleanTokenBase(w.symbol) === cleanInput);
+        if (!matched && cleanInput.length >= 4) {
+          matched = customWatchlist.find(w => !isClientNonCryptoSymbol(w.symbol) && (cleanTokenBase(w.symbol).startsWith(cleanInput) || w.name.toUpperCase().startsWith(cleanInput)));
+        }
       }
-      const targetSymbol = matched ? matched.symbol : symbolOrCoin;
+      if (!matched && !hasExchangePrefix && isClientNonCryptoSymbol(currentSymbol)) {
+        return;
+      }
+      const targetSymbol = matched ? matched.symbol : rawStr;
 
+      const prevPrice = pricesCache[targetSymbol]?.close;
+      if (prevPrice && prevPrice > 0) {
+        const ratio = price / prevPrice;
+        if (ratio < 0.25 || ratio > 4.0) {
+          console.warn('[Watchlist Price Guard] Blocked extreme cross-asset jump for', targetSymbol, ':', price, 'vs', prevPrice);
+          return;
+        }
+      }
       if (!pricesCache[targetSymbol]) pricesCache[targetSymbol] = {};
-      const prevPrice = pricesCache[targetSymbol].close;
       pricesCache[targetSymbol].close = price;
       if (changePct !== undefined && changePct !== null && !isNaN(changePct)) {
         pricesCache[targetSymbol].change = changePct;
@@ -7082,8 +7102,10 @@ const htmlContent = `<!DOCTYPE html>
       }
 
       // Keep Header / Ticker Bar & Active Chart in sync ONLY if this price belongs to the ACTIVE symbol!
-      const isActiveChartSymbol = (targetSymbol === currentSymbol) || 
-                                  (cleanTokenBase(targetSymbol) === cleanTokenBase(currentSymbol));
+      const isNonCryptoPair = isClientNonCryptoSymbol(targetSymbol) || isClientNonCryptoSymbol(currentSymbol);
+      const isActiveChartSymbol = isNonCryptoPair
+        ? (targetSymbol === currentSymbol)
+        : ((targetSymbol === currentSymbol) || (cleanTokenBase(targetSymbol) === cleanTokenBase(currentSymbol)));
       if (isActiveChartSymbol) {
         const lastEl = document.getElementById('hl-stat-last');
         if (lastEl) lastEl.textContent = '$' + (price >= 1 ? price.toLocaleString('en-US') : formatTokenPrice(price));
@@ -7128,8 +7150,8 @@ const htmlContent = `<!DOCTYPE html>
 
             // Synchronize active chart candle and right price scale directly from watchlist response
             const activeBase = cleanTokenBase(currentSymbol);
-            const pEntry = data.prices[currentSymbol] || 
-                           (activeBase && (data.prices['BINANCE:' + activeBase + 'USDT'] || data.prices['HYPERLIQUID:' + activeBase] || data.prices[activeBase]));
+            const pEntry = data.prices[currentSymbol] ||
+                           (!isClientNonCryptoSymbol(currentSymbol) && activeBase && (data.prices['BINANCE:' + activeBase + 'USDT'] || data.prices['HYPERLIQUID:' + activeBase] || data.prices[activeBase]));
             if (pEntry && typeof pEntry.close === 'number' && pEntry.close > 0) {
               const livePrice = pEntry.close;
               if (typeof updateActiveCandleWithLivePrice === 'function') {
@@ -7645,7 +7667,7 @@ const htmlContent = `<!DOCTYPE html>
             if (!msg || !msg.channel) return;
 
             // 1. L2 Orderbook stream: channel 'l2Book'
-            if (msg.channel === 'l2Book' && msg.data && msg.data.coin === currentDockCoin) {
+            if (msg.channel === 'l2Book' && msg.data && msg.data.coin === currentDockCoin && !isClientNonCryptoSymbol(currentSymbol)) {
               const data = msg.data;
               if (data.levels && Array.isArray(data.levels) && data.levels.length >= 2) {
                 const rawBids = data.levels[0] || [];
@@ -7685,7 +7707,7 @@ const htmlContent = `<!DOCTYPE html>
             }
 
             // 2. Realtime trades stream: channel 'trades'
-            if (msg.channel === 'trades' && Array.isArray(msg.data)) {
+            if (msg.channel === 'trades' && Array.isArray(msg.data) && !isClientNonCryptoSymbol(currentSymbol)) {
               const trades = msg.data.filter(t => t.coin === currentDockCoin);
               if (trades.length > 0) {
                 const latestTrade = trades[trades.length - 1];
@@ -7703,7 +7725,7 @@ const htmlContent = `<!DOCTYPE html>
             }
 
             // 3. Realtime native candle stream: channel 'candle' (Vela Hyperliquid Engine)
-            if (msg.channel === 'candle' && msg.data && msg.data.s === currentDockCoin) {
+            if (msg.channel === 'candle' && msg.data && msg.data.s === currentDockCoin && !isClientNonCryptoSymbol(currentSymbol)) {
               const cd = msg.data;
               const livePx = parseFloat(cd.c);
               if (livePx > 0) {
@@ -7723,7 +7745,7 @@ const htmlContent = `<!DOCTYPE html>
                 const px = parseFloat(pxStr);
                 if (px > 0) {
                   updatePositionRowLivePrice(coin, px);
-                  if (coin === currentDockCoin) {
+                  if (coin === currentDockCoin && !isClientNonCryptoSymbol(currentSymbol)) {
                     currentDockPrice = px;
                     const mktPriceEl = document.getElementById('dock-market-price');
                     if (mktPriceEl) mktPriceEl.textContent = '$' + (px >= 1 ? px.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : px.toFixed(4));
@@ -7741,7 +7763,7 @@ const htmlContent = `<!DOCTYPE html>
               const markPx = parseFloat(ctx.markPx || ctx.midPx);
               if (markPx > 0) {
                 updatePositionRowLivePrice(coin, markPx);
-                if (coin === currentDockCoin) {
+                if (coin === currentDockCoin && !isClientNonCryptoSymbol(currentSymbol)) {
                   currentDockPrice = markPx;
                   const mktPriceEl = document.getElementById('dock-market-price');
                   if (mktPriceEl) mktPriceEl.textContent = '$' + (markPx >= 1 ? markPx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : markPx.toFixed(4));
@@ -7781,7 +7803,7 @@ const htmlContent = `<!DOCTYPE html>
     function subscribeHlWebSocket(coin) {
       if (typeof WebSocket === 'undefined' || typeof hlWs === 'undefined' || !hlWs || hlWs.readyState !== WebSocket.OPEN) return;
       // Do not subscribe non-crypto indices or stocks to Hyperliquid crypto orderbook
-      if (currentSymbol && (isClientStockSymbol(currentSymbol) || currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:'))) {
+      if (currentSymbol && isClientNonCryptoSymbol(currentSymbol)) {
         if (hlWsActiveCoin) {
           try {
             hlWs.send(JSON.stringify({ method: 'unsubscribe', subscription: { type: 'l2Book', coin: hlWsActiveCoin } }));
@@ -7919,8 +7941,7 @@ const htmlContent = `<!DOCTYPE html>
 
     async function updateDockData() {
       const c = currentDockCoin;
-      const isNonCryptoMarket = isClientStockSymbol(currentSymbol) ||
-        (currentSymbol && (currentSymbol.startsWith('INDEX:') || currentSymbol.startsWith('TVC:')));
+      const isNonCryptoMarket = isClientNonCryptoSymbol(currentSymbol);
 
       if (!isNonCryptoMarket) {
         // 1. Fetch Orderbook (HTTP Fallback if WS connecting)
@@ -8426,11 +8447,11 @@ const htmlContent = `<!DOCTYPE html>
     // --- Hyperliquid & Stock Ticker Bar / Header Logic ---
     async function updateTickerBar(coin) {
       if (!coin || coin !== currentDockCoin) return;
-      if (isClientStockSymbol(currentSymbol)) {
+      if (isClientNonCryptoSymbol(currentSymbol)) {
         try {
           const res = await fetch('/api/stock/ticker?symbol=' + encodeURIComponent(currentSymbol));
           const t = await res.json();
-          if (!t || !t.rawLast || !isClientStockSymbol(currentSymbol)) return;
+          if (!t || !t.rawLast || !isClientNonCryptoSymbol(currentSymbol)) return;
           const rawL = t.rawLast;
           const rawChg = t.rawChange || 0;
           const lastStr = t.last || formatTokenPrice(rawL);
@@ -12160,7 +12181,7 @@ const server = http.createServer(async (req, res) => {
             prices['SP500'] = obj;
             prices['SPX'] = obj;
             symbols.forEach(s => {
-              if (s.includes('SP500') || s.includes('SPX')) prices[s] = obj;
+              if (s.includes('SP500') || s === 'INDEX:SPX' || s === 'SP:SPX' || s === 'TVC:SPX') prices[s] = obj;
             });
           }
         } catch (e) {}
