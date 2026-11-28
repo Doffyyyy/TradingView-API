@@ -12659,6 +12659,11 @@ const server = http.createServer(async (req, res) => {
     return true;
   }
 
+  const getReqIsHttps = () =>
+    req.headers['x-forwarded-proto'] === 'https' ||
+    Boolean(req.socket?.encrypted) ||
+    Boolean(req.headers.host && req.headers.host.includes('hyperview.ai.id'));
+
   // --- Web3 Wallet & Google Authentication API ---
   if (pathname === '/api/auth/wallet/nonce') {
     const body = await parseBody(req);
@@ -12681,12 +12686,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     const body = await parseBody(req);
-    const result = authSecurityInstance.verifyWalletSignature(body.address, body.signature, body.message);
+    const clientCtx = authSecurityInstance.extractClientContext(req);
+    const result = authSecurityInstance.verifyWalletSignature(body.address, body.signature, body.message, clientCtx);
     if (result.success) {
-      const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.headers.host && req.headers.host.includes('hyperview.ai.id'));
       res.writeHead(200, {
         'Content-Type': 'application/json',
-        'Set-Cookie': authSecurityInstance.buildSessionCookie(result.token, isHttps),
+        'Set-Cookie': authSecurityInstance.buildAuthCookies(result.token, result.deviceId, getReqIsHttps()),
       });
       return res.end(JSON.stringify(result));
     } else {
@@ -12704,12 +12709,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     const body = await parseBody(req);
-    const result = await authSecurityInstance.verifyGoogleCredential(body.credential);
+    const clientCtx = authSecurityInstance.extractClientContext(req);
+    const result = await authSecurityInstance.verifyGoogleCredential(body.credential, clientCtx);
     if (result.success) {
-      const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.headers.host && req.headers.host.includes('hyperview.ai.id'));
       res.writeHead(200, {
         'Content-Type': 'application/json',
-        'Set-Cookie': authSecurityInstance.buildSessionCookie(result.token, isHttps),
+        'Set-Cookie': authSecurityInstance.buildAuthCookies(result.token, result.deviceId, getReqIsHttps()),
       });
       return res.end(JSON.stringify(result));
     } else {
@@ -12725,11 +12730,11 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: false, error: 'Vui lòng cung cấp Email hoặc Địa chỉ ví' }));
     }
-    const result = authSecurityInstance.directLogin(id, body.role || 'USER');
-    const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.headers.host && req.headers.host.includes('hyperview.ai.id'));
+    const clientCtx = authSecurityInstance.extractClientContext(req);
+    const result = authSecurityInstance.directLogin(id, body.role || 'USER', clientCtx);
     res.writeHead(200, {
       'Content-Type': 'application/json',
-      'Set-Cookie': authSecurityInstance.buildSessionCookie(result.token, isHttps),
+      'Set-Cookie': authSecurityInstance.buildAuthCookies(result.token, result.deviceId, getReqIsHttps()),
     });
     return res.end(JSON.stringify(result));
   }
@@ -12745,17 +12750,22 @@ const server = http.createServer(async (req, res) => {
     }
     const session = authSecurityInstance.authenticateRequest(req);
     if (session) {
-      session.role = 'ADMIN';
+      const token = authSecurityInstance.extractTokenFromReq(req);
+      authSecurityInstance.updateSessionRole(token, 'ADMIN');
       if (session.type === 'wallet') authSecurityInstance.addAdminWallet(session.fullId);
       else authSecurityInstance.addAdminEmail(session.fullId);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Set-Cookie'] = authSecurityInstance.buildAuthCookies(token, session.deviceId, getReqIsHttps());
+      }
+      res.writeHead(200, headers);
       return res.end(JSON.stringify({ success: true, user: session }));
     } else {
-      const result = authSecurityInstance.directLogin('Admin', 'ADMIN');
-      const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.headers.host && req.headers.host.includes('hyperview.ai.id'));
+      const clientCtx = authSecurityInstance.extractClientContext(req);
+      const result = authSecurityInstance.directLogin('Admin', 'ADMIN', clientCtx);
       res.writeHead(200, {
         'Content-Type': 'application/json',
-        'Set-Cookie': authSecurityInstance.buildSessionCookie(result.token, isHttps),
+        'Set-Cookie': authSecurityInstance.buildAuthCookies(result.token, result.deviceId, getReqIsHttps()),
       });
       return res.end(JSON.stringify(result));
     }
@@ -12763,9 +12773,19 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/auth/me') {
     const session = authSecurityInstance.authenticateRequest(req);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    const headers = { 'Content-Type': 'application/json' };
+    if (session) {
+      const token = authSecurityInstance.extractTokenFromReq(req);
+      if (token) {
+        headers['Set-Cookie'] = authSecurityInstance.buildAuthCookies(token, session.deviceId, getReqIsHttps());
+      }
+    }
+    res.writeHead(200, headers);
     return res.end(JSON.stringify({
       authenticated: !!session,
+      persistent: !!session,
+      boundIp: session ? session.ip : null,
+      expiresAt: session ? session.expiresAt : null,
       user: session ? {
         userId: session.userId,
         displayId: session.displayId,
@@ -12791,21 +12811,45 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/login') {
+    const session = authSecurityInstance.authenticateRequest(req);
+    if (session && parsedUrl.query.force !== '1') {
+      const token = authSecurityInstance.extractTokenFromReq(req);
+      const redirHeaders = { Location: '/terminal' };
+      if (token) {
+        redirHeaders['Set-Cookie'] = authSecurityInstance.buildAuthCookies(token, session.deviceId, getReqIsHttps());
+      }
+      res.writeHead(302, redirHeaders);
+      return res.end();
+    }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(getLoginPageHtml({ domain: authSecurityInstance.config.domain, googleClientId: authSecurityInstance.config.googleClientId }));
   }
 
   if (pathname === '/terminal') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    const session = authSecurityInstance.authenticateRequest(req);
+    const headers = { 'Content-Type': 'text/html; charset=utf-8' };
+    if (session) {
+      const token = authSecurityInstance.extractTokenFromReq(req);
+      if (token) {
+        headers['Set-Cookie'] = authSecurityInstance.buildAuthCookies(token, session.deviceId, getReqIsHttps());
+      }
+    }
+    res.writeHead(200, headers);
     return res.end(htmlContent);
   }
 
   if (pathname === '/') {
     const session = authSecurityInstance.authenticateRequest(req);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    const headers = { 'Content-Type': 'text/html; charset=utf-8' };
     if (session) {
+      const token = authSecurityInstance.extractTokenFromReq(req);
+      if (token) {
+        headers['Set-Cookie'] = authSecurityInstance.buildAuthCookies(token, session.deviceId, getReqIsHttps());
+      }
+      res.writeHead(200, headers);
       return res.end(htmlContent);
     } else {
+      res.writeHead(200, headers);
       return res.end(getLoginPageHtml({ domain: authSecurityInstance.config.domain, googleClientId: authSecurityInstance.config.googleClientId }));
     }
   }

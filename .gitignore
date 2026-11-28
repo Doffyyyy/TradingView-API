@@ -10,4 +10,6 @@ graphify-out/
 data/backups/
 data/user_portfolios/
 data/user_vario_agents/
+data/auth_sessions.json
+data/auth_sessions.json.tmp
 

@@ -22,18 +22,77 @@
 
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const axios = require('axios');
 const { ethers } = require('ethers');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const CONFIG_FILE = path.join(DATA_DIR, 'auth_config.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'auth_sessions.json');
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const MACHINE_HOST = os.hostname();
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function normalizeIp(rawIp) {
+  let s = String(rawIp || '').trim();
+  if (!s) return 'unknown';
+  if (s.includes(',')) s = s.split(',')[0].trim();
+  if (s.startsWith('[')) {
+    const closeIdx = s.indexOf(']');
+    if (closeIdx > 0) s = s.slice(1, closeIdx);
+  } else if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(s)) {
+    s = s.replace(/:\d+$/, '');
+  }
+  s = s.replace(/^::ffff:/i, '').trim();
+  const lower = s.toLowerCase();
+  if (lower === '::1' || lower === '127.0.0.1' || lower === 'localhost') {
+    return '127.0.0.1';
+  }
+  return lower;
+}
+
+function extractClientIp(req) {
+  const raw = req?.headers?.['cf-connecting-ip'] || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || '';
+  return normalizeIp(raw);
+}
+
+function extractClientPlatform(req) {
+  const raw = String(req?.headers?.['sec-ch-ua-platform'] || req?.headers?.['user-agent'] || '').toLowerCase();
+  if (!raw) return 'other';
+  if (/iphone|ipad|ipod|\bios\b/.test(raw)) return 'ios';
+  if (/android/.test(raw)) return 'android';
+  if (/windows/.test(raw)) return 'windows';
+  if (/mac os|macos|macintosh/.test(raw)) return 'macos';
+  if (/linux|x11/.test(raw)) return 'linux';
+  return 'other';
+}
+
+function extractCookieValue(req, name) {
+  const cookieHeader = req?.headers?.['cookie'];
+  if (!cookieHeader) return null;
+  const re = new RegExp(`(?:^|;\\s*)${name}=([^;]+)`);
+  const match = cookieHeader.match(re);
+  return match ? match[1].trim() : null;
+}
+
+function ensureDeviceId(clientContext) {
+  const existing = clientContext?.deviceId;
+  if (existing && /^[a-fA-F0-9]{32,128}$/.test(existing)) {
+    return existing.toLowerCase();
+  }
+  return crypto.randomBytes(24).toString('hex');
+}
 
 // Default initial security configuration
 const DEFAULT_CONFIG = {
   domain: 'hyperview.ai.id',
   sessionTtlHours: 24,
+  persistentSessionDays: 30,
+  bindSessionToIpAndMachine: true,
   adminEmails: [
     'admin@hyperview.ai.id',
     'hi.imduy@gmail.com',
@@ -58,10 +117,11 @@ const DEFAULT_CONFIG = {
 class AuthSecurityManager {
   constructor() {
     this.config = this.loadConfig();
-    this.sessions = new Map(); // token -> sessionData
+    this.sessions = new Map(); // tokenHash -> sessionData
     this.walletNonces = new Map(); // address.toLowerCase() -> { nonce, expiresAt, used, domain }
     this.ipRateLimits = new Map(); // key -> { count, resetTime }
 
+    this.loadPersistedSessions();
     this.initBackupScheduler();
     this.initCleanupScheduler();
   }
@@ -158,7 +218,7 @@ class AuthSecurityManager {
     };
   }
 
-  verifyWalletSignature(rawAddress, signature, message) {
+  verifyWalletSignature(rawAddress, signature, message, clientContext = null) {
     if (!rawAddress || !signature || !message) {
       return { success: false, error: 'Thiếu thông tin xác thực ví (address, signature hoặc message)' };
     }
@@ -212,19 +272,20 @@ class AuthSecurityManager {
     // Check Admin status
     const isAdmin = this.checkIsAdminWallet(key);
 
-    // Create secure session
-    const sessionToken = this.createSession({
+    // Create secure persistent session bound to machine & IP
+    const { token, deviceId } = this.createSession({
       userId: key,
       displayId: checksumAddress.slice(0, 6) + '...' + checksumAddress.slice(-4),
       fullId: checksumAddress,
       type: 'wallet',
       role: isAdmin ? 'ADMIN' : 'USER',
       name: `Wallet ${checksumAddress.slice(0, 6)}`,
-    });
+    }, clientContext);
 
     return {
       success: true,
-      token: sessionToken,
+      token,
+      deviceId,
       user: {
         address: checksumAddress,
         shortAddress: checksumAddress.slice(0, 6) + '...' + checksumAddress.slice(-4),
@@ -237,7 +298,7 @@ class AuthSecurityManager {
   // --------------------------------------------------------------------------
   // Google OAuth / Gmail Sign-In
   // --------------------------------------------------------------------------
-  async verifyGoogleCredential(credential) {
+  async verifyGoogleCredential(credential, clientContext = null) {
     if (!credential) {
       return { success: false, error: 'Thiếu Google Credential token' };
     }
@@ -260,7 +321,7 @@ class AuthSecurityManager {
       const email = payload.email.toLowerCase();
       const isAdmin = this.checkIsAdminEmail(email);
 
-      const sessionToken = this.createSession({
+      const { token, deviceId } = this.createSession({
         userId: email,
         displayId: email,
         fullId: email,
@@ -268,11 +329,12 @@ class AuthSecurityManager {
         role: isAdmin ? 'ADMIN' : 'USER',
         name: payload.name || email.split('@')[0],
         picture: payload.picture || '',
-      });
+      }, clientContext);
 
       return {
         success: true,
-        token: sessionToken,
+        token,
+        deviceId,
         user: {
           email,
           name: payload.name || email.split('@')[0],
@@ -287,23 +349,24 @@ class AuthSecurityManager {
   }
 
   // Fallback demo/direct login for local testing & owner setup
-  directLogin(identifier, role = 'USER') {
+  directLogin(identifier, role = 'USER', clientContext = null) {
     const isWallet = ethers.isAddress(identifier);
     const userId = identifier.toLowerCase();
     const isAdmin = isWallet ? this.checkIsAdminWallet(userId) : this.checkIsAdminEmail(userId) || role === 'ADMIN';
 
-    const sessionToken = this.createSession({
+    const { token, deviceId } = this.createSession({
       userId,
       displayId: isWallet ? identifier.slice(0, 6) + '...' + identifier.slice(-4) : identifier,
       fullId: identifier,
       type: isWallet ? 'wallet' : 'email',
       role: isAdmin ? 'ADMIN' : 'USER',
       name: isWallet ? `Wallet ${identifier.slice(0, 6)}` : identifier.split('@')[0],
-    });
+    }, clientContext);
 
     return {
       success: true,
-      token: sessionToken,
+      token,
+      deviceId,
       user: {
         userId,
         displayId: isWallet ? identifier.slice(0, 6) + '...' + identifier.slice(-4) : identifier,
@@ -314,15 +377,105 @@ class AuthSecurityManager {
   }
 
   // --------------------------------------------------------------------------
-  // Session Management
+  // Persistent Session Management (Bound to Same Machine & IP)
   // --------------------------------------------------------------------------
-  createSession(userData) {
+  extractClientContext(req) {
+    return {
+      ip: extractClientIp(req),
+      platform: extractClientPlatform(req),
+      deviceId: extractCookieValue(req, 'hv_device') || null,
+      machineHost: MACHINE_HOST,
+    };
+  }
+
+  getPersistentTtlMs() {
+    const days = this.config.persistentSessionDays || 30;
+    return days * 24 * 60 * 60 * 1000;
+  }
+
+  loadPersistedSessions() {
+    try {
+      if (!fs.existsSync(SESSIONS_FILE)) return;
+      const raw = fs.readFileSync(SESSIONS_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.sessions) ? parsed.sessions : []);
+      const now = Date.now();
+      let restored = 0;
+
+      for (const s of list) {
+        if (!s || !s.tokenHash || !s.expiresAt || now > s.expiresAt) continue;
+        if (s.machineHost && s.machineHost !== MACHINE_HOST) continue;
+        this.sessions.set(s.tokenHash, {
+          tokenHash: s.tokenHash,
+          userId: s.userId,
+          displayId: s.displayId,
+          fullId: s.fullId,
+          name: s.name || 'User',
+          picture: s.picture || '',
+          type: s.type || 'wallet',
+          role: s.role || 'USER',
+          ip: s.ip || '127.0.0.1',
+          deviceId: s.deviceId || null,
+          platform: s.platform || 'other',
+          machineHost: s.machineHost || MACHINE_HOST,
+          createdAt: s.createdAt || now,
+          lastSeenAt: s.lastSeenAt || s.createdAt || now,
+          lastPersistedAt: s.lastPersistedAt || s.lastSeenAt || now,
+          expiresAt: s.expiresAt,
+        });
+        restored++;
+      }
+      if (restored > 0) {
+        console.log(`[AuthSecurity] Restored ${restored} persistent session(s) for machine ${MACHINE_HOST}`);
+      }
+    } catch (e) {
+      console.warn('[AuthSecurity] Failed to load persistent sessions:', e.message);
+    }
+  }
+
+  savePersistedSessions() {
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      const now = Date.now();
+      const serializable = [];
+      for (const s of this.sessions.values()) {
+        if (!s || now > s.expiresAt) continue;
+        serializable.push({
+          tokenHash: s.tokenHash,
+          userId: s.userId,
+          displayId: s.displayId,
+          fullId: s.fullId,
+          name: s.name,
+          picture: s.picture,
+          type: s.type,
+          role: s.role,
+          ip: s.ip,
+          deviceId: s.deviceId,
+          platform: s.platform,
+          machineHost: s.machineHost,
+          createdAt: s.createdAt,
+          lastSeenAt: s.lastSeenAt,
+          lastPersistedAt: s.lastPersistedAt,
+          expiresAt: s.expiresAt,
+        });
+      }
+      const tmpFile = SESSIONS_FILE + '.tmp';
+      fs.writeFileSync(tmpFile, JSON.stringify({ machineHost: MACHINE_HOST, sessions: serializable }, null, 2), 'utf8');
+      fs.renameSync(tmpFile, SESSIONS_FILE);
+    } catch (e) {
+      console.warn('[AuthSecurity] Failed to save persistent sessions:', e.message);
+    }
+  }
+
+  createSession(userData, clientContext = null) {
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
     const now = Date.now();
-    const ttlMs = (this.config.sessionTtlHours || 24) * 60 * 60 * 1000;
+    const ttlMs = this.getPersistentTtlMs();
+    const deviceId = ensureDeviceId(clientContext);
 
     const sessionObj = {
-      token,
+      tokenHash,
       userId: userData.userId,
       displayId: userData.displayId,
       fullId: userData.fullId,
@@ -330,51 +483,111 @@ class AuthSecurityManager {
       picture: userData.picture || '',
       type: userData.type || 'wallet',
       role: userData.role || 'USER',
+      ip: clientContext?.ip || '127.0.0.1',
+      deviceId,
+      platform: clientContext?.platform || 'other',
+      machineHost: MACHINE_HOST,
       createdAt: now,
+      lastSeenAt: now,
+      lastPersistedAt: now,
       expiresAt: now + ttlMs,
     };
 
-    this.sessions.set(token, sessionObj);
-    return token;
+    this.sessions.set(tokenHash, sessionObj);
+    this.savePersistedSessions();
+    return { token, deviceId, session: sessionObj };
   }
 
-  getSession(token) {
+  getSession(token, clientContext = null, source = 'cookie') {
     if (!token) return null;
-    const s = this.sessions.get(token);
+    const tokenHash = hashToken(token);
+    const s = this.sessions.get(tokenHash);
     if (!s) return null;
 
-    if (Date.now() > s.expiresAt) {
-      this.sessions.delete(token);
+    const now = Date.now();
+    if (now > s.expiresAt) {
+      this.sessions.delete(tokenHash);
+      this.savePersistedSessions();
       return null;
     }
+
+    if (this.config.bindSessionToIpAndMachine !== false && clientContext) {
+      if (s.machineHost !== MACHINE_HOST) {
+        console.warn(`[AuthSecurity] Rejected session for ${s.userId}: machine mismatch`);
+        return null;
+      }
+      if (s.ip !== clientContext.ip) {
+        console.warn(`[AuthSecurity] Rejected session for ${s.userId}: IP mismatch (${clientContext.ip} !== ${s.ip})`);
+        return null;
+      }
+      if (s.platform !== clientContext.platform) {
+        console.warn(`[AuthSecurity] Rejected session for ${s.userId}: platform mismatch (${clientContext.platform} !== ${s.platform})`);
+        return null;
+      }
+      if (source === 'cookie' && s.deviceId && clientContext.deviceId !== s.deviceId) {
+        console.warn(`[AuthSecurity] Rejected session for ${s.userId}: device cookie mismatch`);
+        return null;
+      }
+    }
+
+    // Sliding expiration on valid activity; persist to disk at most every 15m
+    const ttlMs = this.getPersistentTtlMs();
+    s.expiresAt = now + ttlMs;
+    if (now - (s.lastPersistedAt || s.lastSeenAt || 0) >= 15 * 60 * 1000) {
+      s.lastSeenAt = now;
+      s.lastPersistedAt = now;
+      this.savePersistedSessions();
+    }
+
+    return s;
+  }
+
+  updateSessionRole(token, newRole) {
+    if (!token) return null;
+    const s = this.sessions.get(hashToken(token));
+    if (!s) return null;
+    const now = Date.now();
+    s.role = newRole;
+    s.lastSeenAt = now;
+    s.lastPersistedAt = now;
+    s.expiresAt = now + this.getPersistentTtlMs();
+    this.savePersistedSessions();
     return s;
   }
 
   destroySession(token) {
-    if (token) this.sessions.delete(token);
+    if (!token) return;
+    const deleted = this.sessions.delete(hashToken(token));
+    if (deleted) {
+      this.savePersistedSessions();
+    }
   }
 
-  extractTokenFromReq(req) {
-    // 1. Check Authorization Bearer header
-    const authHeader = req.headers['authorization'];
+  extractTokenInfoFromReq(req) {
+    const authHeader = req?.headers?.['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authHeader.slice(7).trim();
+      const token = authHeader.slice(7).trim();
+      if (token) return { token, source: 'bearer' };
     }
 
-    // 2. Check Cookie
-    const cookieHeader = req.headers['cookie'];
-    if (cookieHeader) {
-      const match = cookieHeader.match(/hv_session=([a-zA-Z0-9]+)/);
-      if (match) return match[1];
+    const cookieToken = extractCookieValue(req, 'hv_session');
+    if (cookieToken && /^[a-zA-Z0-9]+$/.test(cookieToken)) {
+      return { token: cookieToken, source: 'cookie' };
     }
 
     return null;
   }
 
+  extractTokenFromReq(req) {
+    const info = this.extractTokenInfoFromReq(req);
+    return info ? info.token : null;
+  }
+
   authenticateRequest(req) {
-    const token = this.extractTokenFromReq(req);
-    if (!token) return null;
-    return this.getSession(token);
+    const info = this.extractTokenInfoFromReq(req);
+    if (!info) return null;
+    const ctx = this.extractClientContext(req);
+    return this.getSession(info.token, ctx, info.source);
   }
 
   // --------------------------------------------------------------------------
@@ -437,14 +650,27 @@ class AuthSecurityManager {
   }
 
   buildSessionCookie(token, isHttps = false) {
-    const maxAge = (this.config.sessionTtlHours || 24) * 3600;
-    let cookie = `hv_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`;
+    const maxAge = (this.config.persistentSessionDays || 30) * 86400;
+    let cookie = `hv_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
     if (isHttps) cookie += '; Secure';
     return cookie;
   }
 
+  buildDeviceCookie(deviceId, isHttps = false) {
+    const maxAge = 365 * 86400;
+    let cookie = `hv_device=${deviceId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+    if (isHttps) cookie += '; Secure';
+    return cookie;
+  }
+
+  buildAuthCookies(token, deviceId, isHttps = false) {
+    const cookies = [this.buildSessionCookie(token, isHttps)];
+    if (deviceId) cookies.push(this.buildDeviceCookie(deviceId, isHttps));
+    return cookies;
+  }
+
   buildClearCookie() {
-    return 'hv_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    return 'hv_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
 
   // --------------------------------------------------------------------------
@@ -493,8 +719,15 @@ class AuthSecurityManager {
     // Purge expired sessions and nonces every 15 minutes
     const timer = setInterval(() => {
       const now = Date.now();
-      for (const [token, s] of this.sessions.entries()) {
-        if (now > s.expiresAt) this.sessions.delete(token);
+      let dirty = false;
+      for (const [tokenHash, s] of this.sessions.entries()) {
+        if (now > s.expiresAt) {
+          this.sessions.delete(tokenHash);
+          dirty = true;
+        }
+      }
+      if (dirty) {
+        this.savePersistedSessions();
       }
       for (const [key, n] of this.walletNonces.entries()) {
         if (now > n.expiresAt) this.walletNonces.delete(key);
